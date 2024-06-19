@@ -28,14 +28,12 @@ export const LiffProvider: FC<PropsWithChildren<{ liffId: string }>> = ({
     try {
       const liffModule = await import('@line/liff');
       const liff = liffModule.default;
-      console.log('LIFF init...' + liffId);
-
+      console.log('LIFF init...');
       await liff.init({ liffId });
-
-      console.log('LIFF init succeeded.');
+      // console.log('LIFF init succeeded.');
       setLiff(liff);
     } catch (error) {
-      console.log('LIFF init failed.');
+      // console.log('LIFF init failed.');
       console.log(error);
       setLiffError((error as Error).toString());
     }
@@ -43,7 +41,6 @@ export const LiffProvider: FC<PropsWithChildren<{ liffId: string }>> = ({
 
   // init Liff
   useEffect(() => {
-    console.log('LIFF init start...');
     initLiff();
   }, [initLiff]);
 

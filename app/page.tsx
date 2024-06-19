@@ -1,25 +1,22 @@
 'use client';
 import { useLiff } from '@/app/liffProvider';
 import { Profile } from '@liff/get-profile';
-import packageJson from "../package.json";
 import { useEffect, useState } from 'react';
 
-export default function Profile2() {
+export default function Home() {
 	const [profile, setProfile] = useState<Profile | null>(null);
 	const { liff } = useLiff();
-	if(liff){
+	if (liff) {
 		liff.ready.then(() => {
-			alert(liff.isLoggedIn());
 			if (!liff.isLoggedIn()) {
 				liff.login();
 			}
 			const idToken = liff.getDecodedIDToken();
-			if(idToken){
+			if (idToken) {
 				const userId = idToken.sub;
 				console.log(userId);
 			}
 		})
-
 	}
 
 
@@ -31,6 +28,30 @@ export default function Profile2() {
 			})();
 		}
 	}, [liff]);
+
+
+	const [responseData, setResponseData] = useState('');
+	const [inputData, setInputData] = useState('');
+
+	const fetchData = async () => {
+		try {
+			const url = process.env.SERVER_URL + `?func=test&param=${inputData}&userId=${profile?.userId}`;
+			if (url) {
+				const response = await fetch(url, {
+					method: 'GET',
+					// headers: {
+					// 	'Access-Control-Allow-Origin': process.env.SERVER_URL
+					// } as RequestInit,
+				});
+				const data = await response.json();
+				setResponseData(data.result);
+			}
+		} catch (error) {
+			console.error('Error fetching data:', error);
+		}
+	};
+
+
 
 	return (
 		<>
@@ -66,62 +87,20 @@ export default function Profile2() {
 					</button>
 				)}
 			</div>
+
 			<div>
-				<div className="home">
-					<h1 className="home__title">
-						Welcome to <br />
-						<a
-							className="home__title__link"
-							href="https://developers.line.biz/en/docs/liff/overview/"
-						>
-							LIFF Starter!
-						</a>
-					</h1>
-					<div className="home__badges">
-						<span className="home__badges__badge badge--primary">
-							LIFF Starter
-						</span>
-						<span className="home__badges__badge badge--secondary">nextjs</span>
-						<span className="home__badges__badge badge--primary">
-							{packageJson.version}
-						</span>
-						<a
-							href="https://github.com/line/line-liff-v2-starter"
-							target="_blank"
-							rel="noreferrer"
-							className="home__badges__badge badge--secondary"
-						>
-							GitHub
-						</a>
-					</div>
-					<div className="home__buttons">
-						<a
-							href="https://developers.line.biz/en/docs/liff/developing-liff-apps/"
-							target="_blank"
-							rel="noreferrer"
-							className="home__buttons__button button--primary"
-						>
-							LIFF Documentation
-						</a>
-						<a
-							href="https://liff-playground.netlify.app/"
-							target="_blank"
-							rel="noreferrer"
-							className="home__buttons__button button--tertiary"
-						>
-							LIFF Playground
-						</a>
-						<a
-							href="https://developers.line.biz/console/"
-							target="_blank"
-							rel="noreferrer"
-							className="home__buttons__button button--secondary"
-						>
-							LINE Developers Console
-						</a>
-					</div>
+				<input
+					type="text"
+					placeholder="Enter data aaaaaaa"
+					value={inputData}
+					onChange={(e) => setInputData(e.target.value)}
+				/>
+				<button onClick={fetchData}>Get Data</button>
+				<div>
+					<p>Response Data: {responseData}</p>
 				</div>
 			</div>
+
 		</>
 	);
 }
