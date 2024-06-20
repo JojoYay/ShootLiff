@@ -2,17 +2,18 @@
 import { useLiff } from '@/app/liffProvider';
 import { Profile } from '@liff/get-profile';
 import { useEffect, useState } from 'react';
-import Ranking from './ranking';
+import VideoCard from './videoCard';
 import { CircularProgress, Grid, Pagination } from '@mui/material';
+import Head from 'next/head';
 
-export default function ProfilePage() {
+export default function VideoPage() {
 	const [profile, setProfile] = useState<Profile | null>(null);
 	const { liff } = useLiff();
 
 	if (liff) {
 		liff.ready.then(() => {
 			if (!liff.isLoggedIn()) {
-				liff.login();
+				liff.login({ redirectUri: window.location.href });
 			}
 		})
 	}
@@ -46,7 +47,7 @@ export default function ProfilePage() {
 				});
 				const data = await response.json();
 				console.log(data.result);
-				setResponseData(data.result.reverse()); // Reverse the order
+				setResponseData(data.result.slice(2).reverse()); // Reverse the order
 			}
 		} catch (error) {
 			console.error('Error fetching data:', error);
@@ -63,12 +64,21 @@ export default function ProfilePage() {
 
 	return (
 		<>
+			<Head>
+				<title>Video Footage</title>
+			</Head>
 			{responseData ? (
 				<>
-					<Grid container spacing={2} style={{ margin: '10px' }}>
+					<Pagination
+						count={Math.ceil(responseData.length / itemsPerPage)}
+						page={currentPage}
+						onChange={handlePageChange}
+						style={{ display: 'flex', justifyContent: 'center', margin: '20px' }}
+					/>				
+					<Grid container spacing={2} style={{ margin: '5px', width:'100%' }}>
 						{currentItems.map((data, index) => (
 							<div key={index}>
-								<Ranking url={data[2]} title={data[1]} date={data[0].substring(0, 10)}></Ranking>
+								<VideoCard url={data[2]} title={data[1]} date={data[0].substring(0, 10)}></VideoCard>
 							</div>
 						))}
 					</Grid>
@@ -80,7 +90,9 @@ export default function ProfilePage() {
 					/>
 				</>
 			) : (
-				<CircularProgress />
+				<div style={{ display: 'flex', justifyContent: 'center', alignItems: 'center', height: '100vh' }}>
+					<CircularProgress />
+				</div>
 			)}
 		</>
 	);

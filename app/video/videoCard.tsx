@@ -1,5 +1,5 @@
 import { styled } from '@mui/system';
-import { Button, CardActionArea, CardActions, Card, CardContent, CardMedia, Typography } from '@mui/material';
+import { CardActionArea, Card, CardMedia, Typography } from '@mui/material';
 
 const Overlay = styled('div')({
   position: 'absolute',
@@ -13,7 +13,7 @@ const Overlay = styled('div')({
 
 const Media = styled(CardMedia)({
   position: 'relative',
-  height: '300px',
+  height: '160px',
 }) as any;
 
 function getPicUrl(url: string): string {
@@ -24,13 +24,13 @@ function getPicUrl(url: string): string {
   return `http://img.youtube.com/vi/${videoIdMatch[1]}/maxresdefault.jpg`;
 }
 
-type RankingProps = {
+type VideoProps = {
   url: string;
   title: string;
   date: string;
 };
 
-export default function Ranking(props: RankingProps) {
+export default function VideoCard(props: VideoProps) {
   // const handleShareClick = () => {
   //   // Share logic here
   // };
@@ -46,7 +46,7 @@ export default function Ranking(props: RankingProps) {
           <Media
             component="img"
             alt="Image"
-            height="140"
+            height="160"
             image={getPicUrl(props.url)}
             title="Image"
             style={{ borderRadius: '15px' }}
