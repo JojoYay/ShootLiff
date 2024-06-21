@@ -9,6 +9,7 @@ export default function Home() {
 	if (liff) {
 		liff.ready.then(() => {
 			if (!liff.isLoggedIn()) {
+				console.log("liff login..."+liff)
 				liff.login({ redirectUri: window.location.href });
 			}
 			const idToken = liff.getDecodedIDToken();
@@ -39,9 +40,6 @@ export default function Home() {
 			if (url) {
 				const response = await fetch(url, {
 					method: 'GET',
-					// headers: {
-					// 	'Access-Control-Allow-Origin': process.env.SERVER_URL
-					// } as RequestInit,
 				});
 				const data = await response.json();
 				setResponseData(data.result);

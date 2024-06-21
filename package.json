@@ -8,7 +8,9 @@
     "build": "npm run set-env && next build",
     "start": "next start",
     "lint": "next lint",
-    "deploy": "npm run set-env && next build && firebase deploy"
+    "deploy": "npm run set-env && next build && firebase deploy --project lifffronttest",
+    "deploy:prod": "npm run set-env && next build && firebase deploy --project shootsundayfront"
+
   },
   "dependencies": {
     "@emotion/react": "^11.11.4",

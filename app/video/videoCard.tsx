@@ -21,7 +21,7 @@ function getPicUrl(url: string): string {
   if (!videoIdMatch) {
       throw new Error('Invalid YouTube URL ' + url);
   }
-  return `http://img.youtube.com/vi/${videoIdMatch[1]}/maxresdefault.jpg`;
+  return `https://img.youtube.com/vi/${videoIdMatch[1]}/maxresdefault.jpg`;
 }
 
 type VideoProps = {
@@ -62,11 +62,6 @@ export default function VideoCard(props: VideoProps) {
           </Typography>
         </Overlay>
       </CardActionArea>
-      {/* <CardActions>
-        <Button size="small" color="primary" onClick={handleShareClick}>
-          Share
-        </Button>
-      </CardActions> */}
     </Card>
   );
 }

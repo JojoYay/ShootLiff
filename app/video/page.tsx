@@ -7,40 +7,39 @@ import { CircularProgress, Grid, Pagination } from '@mui/material';
 import Head from 'next/head';
 
 export default function VideoPage() {
-	const [profile, setProfile] = useState<Profile | null>(null);
-	const { liff } = useLiff();
+	// const [profile, setProfile] = useState<Profile | null>(null);
+	// const { liff } = useLiff();
 
-	if (liff) {
-		liff.ready.then(() => {
-			if (!liff.isLoggedIn()) {
-				liff.login({ redirectUri: window.location.href });
-			}
-		})
-	}
+	// if (liff) {
+	// 	liff.ready.then(() => {
+	// 		if (!liff.isLoggedIn()) {
+	// 			liff.login({ redirectUri: window.location.href });
+	// 		}
+	// 	})
+	// }
+
+	// useEffect(() => {
+	// 	if (liff?.isLoggedIn()) {
+	// 		(async () => {
+	// 			const profile = await liff.getProfile();
+	// 			setProfile(profile);
+	// 		})();
+	// 	}
+	// }, [liff]);
 
 	useEffect(() => {
-		if (liff?.isLoggedIn()) {
-			(async () => {
-				const profile = await liff.getProfile();
-				setProfile(profile);
-			})();
-		}
-	}, [liff]);
+		fetchVideo();
+	}, []);
 
 	const [responseData, setResponseData] = useState<string[][] | null>(null);
 	const [currentPage, setCurrentPage] = useState(1);
-	const itemsPerPage = 7;
-
-	useEffect(() => {
-		if (profile?.userId) {
-			fetchVideo();
-		}
-	}, [profile]);
+	const itemsPerPage = 8;
 
 	const fetchVideo = async () => {
 		try {
 			console.log("fetchData");
-			const url = process.env.SERVER_URL + `?func=getVideo&userId=${profile?.userId}`;
+			// const url = process.env.SERVER_URL + `?func=getVideo&userId=${profile?.userId}`;
+			const url = process.env.SERVER_URL + '?func=getVideo';
 			if (url) {
 				const response = await fetch(url, {
 					method: 'GET',
@@ -91,6 +90,7 @@ export default function VideoPage() {
 				</>
 			) : (
 				<div style={{ display: 'flex', justifyContent: 'center', alignItems: 'center', height: '100vh' }}>
+					<div>Loading...</div>
 					<CircularProgress />
 				</div>
 			)}
