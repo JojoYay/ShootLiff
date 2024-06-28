@@ -10,6 +10,7 @@ function setEnvFile(config) {
   const envContent = `
 NEXT_PUBLIC_LIFF_ID=${config.project_config.liff_id}
 NEXT_PUBLIC_SERVER_URL=${config.project_config.server_url}
+NEXT_PUBLIC_GA_ID=${config.project_config.ga_id}
   `;
   fs.writeFileSync('.env.local', envContent);
 }

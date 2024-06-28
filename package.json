@@ -8,18 +8,19 @@
     "build": "npm run set-env && next build",
     "start": "next start",
     "lint": "next lint",
-    "deploy": "npm run set-env && next build && firebase deploy --project lifffronttest",
-    "deploy:prod": "npm run set-env && next build && firebase deploy --project shootsundayfront"
-
+    "deploy": "firebase use test && npm run set-env && next build && firebase deploy --project test-8120f",
+    "deploy:test": "firebase use test && npm run set-env && next build && firebase deploy --project test-8120f",
+    "deploy:prod": "firebase use prod && npm run set-env && next build && firebase deploy --project shootsundayfront"
   },
   "dependencies": {
     "@emotion/react": "^11.11.4",
     "@emotion/styled": "^11.11.5",
     "@fontsource/roboto": "^5.0.13",
     "@line/liff": "^2.23.2",
-    "@mui/material": "^5.15.0",
     "@mui/icons-material": "^5.15.20",
+    "@mui/material": "^5.15.0",
     "@mui/styled-engine-sc": "^6.0.0-alpha.18",
+    "@next/third-parties": "^14.2.4",
     "next": "14.2.4",
     "react": "^18",
     "react-dom": "^18",

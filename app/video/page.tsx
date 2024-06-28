@@ -1,32 +1,10 @@
 'use client';
-import { useLiff } from '@/app/liffProvider';
-import { Profile } from '@liff/get-profile';
 import { useEffect, useState } from 'react';
 import VideoCard from './videoCard';
 import { CircularProgress, Grid, Pagination } from '@mui/material';
 import Head from 'next/head';
 
 export default function VideoPage() {
-	// const [profile, setProfile] = useState<Profile | null>(null);
-	// const { liff } = useLiff();
-
-	// if (liff) {
-	// 	liff.ready.then(() => {
-	// 		if (!liff.isLoggedIn()) {
-	// 			liff.login({ redirectUri: window.location.href });
-	// 		}
-	// 	})
-	// }
-
-	// useEffect(() => {
-	// 	if (liff?.isLoggedIn()) {
-	// 		(async () => {
-	// 			const profile = await liff.getProfile();
-	// 			setProfile(profile);
-	// 		})();
-	// 	}
-	// }, [liff]);
-
 	useEffect(() => {
 		fetchVideo();
 	}, []);
@@ -37,15 +15,13 @@ export default function VideoPage() {
 
 	const fetchVideo = async () => {
 		try {
-			console.log("fetchData");
-			// const url = process.env.SERVER_URL + `?func=getVideo&userId=${profile?.userId}`;
 			const url = process.env.SERVER_URL + '?func=getVideo';
 			if (url) {
 				const response = await fetch(url, {
 					method: 'GET',
 				});
 				const data = await response.json();
-				console.log(data.result);
+				// console.log(data.result);
 				setResponseData(data.result.slice(2).reverse()); // Reverse the order
 			}
 		} catch (error) {

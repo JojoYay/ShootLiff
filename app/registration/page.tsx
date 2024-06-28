@@ -1,11 +1,11 @@
 'use client';
 import { useLiff } from '@/app/liffProvider';
 import { Profile } from '@liff/get-profile';
-import { Fragment, useEffect, useState } from 'react';
+import { useEffect, useState } from 'react';
 import { Autocomplete, Button, CircularProgress, Grid, TextField } from '@mui/material';
 import Head from 'next/head';
 
-export default function VideoPage() {
+export default function RegistrationPage() {
 	const [members, setMembers] = useState<string[]>([]);
 	const [value, setValue] = useState<string>('');
 	const [profile, setProfile] = useState<Profile | null>(null);
@@ -22,6 +22,7 @@ export default function VideoPage() {
 	}
 
 	useEffect(() => {
+		console.log("Liff login (register page)");
 		if (liff?.isLoggedIn()) {
 			(async () => {
 				const prof = await liff.getProfile();
@@ -31,50 +32,54 @@ export default function VideoPage() {
 	}, [liff]);
 
 	useEffect(() => {
-		fetchMembers();
-	}, []);
-
-
-	useEffect(() => {
-		getDensukeName();
-	}, [profile, members]);
-
-	const getDensukeName = async() => {
-		if(profile?.userId && members){
-			setLoading(true);
-			try {
-				const url = process.env.SERVER_URL + `?func=getDensukeName&userId=${profile?.userId}`;
-				if (url) {
-					const response = await fetch(url, {
-						method: 'GET',
-					});
-					const data = await response.json();
-					console.log(data.result);
-					setValue(data.result);
-				}
-			} catch (error) {
-				console.error('Error fetching data:', error);
-			} finally {
-				setLoading(false);
-			}
+		if(profile?.userId){
+			fetchMembers();
 		}
-	}
+	}, [profile]);
+
+
+	// useEffect(() => {
+	// 	getDensukeName();
+	// }, [profile, members]);
 
 	const fetchMembers = async () => {
 		try {
-			const url = process.env.SERVER_URL + `?func=getMembers`;
+			const url = process.env.SERVER_URL + `?func=getMembers&func=getDensukeName&userId=${profile?.userId}`;
 			if (url) {
 				const response = await fetch(url, {
 					method: 'GET',
 				});
 				const data = await response.json();
-				console.log(data.result);
-				setMembers(data.result);
+				console.log(data);
+				setMembers(data.members);
+				setValue(data.densukeName);
 			}
 		} catch (error) {
 			console.error('Error fetching data:', error);
 		}
 	};
+
+	// const getDensukeName = async() => {
+	// 	if(profile?.userId && members){
+	// 		setLoading(true);
+	// 		try {
+	// 			const url = process.env.SERVER_URL + `?func=getDensukeName&userId=${profile?.userId}`;
+	// 			if (url) {
+	// 				const response = await fetch(url, {
+	// 					method: 'GET',
+	// 				});
+	// 				const data = await response.json();
+	// 				console.log(data.result);
+	// 				setValue(data.result);
+	// 			}
+	// 		} catch (error) {
+	// 			console.error('Error fetching data:', error);
+	// 		} finally {
+	// 			setLoading(false);
+	// 		}
+	// 	}
+	// }
+
 
 	const register = async () => {
 		setLoading(true);
@@ -88,13 +93,6 @@ export default function VideoPage() {
 					});
 					const data = await response.json();
 					console.log(data.result);
-					// const formattedResult = data.result.split('\n').map((line:string, index:number) => (
-					// 	<Fragment key={index}>
-					// 		{line}
-					// 		<br/>
-					// 	</Fragment>
-					// ));
-					// setResult(formattedResult);
 					setResult(data.result);
 				}
 			}

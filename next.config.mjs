@@ -7,7 +7,8 @@ const nextConfig = {
   // },
   env: {
     LIFF_ID: process.env.NEXT_PUBLIC_LIFF_ID,
-    SERVER_URL: process.env.NEXT_PUBLIC_SERVER_URL
+    SERVER_URL: process.env.NEXT_PUBLIC_SERVER_URL,
+    GA_ID: process.env.NEXT_PUBLIC_GA_ID
   },
 };
 
