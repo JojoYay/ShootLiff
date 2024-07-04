@@ -3,7 +3,6 @@ import { useLiff } from '@/app/liffProvider';
 import { Profile } from '@liff/get-profile';
 import { useEffect, useState } from 'react';
 import { Card, CardContent, CardHeader, CircularProgress, Grid, Table, TableBody, TableCell, TableContainer, TableRow, } from '@mui/material';
-import Head from 'next/head';
 import AvatarIcon from './avatarIcon';
 
 interface ProfileDen {
@@ -286,6 +285,7 @@ export default function Stats() {
 															<TableCell sx={{ padding: '3px 6px' }} component="th" scope="row">
 																<img
 																	src={row.medalUrl}
+																	alt="trophy"
 																	style={{
 																		// marginLeft: '30px',
 																		width: '18px',
@@ -302,6 +302,7 @@ export default function Stats() {
 															<TableCell component="th" scope="row" sx={{ padding: '3px 6px' }} >
 																<img
 																	src={row.arrow}
+																	alt="arrow"
 																	style={{
 																		// marginLeft: '30px',
 																		width: '24px',
@@ -341,6 +342,7 @@ export default function Stats() {
 															<TableCell sx={{ padding: '3px 6px' }} component="th" scope="row">
 																<img
 																	src={row.medalUrl}
+																	alt="medal"
 																	style={{
 																		// marginLeft: '30px',
 																		width: '18`px',
@@ -357,6 +359,7 @@ export default function Stats() {
 															<TableCell component="th" scope="row" sx={{ padding: '3px 6px' }} >
 																<img
 																	src={row.arrow}
+																	alt="arrow"
 																	style={{
 																		// marginLeft: '30px',
 																		width: '24px',
@@ -396,6 +399,7 @@ export default function Stats() {
 															<TableCell sx={{ padding: '3px 6px' }} component="th" scope="row">
 																<img
 																	src={row.medalUrl}
+																	alt="medal"
 																	style={{
 																		// marginLeft: '30px',
 																		width: '18px',
@@ -412,6 +416,7 @@ export default function Stats() {
 															<TableCell component="th" scope="row" sx={{ padding: '3px 6px' }} >
 																<img
 																	src={row.arrow}
+																	alt="arrow"
 																	style={{
 																		// marginLeft: '30px',
 																		width: '24px',

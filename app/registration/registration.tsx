@@ -3,7 +3,6 @@ import { useLiff } from '@/app/liffProvider';
 import { Profile } from '@liff/get-profile';
 import { useEffect, useState } from 'react';
 import { Autocomplete, Button, CircularProgress, Grid, TextField } from '@mui/material';
-import Head from 'next/head';
 
 export default function Registration() {
 	const [members, setMembers] = useState<string[]>([]);
