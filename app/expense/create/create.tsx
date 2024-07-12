@@ -17,6 +17,7 @@ export default function CreateExpense() {
     const fetchMembers = async () => {
         try {
             const url = process.env.SERVER_URL + `?func=getRegisteredMembers`;
+            
             if (url) {
                 const response = await fetch(url, {
                     method: 'GET',

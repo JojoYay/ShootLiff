@@ -2,7 +2,6 @@
 import { useEffect, useState } from 'react';
 import VideoCard from './videoCard';
 import { CircularProgress, Grid, Pagination } from '@mui/material';
-import Head from 'next/head';
 
 export default function Video() {
 	useEffect(() => {
@@ -50,7 +49,12 @@ export default function Video() {
 					<Grid container spacing={2} style={{ margin: '5px', width:'100%' }}>
 						{currentItems.map((data, index) => (
 							<div key={index}>
-								<VideoCard url={data[2]} title={data[1]} date={data[0].substring(0, 10)}></VideoCard>
+								<VideoCard url={data[2]} title={data[1]} date={new Date(data[0]).toLocaleDateString('en-CA', {
+									timeZone: 'Asia/Singapore',
+									year: 'numeric',
+									month: '2-digit',
+									day: '2-digit'
+								})}></VideoCard>
 							</div>
 						))}
 					</Grid>

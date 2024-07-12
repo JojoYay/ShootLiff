@@ -87,7 +87,7 @@ export default function Stats() {
 	const genarateRanking = (rankList: any[][], lang: string, users: any[][], ten: string): RankingData[] => {
 		let rankTable: RankingData[] = [];
 		for (const rankRow of rankList) {
-			if (rankRow[0] === '' || rankRow[0] === '伝助名称' || rankRow[1] > 3 || rankRow[3] == 0) {
+			if (rankRow[0] === '' || rankRow[0] === '伝助名称' || rankRow[1] > 5 || rankRow[3] == 0) {
 				continue;
 			}
 			let rank: RankingData = createRanking(

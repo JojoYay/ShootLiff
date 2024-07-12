@@ -21,7 +21,10 @@ function getPicUrl(url: string): string {
   if (!videoIdMatch) {
       throw new Error('Invalid YouTube URL ' + url);
   }
-  return `https://img.youtube.com/vi/${videoIdMatch[1]}/maxresdefault.jpg`;
+  const videoId:string = videoIdMatch[1];
+  // alert(videoId);
+  // return `https://img.youtube.com/vi/${videoIdMatch[1]}/maxresdefault.jpg`;
+  return `https://img.youtube.com/vi/${videoId}/mqdefault.jpg`;
 }
 
 type VideoProps = {
