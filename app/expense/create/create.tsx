@@ -7,6 +7,7 @@ export default function CreateExpense() {
     const [selectedOptions, setSelectedOptions] = useState<string[]>([]);
     const [amount, setAmount] = useState('');
     const [title, setTitle] = useState('');
+    const [payNow, setPayNow] = useState('');
 	const [result, setResult] = useState('');
     const [loading, setLoading] = useState(false);
 
@@ -16,7 +17,7 @@ export default function CreateExpense() {
 
     const fetchMembers = async () => {
         try {
-            const url = process.env.SERVER_URL + `?func=getRegisteredMembers`;
+            const url = process.env.SERVER_URL + `?func=getRegisteredMembers&func=getPayNow`;
             
             if (url) {
                 const response = await fetch(url, {
@@ -28,6 +29,7 @@ export default function CreateExpense() {
                 const sortedMembers = data.members.slice(1).sort((a:any[], b:any[]) => a[0].localeCompare(b[0], 'ja-JP'));
                 setMembers(sortedMembers);
                 // setMembers(data.members);
+                setPayNow(data.payNow)
             }
         } catch (error) {
             console.error('Error fetching data:', error);
@@ -49,11 +51,13 @@ export default function CreateExpense() {
         try {
             let url = process.env.SERVER_URL + `?func=generateExReport`;
             console.log(selectedOptions);
+            console.log(payNow);
             for(const opt of selectedOptions){
                 url = url + '&users='+ encodeURIComponent(opt);
             }
             url = url + '&price='+amount;
-            url = url + '&title='+encodeURIComponent(title);
+            url = url + '&title='+encodeURIComponent(title)
+            url = url + '&payNow='+encodeURIComponent(payNow);
 
             if (url) {
                 const response = await fetch(url, {
@@ -102,6 +106,12 @@ export default function CreateExpense() {
                         {(!title.trim() && <Typography variant="body2" color="error">支払い名称を入力して下さい</Typography>)}
                         <Typography variant="body2">支払い名称:</Typography>
                         <TextField type="text" id="title" value={title} onChange={(e) => setTitle(e.target.value)} placeholder="Enter title" />
+                    </div>
+                    <div style={{margin:'5px'}}>
+                        {(!title.trim() && <Typography variant="body2" color="error">PayNow先</Typography>)}
+                        <Typography variant="body2">PayNow先を入力
+                        </Typography>
+                        <TextField type="text" id="title" value={payNow} onChange={(e) => setPayNow(e.target.value)} placeholder="Enter PayNow" />
                     </div>
                     <div style={{margin:'5px'}}>
                         <Button onClick={generateExpenceReport} variant="contained" disabled={loading}>
