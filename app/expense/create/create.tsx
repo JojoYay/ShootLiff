@@ -99,7 +99,7 @@ export default function CreateExpense() {
                     />
                     <div style={{margin:'5px'}}>
                         {(!amount.trim() && <Typography variant="body2" color="error">金額を入力して下さい</Typography>)}
-                        <Typography variant="body1">金額（一人当たり）:</Typography>
+                        <Typography variant="body2">金額（一人当たり）:</Typography>
                         <TextField type="text" id="amount" value={amount} onChange={(e) => setAmount(e.target.value)} placeholder="Enter amount" />
                     </div>
                     <div style={{margin:'5px'}}>
@@ -108,10 +108,10 @@ export default function CreateExpense() {
                         <TextField type="text" id="title" value={title} onChange={(e) => setTitle(e.target.value)} placeholder="Enter title" />
                     </div>
                     <div style={{margin:'5px'}}>
-                        {(!title.trim() && <Typography variant="body2" color="error">PayNow先</Typography>)}
-                        <Typography variant="body2">PayNow先を入力
+                        {(!payNow.trim() && <Typography variant="body2" color="error">PayNow先を入力して下さい</Typography>)}
+                        <Typography variant="body2">PayNow先を入力:
                         </Typography>
-                        <TextField type="text" id="title" value={payNow} onChange={(e) => setPayNow(e.target.value)} placeholder="Enter PayNow" />
+                        <TextField type="text" id="paynow" value={payNow} onChange={(e) => setPayNow(e.target.value)} placeholder="Enter PayNow" />
                     </div>
                     <div style={{margin:'5px'}}>
                         <Button onClick={generateExpenceReport} variant="contained" disabled={loading}>
