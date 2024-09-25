@@ -1,7 +1,6 @@
 'use client';
 import { useEffect, useState } from 'react';
-import axios from 'axios';
-import { Button, TextField, Typography } from '@mui/material';
+import { Button, Typography } from '@mui/material';
 import { Profile } from '@liff/get-profile';
 import CloudUploadIcon from '@mui/icons-material/CloudUpload';
 import { useLiff } from '@/app/liffProvider';
@@ -94,7 +93,7 @@ export default function InputExpense() {
             setLoading(false);
         }
     }
-    
+
 
 
 
@@ -102,7 +101,7 @@ export default function InputExpense() {
         setLoading(true);
         const formData = new FormData();
         if (file && profile) {
-            formData.append('message', 'リマインド');
+            // formData.append('message', 'リマインド');
             // formData.append('userId', userId)
             formData.append('func', 'upload');
             // formData.append('file', file);

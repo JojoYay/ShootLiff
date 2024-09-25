@@ -1,201 +1,227 @@
-// 'use client';
-// import { useEffect, useState } from 'react';
-// import axios from 'axios';
-// import { Button, TextField, Typography } from '@mui/material';
-// import { Profile } from '@liff/get-profile';
-// import CloudUploadIcon from '@mui/icons-material/CloudUpload';
-// import { useLiff } from '@/app/liffProvider';
-// // Existing code for InputExpense component
+'use client';
+import { useRouter } from 'next/navigation';
+import { useEffect, useState } from 'react';
+import { Button, Card, CardActions, CardContent, CircularProgress, Dialog, DialogActions, DialogContent, DialogContentText, DialogTitle, Grid,IconButton,Paper, Typography } from '@mui/material';
+import { Profile } from '@liff/get-profile';
+import { useLiff } from '@/app/liffProvider';
+import DeleteIcon from '@mui/icons-material/Delete';
+import EditIcon from '@mui/icons-material/Edit';
+import TableChartIcon from '@mui/icons-material/TableChart';
+// Existing code for InputExpense component
 
-// export default function ListExpense() {
-//     // const [file, setFile] = useState<File | null>(null);
-//     const [src, setSrc] = useState<string>('');
-//     // const [amount, setAmount] = useState('');
-// 	const { liff } = useLiff();
-// 	const [profile, setProfile] = useState<Profile | null>(null);
-//     const [loading, setLoading] = useState(false);
-//     const [title, setTitle] = useState('');
-//     const [result, setResult] = useState('');
-//     const [info, setInfo] = useState<string>('');
+export default function ExpenseList() {
+    const router = useRouter();
+    // const [file, setFile] = useState<File | null>(null);
+    // const [src, setSrc] = useState<string>('');
+    // const [amount, setAmount] = useState('');
+	const { liff } = useLiff();
+	const [profile, setProfile] = useState<Profile | null>(null);
+    const [loading, setLoading] = useState(false);
+    // const [result, setResult] = useState('');
+    const [info, setInfo] = useState<ExpenseItem[]>([]);
+    const [deleteConfirmOpen, setDeleteConfirmOpen] = useState(false);
+    const [itemToDelete, setItemToDelete] = useState<string | null>(null);
 
-// 	if (liff) {
-// 		liff.ready.then(() => {
-// 			if (!liff.isLoggedIn()) {
-// 				liff.login({ redirectUri: window.location.href });
-// 			}
-// 		})
-// 	}
+	if (liff) {
+		liff.ready.then(() => {
+			if (!liff.isLoggedIn()) {
+				liff.login({ redirectUri: window.location.href });
+			}
+		})
+	}
 
-//     useEffect(() => {
-//         const urlParams = new URLSearchParams(window.location.search);
-//         setTitle(urlParams.get('title') || '');
-//     }, [])
+    useEffect(() => {
+        if(profile){
+            loadExList();
+        }
+    }, [profile])
 
-//     useEffect(() => {
-//         if(title && profile){
-//             loadExpenseInfo(title, profile.userId);
-//         }
-//     }, [title, profile])
+	useEffect(() => {
+		console.log("Liff login (register page)");
+		if (liff?.isLoggedIn()) {
+			(async () => {
+				const prof = await liff.getProfile();
+				setProfile(prof);
+			})();
+		}
+	}, [liff]);
 
-// 	useEffect(() => {
-// 		console.log("Liff login (register page)");
-// 		if (liff?.isLoggedIn()) {
-// 			(async () => {
-// 				const prof = await liff.getProfile();
-// 				setProfile(prof);
-// 			})();
-// 		}
-// 	}, [liff]);
+    const loadExList = async () => {
+        setLoading(true);
+        setInfo([]);
+        const formData = new FormData();
+        if (profile) {
+            formData.append('func', 'loadExList');
+            const url = process.env.SERVER_URL;
+            if (url) {
+                try {
+                    const response = await fetch(url, {
+                        method: 'POST',
+                        body: formData,
+                        headers: {
+                            'Accept': 'application/json',
+                        },
+                    });
+                    if (!response.ok) {
+                        throw new Error('Network response was not ok');
+                    }
+                    const data = await response.json();
+                    setInfo(data.resultList);
+                    console.log(data);
+
+                } catch (error) {
+                    console.error('Error loading Expense list:', error);
+                    // setResult('Error uploading file:'+error);
+                } finally {
+                    setLoading(false);
+                }
+            }
+                // }
+            // };
+        } else {
+            setLoading(false);
+        }
+    };
+    const handleCreateNew = () => {
+        router.push('/expense/create');
+    };
+
+    interface ExpenseItem {
+        title: string;
+        url: string;
+    }
+
+    const handleDeleteClick = (title: string) => {
+        setItemToDelete(title);
+        setDeleteConfirmOpen(true);
+    };
+
+    const handleDeleteConfirm = () => {
+        if (itemToDelete) {
+            // Implement actual delete functionality here
+            console.log('Deleting', itemToDelete);
+            deleteEx(itemToDelete);
+            
+        }
+        setDeleteConfirmOpen(false);
+        setItemToDelete(null);
+    };
+
+    const deleteEx = async (title:string) => {
+        setLoading(true);
+        const formData = new FormData();
+        if (profile) {
+            formData.append('func', 'deleteEx');
+            formData.append('title',title);
+            const url = process.env.SERVER_URL;
+            if (url) {
+                try {
+                    const response = await fetch(url, {
+                        method: 'POST',
+                        body: formData,
+                        headers: {
+                            'Accept': 'application/json',
+                        },
+                    });
+                    if (!response.ok) {
+                        throw new Error('Network response was not ok');
+                    }
+                    const data = await response.json();
+                    // setInfo(data.resultList);
+                    console.log(data);
+                } catch (error) {
+                    console.error('Error loading Expense list:', error);
+                    // setResult('Error uploading file:'+error);
+                } finally {
+                    setLoading(false);
+                    // After deletion, you might want to refresh the list
+                    loadExList();
+                }
+            }
+        } else {
+            setLoading(false);
+        }
+    };
 
 
-//     const handleFileChange = (event: React.ChangeEvent<HTMLInputElement>) => {
-//         const selectedFile = event.target.files?.[0];
-//         if (selectedFile) {
-//             setFile(selectedFile);
+    const handleDeleteCancel = () => {
+        setDeleteConfirmOpen(false);
+        setItemToDelete(null);
+    };
 
-//             // Display the uploaded image
-//             const reader = new FileReader();
-//             reader.onload = (e) => {
-//                 const imgElement = document.getElementById('uploadedImage') as HTMLImageElement;
-//                 if (imgElement && e.target?.result) {
-//                     imgElement.src = e.target.result as string;
-//                 }
-//             };
-//             reader.readAsDataURL(selectedFile);
-//         }
-//     };
+    const handleGoInput = (title: string) => {
+        router.push('/expense/input?title='+title);
+    };
 
-//     const loadExpenseInfo = async (title: string, userId: string) => {
-//         setLoading(true);
-//         try {
-//             let url = process.env.SERVER_URL + `?func=getExpenseWithStatus`;
-//             url = url + '&title=' + encodeURIComponent(title);
-//             url = url + '&userId=' + encodeURIComponent(userId);
-    
-//             if (url) {
-//                 const response = await fetch(url, {
-//                     method: 'GET',
-//                 });
-//                 const data = await response.json();
-//                 if(data.picUrl){
-//                     const imgElement = document.getElementById('uploadedImage') as HTMLImageElement;
-//                     if (imgElement && data.picUrl) {
-//                         imgElement.src = data.picUrl;
-//                         setSrc(data.picUrl);
-//                     }
-//                 }
-//                 console.log(data);
-//                 setInfo(data.statusMsg);
-//             }
-//         } catch (error) {
-//             alert(error);
-//             console.error('Error fetching data:', error);
-//         } finally {
-//             setLoading(false);
-//         }
-//     }
-    
+    const handleOpenSpreadsheet = (url: string) => {
+        window.open(url, '_blank');
+    };
+
+    return (
+        <>
+        {info.length > 0 ? (
+        <div>
+            <div style={{margin:'5px'}}>
+                <Button variant="contained" color="primary" onClick={handleCreateNew} disabled={loading}>新規作成</Button>
+            </div>
+            <Grid container spacing={2}>
+                {info.map((infoElement, index) => (
+                    <Grid item xs={12} sm={6} md={4} key={index}>
+                        <Card>
+                            <CardContent>
+                                <Typography variant="h6" component="div" noWrap>
+                                    {infoElement.title}
+                                </Typography>
+                            </CardContent>
+                            <CardActions>
+                                <IconButton aria-label="goInput" onClick={() => handleGoInput(infoElement.title)}>
+                                    <EditIcon />
+                                </IconButton>
+                                <IconButton aria-label="spreadsheet" onClick={() => handleOpenSpreadsheet(infoElement.url)}>
+                                    <TableChartIcon />
+                                </IconButton>
+                                <IconButton aria-label="delete" onClick={() => handleDeleteClick(infoElement.title)}>
+                                    <DeleteIcon />
+                                </IconButton>
+                            </CardActions>
+                        </Card>
+                    </Grid>
+                ))}
+            </Grid>
+
+            <Dialog
+                open={deleteConfirmOpen}
+                onClose={handleDeleteCancel}
+                aria-labelledby="alert-dialog-title"
+                aria-describedby="alert-dialog-description"
+            >
+                <DialogTitle id="alert-dialog-title">{"削除の確認"}</DialogTitle>
+                <DialogContent>
+                    <DialogContentText id="alert-dialog-description">
+                        「{itemToDelete}」を削除しますか？
+                    </DialogContentText>
+                </DialogContent>
+                <DialogActions>
+                    <Button onClick={handleDeleteCancel}>キャンセル</Button>
+                    <Button onClick={handleDeleteConfirm} autoFocus>
+                        削除
+                    </Button>
+                </DialogActions>
+            </Dialog>
 
 
-
-//     const handleUpload = async () => {
-//         setLoading(true);
-//         const formData = new FormData();
-//         if (file && profile) {
-//             formData.append('message', 'リマインド');
-//             // formData.append('userId', userId)
-//             formData.append('func', 'upload');
-//             // formData.append('file', file);
-//             // formData.append('amount', amount);
-//             formData.append('title', title);
-//             formData.append('userId', profile.userId);
-//             const reader = new FileReader();
-//             reader.readAsDataURL(file);
-//             reader.onload = async () => {
-//                 if (reader.result) {
-//                     const base64File = (reader.result as string).split(',')[1];
-//                     formData.append('file', base64File);
-//                     // console.log(base64File);
-
-//                     const url = process.env.SERVER_URL;
-//                     if (url) {
-//                         try {
-//                             const response = await fetch(url, {
-//                                 method: 'POST',
-//                                 body: formData,
-//                                 headers: {
-//                                     'Accept': 'application/json',
-//                                 },
-//                             });
-//                             if (!response.ok) {
-//                                 throw new Error('Network response was not ok');
-//                             }
-//                             const data = await response.json();
-
-//                             const imgElement = document.getElementById('uploadedImage') as HTMLImageElement;
-//                             if (imgElement && data.picUrl) {
-//                                 imgElement.src = data.picUrl;
-//                                 setSrc(data.picUrl);
-//                             }
-//                             // setResult(data.picUrl);
-
-//                             // 'https://lh3.googleusercontent.com/d/1KsKJg9LNZOS0pMGq4Yqzv10ZfBGDsEKB';
-//                             setResult("支払い登録が完了しました！");
-//                             console.log('File uploaded successfully:', data);
-//                         } catch (error) {
-//                             console.error('Error uploading file:', error);
-//                             setResult('Error uploading file:'+error);
-//                         } finally {
-//                             setLoading(false);
-//                         }
-//                     }
-//                 }
-//             };
-//         } else {
-//             setLoading(false);
-//         }
-//     };
-
-//     return (
-//         <>
-//         {title ? (
-//         <div>
-//             <div style={{margin:'5px'}}>
-//                 <Typography variant="body1">{title} の支払い登録</Typography>
-//             </div>
-//             <div style={{margin:'5px'}}>
-//                 <Typography variant="body2">{info}</Typography>
-//             </div>
-//             {/* <div style={{margin:'5px'}}>
-//                 <TextField type="text" id="amount" value={amount} onChange={(e) => setAmount(e.target.value)} placeholder="Enter amount" />
-//             </div> */}
-//             <div style={{margin:'5px'}}>
-//                 <Button
-//                     component="label"
-//                     // role={undefined}
-//                     variant="contained"
-//                     tabIndex={-1}
-//                     startIcon={<CloudUploadIcon />}
-//                     disabled={loading}
-//                 >
-//                     {loading && profile ? 'Loading...' : 'PayNow写真を選択'}
-//                     <input type="file" onChange={handleFileChange} style={{ display: 'none' }} />
-//                 </Button>
-//             </div>
-//             <div style={{margin:'5px'}}>
-//                 <img id="uploadedImage" alt="Uploaded Preview" style={{ maxWidth: '100%', display: (file || src) ? 'block' : 'none' }} />
-//             </div>
-//             <div style={{margin:'5px'}}>
-//                 <Button variant="contained" color="primary" onClick={handleUpload} disabled={loading}>送信</Button>
-//             </div>
-//             <div style={{margin:'5px'}}>
-//                 {result && <div dangerouslySetInnerHTML={{ __html: result }} style={{ maxWidth: '100%', display: result ? 'block' : 'none' }}></div>}
-//             </div>
-//         </div>
-//         ) : (
-//             <div></div>
-//         )}
-//         </>
-//    );
-// }
+            {/* <div style={{margin:'5px'}}>
+                {result && <div dangerouslySetInnerHTML={{ __html: result }} style={{ maxWidth: '100%', display: result ? 'block' : 'none' }}></div>}
+            </div> */}
+        </div>
+        
+        ) : (
+                <div style={{ display: 'flex', justifyContent: 'center', alignItems: 'center', height: '100vh' }}>
+                    <div>Loading Form... </div>
+                    <CircularProgress />
+                </div>
+        )}
+        </>
+    );
+}
 
