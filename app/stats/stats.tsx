@@ -62,22 +62,22 @@ export default function Stats() {
 	useEffect(() => {
 		if (eventResult?.length > 0 && profile?.lineProfile && statsTable.length === 0) {
 			const yourResult = eventResult.find(item => item[0] === profile.lineProfile.userId);
-			// console.log(yourResult);
+			console.log(yourResult);
 			if (yourResult) {
 				let statsTable: StatsData[] = [
-					createData('試合参加数', yourResult[2] + '回'),
+					createData('試合参加数', yourResult[2] + '/'+yourResult[11]+'回'),
 					createData('通算ゴール数', yourResult[5] + '回'),
 					createData('通算アシスト数', yourResult[6] + '回'),
-					createData('得点王ランキング', yourResult[11] + '位'),
-					createData('アシスト王ランキング', yourResult[12] + '位'),
-					createData('岡本カップランキング', yourResult[13] + '位'),
+					createData('得点王ランキング', yourResult[12] + '位'),
+					createData('アシスト王ランキング', yourResult[13] + '位'),
+					createData('岡本カップランキング', yourResult[14] + '位'),
 					createData('岡本カップ成績', ''),
 					createData('1位獲得数', yourResult[9] + '回'),
 					createData('最下位獲得数', yourResult[10] + '回'),
 					createData('チーム獲得ポイント', yourResult[8] + 'pt'),
 				];
 				setStatsTable(statsTable);
-				const showTrophy: boolean = yourResult[14] === 1;
+				const showTrophy: boolean = yourResult[15] === 1;
 				setProfile(prevProfile => prevProfile ? { ...prevProfile, trophy: showTrophy } : null);
 			}
 
