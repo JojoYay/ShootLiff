@@ -66,7 +66,7 @@ export default function Stats() {
 			if (yourResult) {
 				let statsTable: StatsData[] = [
 					createData('試合参加数', yourResult[2] + '/'+yourResult[11]+'回'),
-					createData('通算ゴール数', yourResult[5] + '回'),
+					createData('通算ゴール数', yourResult[5] + '点'),
 					createData('通算アシスト数', yourResult[6] + '回'),
 					createData('得点王ランキング', yourResult[12] + '/' + yourResult[16] + '位'),
 					createData('アシスト王ランキング', yourResult[13] + '/' + yourResult[17] + '位'),
@@ -153,7 +153,7 @@ export default function Stats() {
 				setUsers(data.users);
 				setEventResult(data.stats);
 				setGRanking(genarateRanking(data.gRank, 'ja', data.users, '点'));
-				setARanking(genarateRanking(data.aRank, 'ja', data.users, '点'));
+				setARanking(genarateRanking(data.aRank, 'ja', data.users, '回'));
 				setORanking(genarateRanking(data.oRank, 'ja', data.users, 'pt'));
 			}
 		} catch (error) {
