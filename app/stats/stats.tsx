@@ -12,9 +12,11 @@ interface ProfileDen {
 }
 
 export default function Stats() {
+	
 	const [statsTable, setStatsTable] = useState<StatsData[]>([]);
 	const [users, setUsers] = useState<string[][] | null>(null);
 
+	const [lang, setLang] = useState<string>('ja');
 	const [gRanking, setGRanking] = useState<RankingData[]>([]);
 	const [aRanking, setARanking] = useState<RankingData[]>([]);
 	const [oRanking, setORanking] = useState<RankingData[]>([]);
@@ -29,6 +31,7 @@ export default function Stats() {
 		liff.ready.then(() => {
 			if (!liff.isLoggedIn()) {
 				liff.login({ redirectUri: window.location.href });
+				setLang(liff?.getLanguage());
 			}
 		})
 	}
@@ -64,18 +67,47 @@ export default function Stats() {
 			const yourResult = eventResult.find(item => item[0] === profile.lineProfile.userId);
 			console.log(yourResult);
 			if (yourResult) {
+				const nextGoalRow = eventResult.find(item => item[12] === (yourResult[12]-1));
+				const nextAssistRow = eventResult.find(item => item[13] === (yourResult[13]-1));
+				const nextOkamotoRow = eventResult.find(item => item[14] === (yourResult[14]-1));
+				let nextGoal = !nextGoalRow ? '--' : nextGoalRow[5] - yourResult[5];
+				let nextAssist = !nextAssistRow ? '--' : nextAssistRow[6] - yourResult[6];
+				let nextOkamoto = !nextOkamotoRow ? '--' : nextOkamotoRow[8] - yourResult[8] +1;
+
+				const siaisanka = lang === 'ja' ? '試合参加数':"No. of Matches";
+				const totalGoals = lang === 'ja' ? '通算ゴール数':"Toal Goals";
+				const totalAssists = lang === 'ja' ? '通算アシスト数':"Total Assists";
+				const goalRanking = lang === 'ja' ? '得点王ランキング':"Top Scorer Ranking";
+				const assistRanking = lang === 'ja' ? 'アシスト王ランキング':"Assist King Ranking";
+				const okamotoRanking = lang === 'ja' ? '岡本カップランキング':"Okamoto Cup Ranking";
+				const okamotoCupDetail = lang === 'ja' ? '岡本カップ詳細':"Okamoto Cup Result";
+				const ichii = lang === 'ja' ? '1位獲得数':"1st Place";
+				const biri = lang === 'ja' ? '最下位獲得数':"Last Place";
+				const okamotoCupResult = lang === 'ja' ? '岡本カップポイント':"Okamoto Point";
+				const nextRankup = lang === 'ja' ? '次のランクアップまで':"Next Rank Up";
+				const tokuten = lang === 'ja' ? '得点':"Goals";
+				const assist = lang === 'ja' ? 'アシスト':"Assists";
+				const okamotoPoint = lang === 'ja' ? '岡本ポイント':"Okamoto Point";
+				const kai =  lang === 'ja' ? '回':"";
+				const ten =  lang === 'ja' ? '点':"";
+				const ee =   lang === 'ja' ? '位':"";
+				
 				let statsTable: StatsData[] = [
-					createData('試合参加数', yourResult[2] + '/'+yourResult[11]+'回'),
-					createData('通算ゴール数', yourResult[5] + '点'),
-					createData('通算アシスト数', yourResult[6] + '回'),
-					createData('得点王ランキング', yourResult[12] + '/' + yourResult[16] + '位'),
-					createData('アシスト王ランキング', yourResult[13] + '/' + yourResult[17] + '位'),
-					createData('岡本カップランキング', yourResult[14] + '/' + yourResult[18] + '位'),
-					createData('岡本カップ成績', ''),
-					createData('1位獲得数', yourResult[9] + '回'),
-					createData('最下位獲得数', yourResult[10] + '回'),
-					createData('チーム獲得ポイント', yourResult[8] + 'pt'),
-				];
+					createData(siaisanka, yourResult[2] + '/'+yourResult[11]+kai),
+					createData(totalGoals, yourResult[5] + ten),
+					createData(totalAssists, yourResult[6] + kai),
+					createData(goalRanking, yourResult[12] + '/' + yourResult[16] + ee),
+					createData(assistRanking, yourResult[13] + '/' + yourResult[17] + ee),
+					createData(okamotoRanking, yourResult[14] + '/' + yourResult[18] + ee),
+					createData(okamotoCupDetail, ''),
+					createData(ichii, yourResult[9] + kai),
+					createData(biri, yourResult[10] + kai),
+					createData(okamotoCupResult, yourResult[8] + 'pt'),
+					createData(nextRankup,''),
+					createData(tokuten,nextGoal+ten),
+					createData(assist,nextAssist+kai),
+					createData(okamotoPoint,nextOkamoto+'pt')
+					];
 				setStatsTable(statsTable);
 				const showTrophy: boolean = yourResult[15] === 1;
 				setProfile(prevProfile => prevProfile ? { ...prevProfile, trophy: showTrophy } : null);
@@ -84,10 +116,10 @@ export default function Stats() {
 		}
 	}, [eventResult, profile]);
 
-	const genarateRanking = (rankList: any[][], lang: string, users: any[][], ten: string): RankingData[] => {
+	const genarateRanking = (rankList: any[][], users: any[][], ten: string): RankingData[] => {
 		let rankTable: RankingData[] = [];
 		for (const rankRow of rankList) {
-			if (rankRow[0] === '' || rankRow[0] === '伝助名称' || rankRow[1] > 5 || rankRow[3] == 0) {
+			if (rankRow[0] === '' || rankRow[0] === '伝助名称' || rankRow[3] == 0) {
 				continue;
 			}
 			let rank: RankingData = createRanking(
@@ -152,9 +184,12 @@ export default function Stats() {
 				console.log(data);
 				setUsers(data.users);
 				setEventResult(data.stats);
-				setGRanking(genarateRanking(data.gRank, 'ja', data.users, '点'));
-				setARanking(genarateRanking(data.aRank, 'ja', data.users, '回'));
-				setORanking(genarateRanking(data.oRank, 'ja', data.users, 'pt'));
+				const kai =  lang === 'ja' ? '回':"";
+				const ten =  lang === 'ja' ? '点':"";
+
+				setGRanking(genarateRanking(data.gRank, data.users, ten));
+				setARanking(genarateRanking(data.aRank, data.users, kai));
+				setORanking(genarateRanking(data.oRank, data.users, 'pt'));
 			}
 		} catch (error) {
 			console.error('Error fetching data:', error);
@@ -229,7 +264,10 @@ export default function Stats() {
 										}}
 									/>
 									<CardContent>
-										<TableContainer>
+										<TableContainer sx={{ 
+											maxHeight: '65vh',  // ビューポートの高さの60%
+											overflowY: 'auto'   // 縦方向のスクロールを有効化
+										}}>
 											<Table sx={{ width: '100%' }} size="small" aria-label="simple table">
 												<TableBody>
 													{statsTable.map((row) => {
@@ -273,7 +311,10 @@ export default function Stats() {
 									}}
 								/>
 								<CardContent>
-									<TableContainer>
+									<TableContainer sx={{ 
+											maxHeight: '65vh',  // ビューポートの高さの60%
+											overflowY: 'auto'   // 縦方向のスクロールを有効化
+										}}>
 										<Table sx={{ width: '100%' }} size="small" aria-label="simple table">
 											<TableBody>
 												{gRanking.map((row) => {
@@ -330,7 +371,10 @@ export default function Stats() {
 									}}
 								/>
 								<CardContent>
-									<TableContainer>
+									<TableContainer sx={{ 
+											maxHeight: '65vh',  // ビューポートの高さの60%
+											overflowY: 'auto'   // 縦方向のスクロールを有効化
+										}}>
 										<Table sx={{ width: '100%' }} size="small" aria-label="simple table">
 											<TableBody>
 												{aRanking.map((row) => {
@@ -387,7 +431,10 @@ export default function Stats() {
 									}}
 								/>
 								<CardContent>
-									<TableContainer>
+									<TableContainer sx={{ 
+											maxHeight: '65vh',  // ビューポートの高さの60%
+											overflowY: 'auto'   // 縦方向のスクロールを有効化
+										}}>
 										<Table sx={{ width: '100%' }} size="small" aria-label="simple table">
 											<TableBody>
 												{oRanking.map((row) => {
