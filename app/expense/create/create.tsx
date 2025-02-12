@@ -28,7 +28,7 @@ export default function CreateExpense() {
                 });
                 const data = await response.json();
                 const sortedMembers = data.members.slice(1).sort((a:any[], b:any[]) => a[0].localeCompare(b[0], 'ja-JP'));
-                setMembers(sortedMembers);
+                setMembers(sortedMembers); 
                 setPayNow(data.payNow)
             }
         } catch (error) {
