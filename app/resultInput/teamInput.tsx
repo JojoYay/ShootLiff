@@ -1,76 +1,51 @@
 'use client';
-import { useEffect, useState } from 'react';
-import { Avatar, Button, Card, CardActionArea, CardContent, CircularProgress, Grid, Typography } from '@mui/material';
+import { useEffect, useState, SetStateAction } from 'react';
+import { Avatar, Button, Card, CardActionArea, CardContent, CircularProgress, Grid, Typography, FormControl, InputLabel, MenuItem, Select } from '@mui/material';
 
-export default function Teams() {
-	const [teams, setTeams] = useState<string[]>([]);
-	// const [value, setValue] = useState<string>('');
-	const [team1, setTeam1] = useState<string[]>([]);
-	const [team2, setTeam2] = useState<string[]>([]);
-	const [team3, setTeam3] = useState<string[]>([]);
-	const [team4, setTeam4] = useState<string[]>([]);
-	const [team5, setTeam5] = useState<string[]>([]);
-	const [team6, setTeam6] = useState<string[]>([]);
-	const [team7, setTeam7] = useState<string[]>([]);
-	const [team8, setTeam8] = useState<string[]>([]);
-	const [team9, setTeam9] = useState<string[]>([]);
-	const [team10, setTeam10] = useState<string[]>([]);
+export default function TeamInput() {
+    const [teams, setTeams] = useState<string[]>([]);
+    // const [value, setValue] = useState<string>('');
+    const [team1, setTeam1] = useState<string[]>([]);
+    const [team2, setTeam2] = useState<string[]>([]);
+    const [team3, setTeam3] = useState<string[]>([]);
+    const [team4, setTeam4] = useState<string[]>([]);
+    const [team5, setTeam5] = useState<string[]>([]);
+    const [team6, setTeam6] = useState<string[]>([]);
+    const [team7, setTeam7] = useState<string[]>([]);
+    const [team8, setTeam8] = useState<string[]>([]);
+    const [team9, setTeam9] = useState<string[]>([]);
+    const [team10, setTeam10] = useState<string[]>([]);
 
-	const [isSaving, setIsSaving] = useState(false);
-	const [hasChanges, setHasChanges] = useState(false);
-    const [initialTeamData, setInitialTeamData] = useState<string[][]>([]);  // 追加: 初期データを保存
+    const [isSaving, setIsSaving] = useState(false);
+    const [hasChanges, setHasChanges] = useState(false);
 
     const [unassignedUsers, setUnassignedUsers] = useState<string[]>([]); // 未所属ユーザーの状態を追加
     const [selectedUser, setSelectedUser] = useState<string | null>(null); // 選択中のユーザーの状態を追加
 
-	const [users, setUsers] = useState<string[][] | null>(null);
+    const [users, setUsers] = useState<string[][] | null>(null);
 
-	// const [profile, setProfile] = useState<Profile | null>(null);
-	// const [loading, setLoading] = useState(false);
-	// const [result, setResult] = useState('');
-	// const { liff } = useLiff();
+    useEffect(() => {
+        fetchTeams();
+    }, []);
 
-	// if (liff) {
-	// 	liff.ready.then(() => {
-	// 		if (!liff.isLoggedIn()) {
-	// 			liff.login({ redirectUri: window.location.href });
-	// 		}
-	// 	})
-	// }
-
-	// useEffect(() => {
-	// 	console.log("Liff login (register page)");
-	// 	if (liff?.isLoggedIn()) {
-	// 		(async () => {
-	// 			const prof = await liff.getProfile();
-	// 			setProfile(prof);
-	// 		})();
-	// 	}
-	// }, [liff]);
-
-	useEffect(() => {
-		fetchTeams();
-	}, []);
-
-	const fetchTeams = async () => {
-		try {
-			const url = process.env.SERVER_URL + `?func=getTeams&func=getUsers`;
-			if (url) {
-				const response = await fetch(url, {
-					method: 'GET',
-				});
-				const data = await response.json();
-				console.log(data);
-				const teamData:string[][] = data.teams as string[][];
-                setInitialTeamData(teamData); // 初期データを保存
-				setUsers(data.users);
-				// console.log(data.users);
+    const fetchTeams = async () => {
+        try {
+            const url = process.env.SERVER_URL + `?func=getTeams&func=getUsers`;
+            if (url) {
+                const response = await fetch(url, {
+                    method: 'GET',
+                });
+                const data = await response.json();
+                console.log(data);
+                const teamData:string[][] = data.teams as string[][];
+                setUsers(data.users);
+                // console.log(data.users);
                 // プレイヤー名のリストを作成
                 const playerNames = teamData.slice(1).map(player => player[0]);
                 setTeams(playerNames);
 
                 // チーム別に初期値を設定
-				const team1Players = teamData.slice(1)
+                const team1Players = teamData.slice(1)
                     .filter(player => player[1] === 'チーム1')
                     .map(player => player[0]);
                 const team2Players = teamData.slice(1)
@@ -79,7 +54,7 @@ export default function Teams() {
                 const team3Players = teamData.slice(1)
                     .filter(player => player[1] === 'チーム3')
                     .map(player => player[0]);
-				const team4Players = teamData.slice(1)
+                const team4Players = teamData.slice(1)
                     .filter(player => player[1] === 'チーム4')
                     .map(player => player[0]);
                 const team5Players = teamData.slice(1)
@@ -88,10 +63,10 @@ export default function Teams() {
                 const team6Players = teamData.slice(1)
                     .filter(player => player[1] === 'チーム6')
                     .map(player => player[0]);
-				const team7Players = teamData.slice(1)
+                const team7Players = teamData.slice(1)
                     .filter(player => player[1] === 'チーム7')
                     .map(player => player[0]);
-				const team8Players = teamData.slice(1)
+                const team8Players = teamData.slice(1)
                     .filter(player => player[1] === 'チーム8')
                     .map(player => player[0]);
                 const team9Players = teamData.slice(1)
@@ -100,131 +75,73 @@ export default function Teams() {
                 const team10Players = teamData.slice(1)
                     .filter(player => player[1] === 'チーム10')
                     .map(player => player[0]);
-				const unassignedPlayers = teamData.slice(1)
+                const unassignedPlayers = teamData.slice(1)
                     .filter(player => !player[1])
                     .map(player => player[0]);
 
                 setTeam1(team1Players);
                 setTeam2(team2Players);
-                setTeam3(team3Players);				
+                setTeam3(team3Players);
                 setTeam4(team4Players);
                 setTeam5(team5Players);
-                setTeam6(team6Players);				
+                setTeam6(team6Players);
                 setTeam7(team7Players);
                 setTeam8(team8Players);
-                setTeam9(team9Players);				
-                setTeam10(team10Players);				
-				setUnassignedUsers(unassignedPlayers);
-			}
+                setTeam9(team9Players);
+                setTeam10(team10Players);
+                setUnassignedUsers(unassignedPlayers);
+            }
 
-		} catch (error) {
-			console.error('Error fetching Teams:', error);
-		}
-	};
+        } catch (error) {
+            console.error('Error fetching Teams:', error);
+        }
+    };
 
     const handleUserSelect = (userName: string) => {
         setSelectedUser(userName === selectedUser ? null : userName); // 選択状態の切り替え
     };
 
-
-	// // 選択済みのプレイヤーを除外したオプションを取得
-	// const getAvailablePlayers = (currentTeam: string[]) => {
-	// 	const selectedPlayers = [
-	// 		...team1, ...team2, ...team3, ...team4, ...team5,
-	// 		...team6, ...team7, ...team8, ...team9, ...team10
-	// 	];
-	// 	return teams.filter(player => 
-	// 		!selectedPlayers.includes(player) || currentTeam.includes(player)
-	// 	);
-	// };
-	
-	// const defaultProps = {
-	// 	options: teams,
-	// 	getOptionLabel: (teams: string) => teams,
-	// };
-
-    // チーム変更をサーバーに一括送信する関数
-    const updateTeamsOnServer = async (changes: { player: string; teamNumber: number }[]) => {
-        try {
-            const url = process.env.SERVER_URL;
-			if(!url){
-				throw Error("SERVER_URLが指定されていません");
-			}
-			console.log(JSON.stringify(changes));
-			const formData = new FormData();
-			changes.forEach((change, index) => {
-				formData.append(change.player, String(change.teamNumber));
-			});			
-			formData.append('func', 'updateTeams');
-			// formData.append('userId', 'dummy');
-			// formData.append('teams', encodedStr);
-			// formData.append('teams', encodeURIComponent(JSON.stringify(changes)));
-            const response = await fetch(url, {
-                method: 'POST',
-				body: formData,
-				// body: JSON.stringify({'func':'upload', 'teams':encodeURIComponent(JSON.stringify(changes))}),
-				headers: {
-					// 'Content-Type': 'text/plain;charset=UTF-8',
-					'Accept': 'application/json',
-				},
-            });
-            const data = await response.json();
-			if (!response.ok) {
-				throw new Error('Network response was not ok');
-			}
-            // if (!data.success) {
-            //     throw new Error(data.message || 'Failed to update teams');
-            // }
-            return data;
-        } catch (error) {
-            console.error('Error updating teams:', error);
-            throw error;
-        }
-    };
-
-    // すべての変更を保存
     const handleSaveAll = async () => {
         setIsSaving(true);
+        setHasChanges(false); // 保存開始時に変更フラグをリセット
+
+        const currentAssignments = getCurrentAssignments();
+        const teamDataToSave = Object.entries(currentAssignments).map(([player, teamNumber]) => {
+            const teamName = teamNumber === 0 ? null : `チーム${teamNumber}`; // チーム番号が0の場合は未所属
+            return [player, teamName || null]; // チーム番号が0の場合はチーム名をnullにする
+        });
+
         try {
-            // 初期のチーム割り当てを保存
-            const initialAssignments = new Map(
-                teams.map(player => {
-                    const teamData = initialTeamData.find(t => t[0] === player);
-                    const teamNumber = teamData ? parseInt(teamData[1].replace('チーム', '')) || 0 : 0;
-                    return [player, teamNumber];
-                })
-            );
-
-            // 現在のチーム割り当てを取得
-            const currentAssignments = getCurrentTeamAssignments();
-
-            // 変更のあったプレイヤーを特定
-            const changedPlayers: { player: string; teamNumber: number }[] = [];
-            currentAssignments.forEach((teamNumber, player) => {
-                const initialTeam = initialAssignments.get(player) || 0;
-                if (teamNumber !== initialTeam) {
-                    changedPlayers.push({ player, teamNumber });
-                }
+            const response = await fetch(process.env.SERVER_URL + '?func=updateTeam', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify({ teams: teamDataToSave }),
             });
 
-            if (changedPlayers.length > 0) {
-                // 変更のあったプレイヤーのデータを一括で送信
-                await updateTeamsOnServer(changedPlayers);
-                console.log(`Updated ${changedPlayers.length} players`);
+            if (!response.ok) {
+                throw new Error(`HTTP error! status: ${response.status}`);
             }
 
-            setHasChanges(false);
+            setIsSaving(false);
+            //setHasChanges(false); // 保存後に変更なし状態にする
+            console.log('Team data saved successfully');
+            // 必要に応じて成功時の処理を追加
         } catch (error) {
-            console.error('Failed to save teams:', error);
-            await fetchTeams(); // エラー時はデータを再取得
+            setIsSaving(false);
+            console.error('Error saving team data:', error);
+            // 必要に応じてエラー処理を追加
         } finally {
             setIsSaving(false);
         }
     };
-    // 現在のチーム割り当てを取得
-    const getCurrentTeamAssignments = () => {
-        const assignments = new Map();
-        teams.forEach(player => {
+
+
+    const getCurrentAssignments = () => {
+        const assignments: Map<string, number> = new Map();
+        users?.forEach(playerData => {
+            const player = playerData[1];
             if (team1.includes(player)) assignments.set(player, 1);
             else if (team2.includes(player)) assignments.set(player, 2);
             else if (team3.includes(player)) assignments.set(player, 3);
@@ -240,14 +157,20 @@ export default function Teams() {
         return assignments;
     };
 
-    const handleTeamAssign = (teamNumber: number) => {
-        if (!selectedUser) {
+    const handleTeamAssign = (teamNumber: number, user: string | null = null) => {
+        // console.log('handleTeamAssign is called', teamNumber, 'selectedUser:', selectedUser, 'user',user); // ログ追加
+        let userToAssign = selectedUser;
+        if(user){
+            userToAssign = user;
+        }
+        // console.log("selectedUser:"+selectedUser);
+        if(!userToAssign){
             return;
         }
 
         let updatedTeam;
         let updatedUnassigned;
-        const userToAssign = selectedUser;
+        // userToAssign = selectedUser;
         setSelectedUser(null); // 選択解除
 
         // ユーザーが現在所属しているチームを特定し、そこから削除 (同じチーム選択時も削除処理は行う)
@@ -301,7 +224,7 @@ export default function Teams() {
                 return; // 処理を中断
             }
             setTeam10(team10.filter(user => user !== userToAssign));
-		} else if (unassignedUsers.includes(userToAssign)) {
+        } else if (unassignedUsers.includes(userToAssign)) {
             if (teamNumber === 0) { // 同じチームを選択した場合、チームから削除して未所属にする
                 return; // 処理を中断
             }
@@ -360,7 +283,8 @@ export default function Teams() {
         setHasChanges(true);
     };
 
-    const UserCard = ({ userName, isUnassigned, imageUrl }: { userName: string, isUnassigned?: boolean, imageUrl?: string | null }) => (
+    const UserCard = ({ userName, isUnassigned, imageUrl }: { userName: string, isUnassigned?: boolean, imageUrl?: string | null }) => {
+        return (
         <Card
             sx={{
                 minWidth: 100,
@@ -384,35 +308,78 @@ export default function Teams() {
                 </CardContent>
             </CardActionArea>
         </Card>
-    );
+    )};
 
-    const TeamSection = ({ teamNumber, teamName, players }: { teamNumber: number, teamName: string, players: string[] }) => (
-        <Grid item xs={12} sm={6} md={4} key={teamNumber}>
-            <Typography variant="h6" component="div" sx={{ textAlign: 'center', mb: 1, fontWeight: 'bold' }}>
-                {teamName}
-            </Typography>
+    const TeamSection = ({ teamNumber, teamName, players, unassignedUsers, handleTeamAssign}: {
+        teamNumber: number,
+        teamName: string,
+        players: string[],
+        unassignedUsers: string[],
+        handleTeamAssign: (teamNumber: number, user:string|null) => void,
+        // setSelectedUser: (user:string) => void
+    }) => {
+        const [selectedUnassignedUser, setSelectedUnassignedUser] = useState<string | null>(null);
 
-            <Card
-                sx={{ minHeight: 150, padding: '1px', textAlign: 'center', backgroundColor: '#f0f0f0',...(teamNumber === 0 && { // teamNumber が 0 の場合のみスタイルを適用
-																																maxHeight: '200px',
-																																overflowY: 'auto',
-																															}),
-				 }}
-                onClick={() => handleTeamAssign(teamNumber)}
-            >
-                 <div style={{ display: 'flex', flexWrap: 'wrap', justifyContent: 'center' }}>
-                    {players.map(player => {
-                        const userData = users?.find(user => user[1] === player); // ユーザー名でusersデータから検索
-                        const imageUrl = userData?.[4] || null; // 5列目のURLを取得、存在しない場合はnull
-						// console.log("user:"+userData);
-                        return (
-                            <UserCard key={player} userName={player} imageUrl={imageUrl} /> // imageUrlをpropsとして渡す
-                        );
-                    })}
-                </div>
-            </Card>
-        </Grid>
-    );
+        const handleChange = (event: { target: { value: SetStateAction<string | null>; }; }) => {
+            const selectedUser1 = event.target.value;
+            if (selectedUser1) {
+                // console.log("1"+selectedUser1+'2:'+selectedUnassignedUser);
+                // setSelectedUser(selectedUser.toString());
+                handleTeamAssign(teamNumber, selectedUser1.toString()); // ユーザーをチームに割り当てる
+                setUnassignedUsers(unassignedUsers.filter(user => user !== selectedUser1)); // 未所属リストから削除
+                setSelectedUnassignedUser(''); // ComboBox の選択をリセット
+            // } else {
+            //     setSelectedUnassignedUser(event.target.value); // 未選択状態を保持
+            }
+        };
+
+        return (
+            <Grid item xs={12} sm={6} md={4} key={teamNumber}>
+                <Typography variant="h6" component="div" sx={{ textAlign: 'center', mb: 1, fontWeight: 'bold' }}>
+                    {teamName}
+                </Typography>
+
+                {teamNumber !== 0 && ( // teamNumber が 0 でない場合のみ ComboBox を表示
+                    <FormControl fullWidth margin="dense">
+                        <InputLabel id="unassigned-user-select-label">未所属ユーザー</InputLabel>
+                        <Select
+                            labelId="unassigned-user-select-label"
+                            id="unassigned-user-select"
+                            value={selectedUnassignedUser || ''}
+                            label="未所属ユーザー"
+                            onChange={handleChange}
+                        >
+                            <MenuItem value="">
+                                <em>なし</em>
+                            </MenuItem>
+                            {unassignedUsers.map((user) => (
+                                <MenuItem key={user} value={user}>{user}</MenuItem>
+                            ))}
+                        </Select>
+                    </FormControl>
+                )}
+
+                <Card
+                    sx={{ minHeight: 150, padding: '1px', textAlign: 'center', backgroundColor: '#f0f0f0',...(teamNumber === 0 && {
+                                                                                    maxHeight: '200px',
+                                                                                    overflowY: 'auto',
+                                                                                }),
+                     }}
+                    onClick={() => handleTeamAssign(teamNumber,null)}
+                >
+                     <div style={{ display: 'flex', flexWrap: 'wrap', justifyContent: 'center' }}>
+                        {players.map(player => {
+                            const userData = users?.find(user => user[1] === player);
+                            const imageUrl = userData?.[4] || null;
+                            return (
+                                <UserCard key={player} userName={player} imageUrl={imageUrl} isUnassigned={teamNumber === 0}/>
+                            );
+                        })}
+                    </div>
+                </Card>
+            </Grid>
+        );
+    };
 
 
     return (
@@ -434,7 +401,7 @@ export default function Teams() {
 
                     <Grid container spacing={2} sx={{ p: 2, mt: 0 }}>
                         {[
-							{ state: unassignedUsers, setState: setUnassignedUsers, label: '未所属ユーザー', number: 0 },
+                            { state: unassignedUsers, setState: setUnassignedUsers, label: '未所属ユーザー', number: 0 },
                             { state: team1, setState: setTeam1, label: 'Team 1', number: 1 },
                             { state: team2, setState: setTeam2, label: 'Team 2', number: 2 },
                             { state: team3, setState: setTeam3, label: 'Team 3', number: 3 },
@@ -451,12 +418,14 @@ export default function Teams() {
                                 teamNumber={team.number}
                                 teamName={team.label}
                                 players={team.state}
+                                unassignedUsers={unassignedUsers}
+                                handleTeamAssign={handleTeamAssign}
                             />
                         ))}
                     </Grid>
                 </>
            ) : (
-                // ... existing loading state ...
+                // Loading状態の表示 ...
                 <div style={{ display: 'flex', justifyContent: 'center', alignItems: 'center', height: '100vh' }}>
                     <div>Preparing Team Input Console... </div>
                     <CircularProgress />

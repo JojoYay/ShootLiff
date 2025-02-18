@@ -1,12 +1,12 @@
 import { Metadata } from "next"
-import Registration from "./teams"
+import TeamInput from "./teamInput"
 
 export const metadata: Metadata = {
-    title: "Result Input | Shoot Sunday",
+    title: "Team Input | Shoot Sunday",
 }
 
-const RegPage = () => {
-    return <Registration/>
+const InputTeam = () => {
+    return <TeamInput/>
 }
 
-export default RegPage
+export default InputTeam

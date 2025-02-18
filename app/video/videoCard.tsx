@@ -44,27 +44,45 @@ export default function VideoCard(props: VideoProps) {
 
   return (
     <Card style={{ margin:'5px', borderRadius: '15px' }}>
-      <CardActionArea onClick={handleCardClick}>
-        <div style={{ position: 'relative' }}>
-          <Media
-            component="img"
-            alt="Image"
-            height="160"
-            image={getPicUrl(props.url)}
-            title="Image"
-            style={{ borderRadius: '15px' }}
-          />
-          <Overlay />
-        </div>
-        <Overlay>
-          <Typography variant="h5" style={{ color: 'white', paddingTop: '10px', paddingLeft: '10px' }}>
-            {props.title}
-          </Typography>
-          <Typography variant="body2" style={{ color: 'white', paddingLeft: '10px' }}>
-            {props.date}
-          </Typography>
-        </Overlay>
-      </CardActionArea>
+      {props.url ? (
+        <CardActionArea onClick={handleCardClick}style={{width:'300px'}} >
+          <div style={{ position: 'relative' }}>
+            <Media
+              component="img"
+              alt="Image"
+              height="160"
+              image={getPicUrl(props.url)}
+              title="Image"
+              style={{ borderRadius: '15px' }}
+            />
+            <Overlay />
+          </div>
+          <Overlay>
+            <Typography variant="h5" style={{ color: 'white', paddingTop: '10px', paddingLeft: '10px' }}>
+              {props.title}
+            </Typography>
+            <Typography variant="body2" style={{ color: 'white', paddingLeft: '10px' }}>
+              {props.date}
+            </Typography>
+          </Overlay>
+        </CardActionArea>
+      ) : (
+        <CardActionArea>
+          <div style={{ position: 'relative', height: '160px', backgroundColor: 'grey', borderRadius: '15px', display: 'flex', flexDirection: 'column', justifyContent: 'flex-end', alignItems: 'center', width:'300px'}}>
+            <Typography variant="h4" style={{ color: 'white', fontWeight: 'bold' }}>
+              Coming Soon!
+            </Typography>
+          </div>
+          <Overlay>
+            <Typography variant="h5" style={{ color: 'white', paddingTop: '10px', paddingLeft: '10px' }}>
+              {props.title}
+            </Typography>
+            <Typography variant="body2" style={{ color: 'white', paddingLeft: '10px' }}>
+              {props.date}
+            </Typography>
+          </Overlay>
+        </CardActionArea>
+      )}
     </Card>
   );
 }
