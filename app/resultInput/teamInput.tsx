@@ -105,31 +105,41 @@ export default function TeamInput() {
         setIsSaving(true);
         setHasChanges(false); // 保存開始時に変更フラグをリセット
 
-        const currentAssignments = getCurrentAssignments();
-        const teamDataToSave = Object.entries(currentAssignments).map(([player, teamNumber]) => {
-            const teamName = teamNumber === 0 ? null : `チーム${teamNumber}`; // チーム番号が0の場合は未所属
-            return [player, teamName || null]; // チーム番号が0の場合はチーム名をnullにする
-        });
+        const currentAssignments:Map<string, number> = getCurrentAssignments();
+        console.log(currentAssignments);
+        // const teamDataToSave = Object.entries(currentAssignments).map(([player, teamNumber]) => {
+        //     const teamName = teamNumber === 0 ? null : `チーム${teamNumber}`; // チーム番号が0の場合は未所属
+        //     return [player, teamName || null]; // チーム番号が0の場合はチーム名をnullにする
+        // });
 
         try {
-            const response = await fetch(process.env.SERVER_URL + '?func=updateTeam', {
+            const formData = new FormData();            
+			currentAssignments.forEach((value, key) => {
+                if(key){
+                    formData.append(key, String(value));
+                }
+			});
+            
+            console.log(formData);
+			formData.append('func', 'updateTeams');
+            if(!process.env.SERVER_URL){
+                return;
+            }
+            const response = await fetch(process.env.SERVER_URL, {
                 method: 'POST',
                 headers: {
-                    'Content-Type': 'application/json',
+                    'Accept': 'application/json',
                 },
-                body: JSON.stringify({ teams: teamDataToSave }),
+                body: formData,
             });
 
             if (!response.ok) {
                 throw new Error(`HTTP error! status: ${response.status}`);
             }
-
-            setIsSaving(false);
             //setHasChanges(false); // 保存後に変更なし状態にする
             console.log('Team data saved successfully');
             // 必要に応じて成功時の処理を追加
         } catch (error) {
-            setIsSaving(false);
             console.error('Error saving team data:', error);
             // 必要に応じてエラー処理を追加
         } finally {
@@ -140,7 +150,7 @@ export default function TeamInput() {
 
     const getCurrentAssignments = () => {
         const assignments: Map<string, number> = new Map();
-        users?.forEach(playerData => {
+        users?.slice(1).forEach(playerData => {
             const player = playerData[1];
             if (team1.includes(player)) assignments.set(player, 1);
             else if (team2.includes(player)) assignments.set(player, 2);

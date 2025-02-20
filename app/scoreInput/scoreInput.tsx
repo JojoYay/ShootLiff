@@ -56,6 +56,8 @@ export default function ScoreInput() {
     const [isSaving, setIsSaving] = useState<boolean>(false); // Saving flagを追加
     const [isEndMatchDialogOpen, setIsEndMatchDialogOpen] = useState<boolean>(false); // ダイアログの表示状態
     const [dialogWinningTeam, setDialogWinningTeam] = useState<string | null>(null); // ダイアログで選択された勝利チーム
+    const [selectedMatchType, setSelectedMatchType] = useState<string | null>('3'); // 選択された試合タイプ
+    const [isCreatingMatch, setIsCreatingMatch] = useState<boolean>(false); // 試合作成中フラグ
 
 
     useEffect(() => {
@@ -79,8 +81,15 @@ export default function ScoreInput() {
         setMatchScores(formattedScores);
     };
 
-    const fetchScores = async () => {
+    const fetchScores = async (videoUnselect:boolean=false) => {
         try {
+            if(videoUnselect){
+                setSelectedVideo(null);
+                setTeam1Players([]);
+                setTeam2Players([]);
+                setVideos(null);
+                setTeams(null);
+            }
             // const url = process.env.SERVER_URL + `?func=getTeams&func=getUsers&func=getVideo&func=getScores`;
             let url = process.env.SERVER_URL + `?func=getTeams&func=getUsers`;
             if (url) {
@@ -88,12 +97,14 @@ export default function ScoreInput() {
                     method: 'GET',
                 });
                 const data = await response.json();
-                // console.log(data.teams);
-                // console.log(data.users);
-                // console.log(data);
-
                 setTeams(data.teams as string[][]);
                 setUsers(data.users as string[][]);
+
+                // data.teamsの2列目のチーム数に応じて試合タイプを選択
+                if (data.matchCount && data.matchCount.length > 0) {
+                    setSelectedMatchType(data.matchCount);
+                }
+
             }
             url = process.env.SERVER_URL + `?func=getTodayMatch&func=getScores`;
             if (url) {
@@ -101,8 +112,8 @@ export default function ScoreInput() {
                     method: 'GET',
                 });
                 const data = await response.json();
-                // console.log(data.match);
-                // console.log(data.scores);
+                console.log(data.match);
+                console.log(data.scores);
                 // console.log(data);
 
                 setVideos(data.match as string[][]);
@@ -122,8 +133,8 @@ export default function ScoreInput() {
                 // const team1Name = selectedVideoData[7]; // 7行目のチーム名
                 // const team2Name = selectedVideoData[8]; // 8行目のチーム名
 
-                const team1PlayersList: string[] = selectedVideoData[5].split(',');
-                const team2PlayersList: string[] = selectedVideoData[6].split(',');
+                const team1PlayersList: string[] = selectedVideoData[5].split(', ');
+                const team2PlayersList: string[] = selectedVideoData[6].split(', ');
 
                 setTeam1Players(team1PlayersList);
                 setTeam2Players(team2PlayersList);
@@ -415,8 +426,8 @@ export default function ScoreInput() {
                 if (response.ok) {
                     const winningTeamName = data.winningTeam; // サーバーからのレスポンスで勝ちチーム名を取得
                     console.log(winningTeamName);
-                    if (winningTeamName === 'draw') {
-                        // 同点の場合、ダイアログを表示
+                    if (winningTeamName === 'draw' && selectedMatchType !== '5') {
+                        // 同点かつ、トーナメントの場合
                         setIsEndMatchDialogOpen(true);
                     } else {
                         // 勝ちチームが確定した場合、サーバーに送信
@@ -460,7 +471,7 @@ export default function ScoreInput() {
                 if (response.ok) {
                     alert(`${winningTeamName}の勝利を記録しました！`);
                     // 試合結果を更新するためにfetchVideosを再度実行するか、必要に応じてstateを更新
-                    fetchScores(); // スコアと試合結果を再fetch
+                    fetchScores(true); // スコアと試合結果を再fetch
                 } else {
                     const errorData = await response.json();
                     console.error('勝利チーム記録エラー:', errorData);
@@ -497,11 +508,78 @@ export default function ScoreInput() {
         setIsEndMatchDialogOpen(false); // ダイアログを閉じる
         setDialogWinningTeam(null); // 選択状態をリセット
     };
+    // 試合作成処理
+    const handleCreateMatch = async () => {
+        setIsCreatingMatch(true);
+        try {
+            const url = process.env.SERVER_URL + `?func=createShootLog`;
+            const form = new FormData();
+            form.append('teamCount', selectedMatchType as string);
+            if (url) {
+                const response = await fetch(url, {
+                    method: 'POST',
+                    headers: {
+                        'Accept': 'application/json',
+                    },
+                    body: form, // 選択された試合タイプを送信
+                });
+                if (response.ok) {
+                    // alert('試合作成に成功しました！');
+                    fetchScores(true); // 試合リストを再取得して更新
+                } else {
+                    const errorData = await response.json();
+                    console.error('試合作成エラー:', errorData);
+                    // alert('試合作成に失敗しました。');
+                }
+            } else {
+                console.error('SERVER_URLが設定されていません。');
+                alert('サーバーURLが設定されていません。');
+            }
+        } catch (error) {
+            console.error('試合作成中にエラーが発生しました:', error);
+            alert('試合作成中にエラーが発生しました。');
+        } finally {
+            setIsCreatingMatch(false);
+        }
+    };
+
 
     return (
         <>
             {videos && teams && users ? (
                 <>
+                    {/* 画面上部のコンボボックスとボタン */}
+                    <Grid container spacing={2} alignItems="center" sx={{ mb: 2 }}>
+                        <Grid item xs={8} sm={6} md={4}>
+                            <FormControl fullWidth margin="normal">
+                                <InputLabel id="match-type-select-label">試合タイプ選択</InputLabel>
+                                <Select
+                                    labelId="match-type-select-label"
+                                    id="match-type-select"
+                                    value={selectedMatchType}
+                                    label="試合タイプ選択"
+                                    disabled={(!!scores && scores.length > 1) || (videos && videos.some(video => video[9]))}
+                                    onChange={(e) => setSelectedMatchType(e.target.value)}
+                                >
+                                    <MenuItem value="3">３チーム（１面）</MenuItem>
+                                    <MenuItem value="4">４チーム（１面）</MenuItem>
+                                    <MenuItem value="5">５チーム（２面）</MenuItem>
+                                </Select>
+                            </FormControl>
+                        </Grid>
+                        <Grid item xs={4} sm={6} md={4}>
+                            <Button
+                                variant="contained"
+                                color="primary"
+                                onClick={handleCreateMatch}
+                                disabled={isCreatingMatch || (!!scores && scores.length > 1) || (videos && videos.some(video => video[9]))}
+                            >
+                                試合作成
+                                {isCreatingMatch && <CircularProgress size={24} sx={{ color: 'white', position: 'absolute', top: '50%', left: '16px', marginTop: '-12px' }} />}
+                            </Button>
+                        </Grid>
+                    </Grid>
+
                     <FormControl fullWidth margin="normal" >
                         <InputLabel id="video-select-label" > 試合選択 </InputLabel>
                         <Select labelId="video-select-label"
@@ -530,7 +608,7 @@ export default function ScoreInput() {
                                     {selectedVideo && videos.find(video => video[10] === selectedVideo) ? (
                                         <Typography variant="h5" component="div" sx={{ textAlign: 'center', my: 2 }}>
                                             {videos.find(video => video[10] === selectedVideo)![7] || '0'} - {videos.find(video => video[10] === selectedVideo)![8] || '0'}
-                                            {videos.find(video => video[10] === selectedVideo)![9] ? ` (${videos.find(video => video[10] === selectedVideo)![9]}の勝ち)` : '(試合未集計)'}
+                                            {videos.find(video => video[10] === selectedVideo)![9] ? ` (${videos.find(video => video[10] === selectedVideo)![9]})` : '(未集計)'}
                                         </Typography>
                                     ) : null}
                                 </Grid>
@@ -632,7 +710,7 @@ export default function ScoreInput() {
                                             variant="contained"
                                             onClick={handleAddGoal}
                                             sx={{ mt: 2, position: 'relative' }} // ボタン内にローディングアイコンを重ねるためにposition: 'relative' を追加
-                                            disabled={!currentGoal.scorer || !currentGoal.team} // チームと得点者が選択されていない場合、ボタンをdisabledにする
+                                            disabled={isSaving} // チームと得点者が選択されていない場合、ボタンをdisabledにする
                                         >
                                             {editMode === 'edit' ? '更新' : 'ゴール追加'}
                                             {isSaving && <CircularProgress size={24} sx={{ color: 'white', position: 'absolute', top: '50%', left: '16px', marginTop: '-12px' }} />}
@@ -659,7 +737,7 @@ export default function ScoreInput() {
                                             variant="contained"
                                             onClick={handleDeleteGoal}
                                             sx={{ mt: 2 }}
-                                            disabled={!currentGoal.scoreId} // スコアIDが選択されていない場合、ボタンをdisabledにする
+                                            disabled={isSaving} // スコアIDが選択されていない場合、ボタンをdisabledにする
                                         >
                                             削除
                                             {isSaving && <CircularProgress size={24} sx={{ color: 'white', position: 'absolute', top: '50%', left: '16px', marginTop: '-12px' }} />}
@@ -693,7 +771,7 @@ export default function ScoreInput() {
                             </Table>
                             <FormControl fullWidth margin="normal" sx={{ display: 'block' }}>
                                 <Button fullWidth variant="contained" color="primary" sx={{ mt: 2 }} onClick={handleEndMatch} disabled={isSaving} >
-                                    試合終了（点数を記録）
+                                    試合終了（点数を集計）
                                     {isSaving && <CircularProgress size={24} sx={{ color: 'white', position: 'absolute', top: '50%', left: '16px', marginTop: '-12px' }} />}
                                     {isSaving && <span style={{ marginLeft: '30px' }}>Saving...</span>}
                                 </Button>
@@ -706,13 +784,13 @@ export default function ScoreInput() {
                                     <Button onClick={() => handleDialogWinningTeamSelect(videos.find(video => video[10] === selectedVideo)?.[3] || '')}
                                             variant={dialogWinningTeam === videos.find(video => video[10] === selectedVideo)?.[3] ? 'contained' : 'outlined'}
                                     >
-                                        {videos.find(video => video[10] === selectedVideo)?.[3] || 'Team1'}
+                                        {videos.find(video => video[10] === selectedVideo)?.[3]}
                                     </Button>
                                     <Button onClick={() => handleDialogWinningTeamSelect(videos.find(video => video[10] === selectedVideo)?.[4] || '')}
                                             variant={dialogWinningTeam === videos.find(video => video[10] === selectedVideo)?.[4] ? 'contained' : 'outlined'}
                                             sx={{ ml: 2 }}
                                     >
-                                        {videos.find(video => video[10] === selectedVideo)?.[4] || 'Team2'}
+                                        {videos.find(video => video[10] === selectedVideo)?.[4]}
                                     </Button>
                                 </DialogContent>
                                 <DialogActions>

@@ -49,12 +49,7 @@ export default function Video() {
 					<Grid container spacing={2} style={{ margin: '5px', width:'100%' }}>
 						{currentItems.map((data, index) => (
 							<div key={index}>
-								<VideoCard url={data[2]} title={data[1]} date={new Date(data[0]).toLocaleDateString('en-CA', {
-									timeZone: 'Asia/Singapore',
-									year: 'numeric',
-									month: '2-digit',
-									day: '2-digit'
-								})}></VideoCard>
+								<VideoCard url={data[2]} title={data[1]} date={data[0]}></VideoCard>
 							</div>
 						))}
 					</Grid>

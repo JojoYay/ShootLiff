@@ -1,4 +1,5 @@
 import { Avatar } from "@mui/material";
+import { useState } from "react";
 
 interface AvatarIconProps {
     picUrl?: string;
@@ -40,14 +41,39 @@ function stringToColor(string: string) {
   }
 
 
-export default function AvatarIcon(avatarIconProps:AvatarIconProps) {
-    if(avatarIconProps.picUrl){
-        return (
-            <Avatar sx={{ width: avatarIconProps.width, height: avatarIconProps.height }} src={avatarIconProps.picUrl} alt={avatarIconProps.name} ></Avatar>
-        );
-    } else {
-        return (
-            <Avatar {...stringAvatar(avatarIconProps.name,avatarIconProps.width,avatarIconProps.height)} />
-        );
-    }
+export default function AvatarIcon(avatarIconProps: AvatarIconProps) {
+    const [showName, setShowName] = useState(false); // 名前表示用の状態
+
+    const handleClick = () => {
+      setShowName(prev => !prev); // クリック時に名前の表示/非表示を切り替え
+    };
+
+    return (
+      <div onClick={handleClick}> {/* マウスイベントをクリックに変更 */}
+          {avatarIconProps.picUrl ? (
+              <Avatar 
+                  sx={{ width: avatarIconProps.width, height: avatarIconProps.height }} 
+                  src={avatarIconProps.picUrl} 
+                  alt={avatarIconProps.name} 
+              />
+          ) : (
+              <Avatar 
+                  {...stringAvatar(avatarIconProps.name, avatarIconProps.width, avatarIconProps.height)} 
+              />
+          )}
+          {showName && (
+                <span style={{ 
+                    position: 'absolute', 
+                    bottom: 0, 
+                    left: '50%', 
+                    transform: 'translateX(-50%)', 
+                    backgroundColor: 'rgba(255, 255, 255, 0.7)', // 背景を半透明に
+                    padding: '2px 5px', 
+                    borderRadius: '4px' 
+                }}>
+                    {avatarIconProps.name}
+                </span>
+          )} {/* 名前をオーバーレイで表示 */}
+      </div>
+  );
 }

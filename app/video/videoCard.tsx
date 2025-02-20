@@ -45,7 +45,7 @@ export default function VideoCard(props: VideoProps) {
   return (
     <Card style={{ margin:'5px', borderRadius: '15px' }}>
       {props.url ? (
-        <CardActionArea onClick={handleCardClick}style={{width:'300px'}} >
+        <CardActionArea onClick={handleCardClick} >
           <div style={{ position: 'relative' }}>
             <Media
               component="img"
@@ -68,7 +68,7 @@ export default function VideoCard(props: VideoProps) {
         </CardActionArea>
       ) : (
         <CardActionArea>
-          <div style={{ position: 'relative', height: '160px', backgroundColor: 'grey', borderRadius: '15px', display: 'flex', flexDirection: 'column', justifyContent: 'flex-end', alignItems: 'center', width:'300px'}}>
+          <div style={{ position: 'relative', height: '160px', backgroundColor: 'grey', borderRadius: '15px', display: 'flex', flexDirection: 'column', justifyContent: 'flex-end', alignItems: 'center'}}>
             <Typography variant="h4" style={{ color: 'white', fontWeight: 'bold' }}>
               Coming Soon!
             </Typography>
