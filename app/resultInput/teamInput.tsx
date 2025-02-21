@@ -107,20 +107,17 @@ export default function TeamInput() {
 
         const currentAssignments:Map<string, number> = getCurrentAssignments();
         console.log(currentAssignments);
-        // const teamDataToSave = Object.entries(currentAssignments).map(([player, teamNumber]) => {
-        //     const teamName = teamNumber === 0 ? null : `チーム${teamNumber}`; // チーム番号が0の場合は未所属
-        //     return [player, teamName || null]; // チーム番号が0の場合はチーム名をnullにする
-        // });
 
         try {
             const formData = new FormData();            
 			currentAssignments.forEach((value, key) => {
                 if(key){
+                    console.log(key + '==' + String(value) +" " + value);
                     formData.append(key, String(value));
                 }
 			});
             
-            console.log(formData);
+            console.log(JSON.stringify(formData));
 			formData.append('func', 'updateTeams');
             if(!process.env.SERVER_URL){
                 return;

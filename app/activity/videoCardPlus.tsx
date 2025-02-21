@@ -65,20 +65,21 @@ const UserIcon = ({ userName }: { userName: string }) => {
 
 
   return (
-    <Card style={{ margin:'5px', borderRadius: '15px', overflow: 'hidden' }}>
+    <Card style={{ margin:'5px', borderRadius: '15px', overflow: 'hidden', width: '100%' }}>
         {props.url ? (
-            <CardActionArea onClick={handleCardClick} >
-                <div style={{ position: 'relative' }}>
-                    <Media
-                        component="img"
-                        alt="Image"
-                        height="160"
-                        image={getPicUrl(props.url)}
-                        title="Image"
-                        style={{ borderRadius: '15px' }} // ここでもborderRadiusを設定
-                    />
-                    <Overlay />
-                </div>
+            <CardActionArea onClick={handleCardClick} style={{width: '100%' }} >
+                {/* <div style={{ position: 'relative', width: '100%' }}> */}
+                <Media
+                    component="img"
+                    alt="Image"
+                    height="160"
+                    width='100%'
+                    image={getPicUrl(props.url)}
+                    title="Image"
+                    style={{ borderRadius: '15px' }} // ここでもborderRadiusを設定
+                />
+
+                {/* </div> */}
                 <Overlay>
                     <Typography variant="h5" style={{ color: 'white', paddingTop: '10px', paddingLeft: '10px', borderRadius: '15px' }}>
                         {props.title}
@@ -86,14 +87,14 @@ const UserIcon = ({ userName }: { userName: string }) => {
                 </Overlay>
             </CardActionArea>
         ) : (
-            <CardActionArea >
-                <div style={{ position: 'relative', height: '160px', backgroundColor: 'grey', borderRadius: '15px', display: 'flex', flexDirection: 'column', justifyContent: 'flex-end', alignItems: 'center' }}>
-                    <Typography variant="h4" style={{ color: 'white', fontWeight: 'bold' }}>
+            <CardActionArea  style={{width: '100%' }} >
+                {/* <div style={{ position: 'relative', height: '160px', backgroundColor: 'grey', borderRadius: '15px', display: 'flex', flexDirection: 'column', justifyContent: 'flex-end', alignItems: 'center', width: '100%' }}> */}
+                    <Typography variant="h4" style={{ color: 'white', fontWeight: 'bold', width: '100%' }}>
                         Coming Soon!
                     </Typography>
-                </div>
+                {/* </div> */}
                 <Overlay>
-                    <Typography variant="h5" style={{ color: 'white', paddingTop: '10px', paddingLeft: '10px' }}>
+                    <Typography variant="h5" style={{ color: 'white', paddingTop: '10px', paddingLeft: '10px', width: '100%' }}>
                         {props.title}
                     </Typography>
                 </Overlay>

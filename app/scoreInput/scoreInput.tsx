@@ -35,6 +35,8 @@ export default function ScoreInput() {
     const [selectedVideo, setSelectedVideo] = useState<string | null>(null); // 選択された試合
     const [team1Players, setTeam1Players] = useState<string[]>([]); // チーム1の選手リスト
     const [team2Players, setTeam2Players] = useState<string[]>([]); // チーム2の選手リスト
+    const [team1Helper, setTeam1Helper] = useState<string | null>(null); // チーム1の助っ人
+    const [team2Helper, setTeam2Helper] = useState<string | null>(null); // チーム2の助っ人
     const [currentGoal, setCurrentGoal] = useState<{
         scoreId: string | null, // 追加: scoreId
         scorer: string | null,
@@ -91,14 +93,21 @@ export default function ScoreInput() {
                 setTeams(null);
             }
             // const url = process.env.SERVER_URL + `?func=getTeams&func=getUsers&func=getVideo&func=getScores`;
-            let url = process.env.SERVER_URL + `?func=getTeams&func=getUsers`;
+            let url = process.env.SERVER_URL + `?func=getTeams&func=getUsers&func=getTodayMatch&func=getScores`;
             if (url) {
                 const response = await fetch(url, {
                     method: 'GET',
                 });
                 const data = await response.json();
+                console.log(data.teams);
                 setTeams(data.teams as string[][]);
                 setUsers(data.users as string[][]);
+                console.log(data.match);
+                console.log(data.scores);
+                // console.log(data);
+
+                setVideos(data.match as string[][]);
+                setScores(data.scores as string[][]);
 
                 // data.teamsの2列目のチーム数に応じて試合タイプを選択
                 if (data.matchCount && data.matchCount.length > 0) {
@@ -106,19 +115,19 @@ export default function ScoreInput() {
                 }
 
             }
-            url = process.env.SERVER_URL + `?func=getTodayMatch&func=getScores`;
-            if (url) {
-                const response = await fetch(url, {
-                    method: 'GET',
-                });
-                const data = await response.json();
-                console.log(data.match);
-                console.log(data.scores);
-                // console.log(data);
+            // url = process.env.SERVER_URL + `?func=getTodayMatch&func=getScores`;
+            // if (url) {
+            //     const response = await fetch(url, {
+            //         method: 'GET',
+            //     });
+            //     const data = await response.json();
+                // console.log(data.match);
+                // console.log(data.scores);
+                // // console.log(data);
 
-                setVideos(data.match as string[][]);
-                setScores(data.scores as string[][]);
-            }
+                // setVideos(data.match as string[][]);
+                // setScores(data.scores as string[][]);
+            // }
         } catch (error) {
             console.error('Error fetching Teams:', error);
         }
@@ -138,6 +147,8 @@ export default function ScoreInput() {
 
                 setTeam1Players(team1PlayersList);
                 setTeam2Players(team2PlayersList);
+                setTeam1Helper(null); // 助っ人をリセット
+                setTeam2Helper(null); // 助っ人をリセット                
             }
         }
     };
@@ -197,8 +208,6 @@ export default function ScoreInput() {
         teamName: string,
         players: string[]
     }) => (
-        // ... existing TeamSection component ...
-        // ... 変更なし ...
         <Grid item xs={12} sm={6} md={4} key={teamNumber} >
             <Typography variant="h6"
                 component="div"
@@ -237,6 +246,57 @@ export default function ScoreInput() {
                         })
                     } 
                 </div> 
+
+                <FormControl fullWidth margin="normal">
+                    <InputLabel id={`helper-select-label-${teamNumber}`}>助っ人追加</InputLabel>
+                    <Select
+                        size='small'
+                        labelId={`helper-select-label-${teamNumber}`}
+                        id={`helper-select-${teamNumber}`}
+                        value={teamNumber === 1 ? team1Helper || '' : team2Helper || ''}
+                        label="助っ人追加"
+                        onChange={(e) => {
+                            const helperName = e.target.value as string;
+                            // const helperData = users?.find(user => user[1] === helperName);
+                            if (teamNumber === 1) {
+                                setTeam1Helper(helperName);
+                                setTeam1Players(prevPlayers => [...prevPlayers, helperName]); // 助っ人をチームに追加
+                            } else {
+                                setTeam2Helper(helperName);
+                                setTeam2Players(prevPlayers => [...prevPlayers, helperName]); // 助っ人をチームに追加
+                            }
+                        }}
+                        displayEmpty={(teamNumber === 1 && team1Helper !== null) || (teamNumber === 2 && team2Helper !== null)}
+
+                    >
+                    {teams && users && teams.slice(1).map(team => team[0]).filter(playerName =>
+                            playerName &&
+                            !team1Players.includes(playerName) &&
+                            !team2Players.includes(playerName)
+                        ).map((playerName) => (
+                            <MenuItem key={playerName} value={playerName}>{playerName}</MenuItem>
+                        ))}
+                    </Select>
+                </FormControl>
+
+                {(teamNumber === 1 && team1Helper) || (teamNumber === 2 && team2Helper) ? (
+                    <Button
+                        variant="contained"
+                        color="secondary"
+                        onClick={() => {
+                            if (teamNumber === 1) {
+                                setTeam1Players(prevPlayers => prevPlayers.filter(player => player !== team1Helper)); // 助っ人を削除
+                                setTeam1Helper(null);
+                            } else {
+                                setTeam2Players(prevPlayers => prevPlayers.filter(player => player !== team2Helper)); // 助っ人を削除
+                                setTeam2Helper(null);
+                            }
+                        }}
+                    >
+                        助っ人削除
+                    </Button>
+                ) : null}
+
             </Card>
         </Grid>
     );
