@@ -222,7 +222,6 @@ export default function Video() {
 				</>
 			) : (
 				<div style={{ display: 'flex', flexDirection: 'column', justifyContent: 'center', alignItems: 'center', height: '100vh' }}>
-					<div>Loading...</div>
 					<style>
 					{`
 						@keyframes spin {

@@ -63,9 +63,10 @@ export default function Stats() {
 	}, [users, profile]);
 
 	useEffect(() => {
+		// console.log("line profile name"+profile?.lineProfile.displayName+" statsTable "+statsTable+" eventrResult "+eventResult);
 		if (eventResult?.length > 0 && profile?.lineProfile && statsTable.length === 0) {
 			const yourResult = eventResult.find(item => item[0] === profile.lineProfile.userId);
-			console.log(yourResult);
+			console.log("loadProfile:"+yourResult);
 			if (yourResult) {
 				const nextGoalRow = eventResult.find(item => item[12] === (yourResult[12]-1));
 				const nextAssistRow = eventResult.find(item => item[13] === (yourResult[13]-1));
@@ -221,6 +222,27 @@ export default function Stats() {
 		return { title, data };
 	}
 
+	const handleRankingIconClick = (densukeName: string) => {
+		if (users) {
+			const userData = users.find(item => item[1] === densukeName);
+			if (userData) {
+				// Assuming userData[2] is userId, userData[4] is displayName, userData[?] is pictureUrl (you might need to adjust the index)
+				const lineProfile = { userId: userData[2], displayName: userData[1], pictureUrl: userData[4] /* adjust index if pictureUrl is elsewhere */, language: lang } as Profile;
+				const yourResult = eventResult.find(item => item[0] === userData[2]);
+				let trophy:boolean = false;
+				if(yourResult){
+					trophy = !!yourResult[15];
+				}
+				const profDen: ProfileDen = { lineProfile: lineProfile, densukeName: densukeName, trophy: trophy };
+				setProfile(profDen);
+				setStatsTable([]);
+				window.scrollTo({ top: 0, behavior: 'smooth' }); 
+			} else {
+				// console.log("User not found:", densukeName);
+			}
+		}
+	};
+
 	return (
 		<>
 			{eventResult && eventResult.length > 0 && profile ? (
@@ -322,6 +344,7 @@ export default function Stats() {
 														<TableRow
 															key={row.name}
 															sx={{ '&:last-child td, &:last-child th': { border: 0 } }}
+															onClick={() => handleRankingIconClick(row.name)}
 														>
 															<TableCell sx={{ padding: '3px 6px' }} component="th" scope="row">
 																<img
@@ -382,6 +405,7 @@ export default function Stats() {
 														<TableRow
 															key={row.name}
 															sx={{ '&:last-child td, &:last-child th': { border: 0 } }}
+															onClick={() => handleRankingIconClick(row.name)}
 														>
 															<TableCell sx={{ padding: '3px 6px' }} component="th" scope="row">
 																<img
@@ -442,6 +466,7 @@ export default function Stats() {
 														<TableRow
 															key={row.name}
 															sx={{ '&:last-child td, &:last-child th': { border: 0 } }}
+															onClick={() => handleRankingIconClick(row.name)}
 														>
 															<TableCell sx={{ padding: '3px 6px' }} component="th" scope="row">
 																<img
@@ -483,9 +508,25 @@ export default function Stats() {
 					</Grid>
 				</>
 			) : (
-				<div style={{ display: 'flex', justifyContent: 'center', alignItems: 'center', height: '100vh' }}>
-					<div>Loading... </div>
-					<CircularProgress />
+				<div style={{ display: 'flex', flexDirection: 'column', justifyContent: 'center', alignItems: 'center', height: '100vh' }}>
+					<style>
+					{`
+						@keyframes spin {
+						0% { transform: rotate(0deg); }
+						100% { transform: rotate(360deg); }
+						}
+					`}
+					</style>
+					<img
+					src="https://lh3.googleusercontent.com/d/18Y61mZsKy4WnRgN8qxsczpnlWI2k6NOh"
+					alt="ローディング"
+					style={{
+						width: '48px',  // サイズ調整
+						height: '48px', // サイズ調整
+						borderRadius: '50%', // 画像を丸くする
+						animation: 'spin 2s linear infinite', // アニメーション
+					}}
+					/>
 				</div>
 			)}
 		</>
