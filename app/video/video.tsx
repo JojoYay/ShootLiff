@@ -48,9 +48,7 @@ export default function Video() {
 					/>				
 					<Grid container spacing={2} style={{ margin: '5px', width:'100%' }}>
 						{currentItems.map((data, index) => (
-							<div key={index}>
-								<VideoCard url={data[2]} title={data[1]} date={data[0]}></VideoCard>
-							</div>
+							<VideoCard key={index} url={data[2]} title={data[1]} date={data[0]}></VideoCard>
 						))}
 					</Grid>
 					<Pagination

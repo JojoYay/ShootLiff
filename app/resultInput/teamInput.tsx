@@ -112,12 +112,11 @@ export default function TeamInput() {
             const formData = new FormData();            
 			currentAssignments.forEach((value, key) => {
                 if(key){
-                    console.log(key + '==' + String(value) +" " + value);
+                    // console.log(key + '==' + String(value) +" " + value);
                     formData.append(key, String(value));
                 }
 			});
             
-            console.log(JSON.stringify(formData));
 			formData.append('func', 'updateTeams');
             if(!process.env.SERVER_URL){
                 return;
@@ -147,8 +146,10 @@ export default function TeamInput() {
 
     const getCurrentAssignments = () => {
         const assignments: Map<string, number> = new Map();
-        users?.slice(1).forEach(playerData => {
-            const player = playerData[1];
+        console.log(teams);
+        teams?.forEach(playerData => {
+            // console.log(playerData);
+            const player = playerData;
             if (team1.includes(player)) assignments.set(player, 1);
             else if (team2.includes(player)) assignments.set(player, 2);
             else if (team3.includes(player)) assignments.set(player, 3);
@@ -179,6 +180,7 @@ export default function TeamInput() {
         let updatedUnassigned;
         // userToAssign = selectedUser;
         setSelectedUser(null); // 選択解除
+        console.log("userToAssign",userToAssign);
 
         // ユーザーが現在所属しているチームを特定し、そこから削除 (同じチーム選択時も削除処理は行う)
         if (team1.includes(userToAssign)) {
@@ -237,6 +239,7 @@ export default function TeamInput() {
             }
             setUnassignedUsers(unassignedUsers.filter(user => user !== userToAssign));
         }
+        console.log(teamNumber);
         switch (teamNumber) {
             case 0: // 未所属グループに移動
                 if (!unassignedUsers.includes(userToAssign)) { // ユーザーが未所属リストに存在しない場合のみ追加

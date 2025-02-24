@@ -43,42 +43,32 @@ export default function VideoCard(props: VideoProps) {
   };
 
   return (
-    <Card style={{ margin:'5px', borderRadius: '15px' }}>
+    <Card style={{ margin:'5px', borderRadius: '15px', width:'100%' }}>
       {props.url ? (
-        <CardActionArea onClick={handleCardClick} >
-          <div style={{ position: 'relative' }}>
-            <Media
+        <CardActionArea onClick={handleCardClick} style={{width: '100%' }} >
+          <Media
               component="img"
               alt="Image"
               height="160"
+              width='100%'
               image={getPicUrl(props.url)}
               title="Image"
-              style={{ borderRadius: '15px' }}
-            />
-            <Overlay />
-          </div>
+              style={{ borderRadius: '15px' }} // ここでもborderRadiusを設定
+          />
           <Overlay>
             <Typography variant="h5" style={{ color: 'white', paddingTop: '10px', paddingLeft: '10px' }}>
               {props.title}
-            </Typography>
-            <Typography variant="body2" style={{ color: 'white', paddingLeft: '10px' }}>
-              {props.date}
             </Typography>
           </Overlay>
         </CardActionArea>
       ) : (
-        <CardActionArea>
-          <div style={{ position: 'relative', height: '160px', backgroundColor: 'grey', borderRadius: '15px', display: 'flex', flexDirection: 'column', justifyContent: 'flex-end', alignItems: 'center'}}>
-            <Typography variant="h4" style={{ color: 'white', fontWeight: 'bold' }}>
-              Coming Soon!
-            </Typography>
-          </div>
+        <CardActionArea style={{width: '100%' }} >
+          <Typography height={'160px'}  variant="h4" style={{ color: 'white', fontWeight: 'bold', backgroundColor: 'grey', borderRadius: '15px', display: 'flex', justifyContent: 'center', alignItems: 'flex-end' }}>
+            Coming Soon!
+          </Typography>
           <Overlay>
             <Typography variant="h5" style={{ color: 'white', paddingTop: '10px', paddingLeft: '10px' }}>
               {props.title}
-            </Typography>
-            <Typography variant="body2" style={{ color: 'white', paddingLeft: '10px' }}>
-              {props.date}
             </Typography>
           </Overlay>
         </CardActionArea>

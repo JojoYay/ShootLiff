@@ -77,8 +77,8 @@ export default function ScoreInput() {
         const formattedScores = filteredScores.map(score => ({
             id: score[0], // score[0]がscoreId
             team: score[2], // score[2]がteam
-            scorer: score[3], // score[3]がscorer
-            assister: score[4] === 'null' ? null : score[4], // score[4]がassister
+            scorer: score[4], // score[4]がscorer
+            assister: score[3] === 'null' ? null : score[3], // score[3]がassister
         }));
         setMatchScores(formattedScores);
     };

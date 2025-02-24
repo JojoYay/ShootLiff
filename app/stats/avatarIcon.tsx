@@ -1,4 +1,4 @@
-import { Avatar } from "@mui/material";
+import { Avatar, Box } from "@mui/material";
 import { useState } from "react";
 
 interface AvatarIconProps {
@@ -6,6 +6,7 @@ interface AvatarIconProps {
     name: string;
     width: number;
     height: number;
+    showTooltip?:boolean;
 }
 
 function stringToColor(string: string) {
@@ -49,7 +50,8 @@ export default function AvatarIcon(avatarIconProps: AvatarIconProps) {
     };
 
     return (
-      <div onClick={handleClick}> {/* マウスイベントをクリックに変更 */}
+      <Box onClick={handleClick} position="relative"> {/* マウスイベントをクリックに変更 */}
+
           {avatarIconProps.picUrl ? (
               <Avatar 
                   sx={{ width: avatarIconProps.width, height: avatarIconProps.height }} 
@@ -61,19 +63,21 @@ export default function AvatarIcon(avatarIconProps: AvatarIconProps) {
                   {...stringAvatar(avatarIconProps.name, avatarIconProps.width, avatarIconProps.height)} 
               />
           )}
-          {showName && (
-                <span style={{ 
-                    position: 'absolute', 
-                    bottom: 0, 
-                    left: '50%', 
-                    transform: 'translateX(-50%)', 
-                    backgroundColor: 'rgba(255, 255, 255, 0.7)', // 背景を半透明に
-                    padding: '2px 5px', 
-                    borderRadius: '4px' 
-                }}>
-                    {avatarIconProps.name}
-                </span>
+          {(showName && avatarIconProps.showTooltip) && (
+            <Box
+                sx={{
+                position: 'absolute', 
+                top: 0,
+                right: 0,
+                left: 'auto',
+                transform: 'translateX(0)',
+                backgroundColor: 'rgba(255, 255, 255, 0.7)', // 背景を半透明に
+                padding: '2px 5px', 
+                borderRadius: '4px' 
+            }}>
+                {avatarIconProps.name}
+            </Box>
           )} {/* 名前をオーバーレイで表示 */}
-      </div>
+      </Box>
   );
 }

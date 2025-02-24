@@ -49,26 +49,24 @@ export default function VideoCardPlus(props: VideoProps) {
     window.open(props.url, '_blank');
   };
 
-const UserIcon = ({ userName }: { userName: string }) => {
-  // console.log("userIcon");
-  const matchedUser = props.users.find(user => user[1] === userName); // userNameとマッチするユーザーを検索
-  const imageUrl = matchedUser ? matchedUser[4] : undefined; // マッチしたユーザーの5列目をimageUrlに設定
+  const UserIcon = ({ userName }: { userName: string }) => {
+    // console.log("userIcon");
+    const matchedUser = props.users.find(user => user[1] === userName); // userNameとマッチするユーザーを検索
+    const imageUrl = matchedUser ? matchedUser[4] : undefined; // マッチしたユーザーの5列目をimageUrlに設定
 
     return (
-      <div style={{ display: 'flex', alignItems: 'center' }}>
       <AvatarIcon
         name={userName} picUrl={imageUrl}
-        width={24} height={24}
+        width={24} height={24} showTooltip={true}
       />
-    </div>
-)};
+    )
+  };
 
 
   return (
     <Card style={{ margin:'5px', borderRadius: '15px', overflow: 'hidden', width: '100%' }}>
         {props.url ? (
             <CardActionArea onClick={handleCardClick} style={{width: '100%' }} >
-                {/* <div style={{ position: 'relative', width: '100%' }}> */}
                 <Media
                     component="img"
                     alt="Image"
@@ -78,8 +76,6 @@ const UserIcon = ({ userName }: { userName: string }) => {
                     title="Image"
                     style={{ borderRadius: '15px' }} // ここでもborderRadiusを設定
                 />
-
-                {/* </div> */}
                 <Overlay>
                     <Typography variant="h5" style={{ color: 'white', paddingTop: '10px', paddingLeft: '10px', borderRadius: '15px' }}>
                         {props.title}
@@ -87,18 +83,16 @@ const UserIcon = ({ userName }: { userName: string }) => {
                 </Overlay>
             </CardActionArea>
         ) : (
-            <CardActionArea  style={{width: '100%' }} >
-                {/* <div style={{ position: 'relative', height: '160px', backgroundColor: 'grey', borderRadius: '15px', display: 'flex', flexDirection: 'column', justifyContent: 'flex-end', alignItems: 'center', width: '100%' }}> */}
-                    <Typography variant="h4" style={{ color: 'white', fontWeight: 'bold', width: '100%' }}>
-                        Coming Soon!
-                    </Typography>
-                {/* </div> */}
-                <Overlay>
-                    <Typography variant="h5" style={{ color: 'white', paddingTop: '10px', paddingLeft: '10px', width: '100%' }}>
-                        {props.title}
-                    </Typography>
-                </Overlay>
-            </CardActionArea>
+          <CardActionArea>
+            <Typography height={'160px'}  variant="h4" style={{ color: 'white', fontWeight: 'bold', backgroundColor: 'grey', borderRadius: '15px', display: 'flex', justifyContent: 'center', alignItems: 'flex-end' }}>
+              Coming Soon!
+            </Typography>
+          <Overlay>
+            <Typography variant="h5" style={{ color: 'white', paddingTop: '10px', paddingLeft: '10px' }}>
+              {props.title}
+            </Typography>
+          </Overlay>
+        </CardActionArea>
         )}
       {props.winTeam ? (
         <>

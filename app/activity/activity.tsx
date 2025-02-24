@@ -1,7 +1,7 @@
 'use client';
 import { useEffect, useState } from 'react';
 
-import { Avatar, Card, CardActionArea, CardContent, CircularProgress, Grid, Pagination, Table, TableBody, TableCell, TableHead, TableRow, Typography } from '@mui/material';
+import { Box, Grid, Pagination, Table, TableBody, TableCell, TableHead, TableRow, Typography } from '@mui/material';
 import VideoCardPlus from './videoCardPlus';
 import VideoCard from '../video/videoCard';
 import AvatarIcon from '../stats/avatarIcon';
@@ -32,11 +32,11 @@ export default function Video() {
 					method: 'GET',
 				});
 				const data = await response.json();
-				console.log(data.videos);
-				console.log(data.actDates);
-				console.log(data.shootLogs);
-				console.log(data.users);
-				console.log(data.events);
+				console.log(data);
+				// console.log(data.actDates);
+				// console.log(data.shootLogs);
+				// console.log(data.users);
+				// console.log(data.events);
 				setVideos(data.videos.slice(2).reverse()); // Reverse the order
 				setActDates(data.actDates);
 				setUsers(data.users.slice(1));
@@ -49,9 +49,7 @@ export default function Video() {
 				if(matchedEvent){
 					const matchedUser = (data.users.slice(1) as string[][]).find(user => user[1] === matchedEvent[5]);
 					setMipPic(matchedUser ? matchedUser[4] : '');
-					console.log(matchedUser);
 				}
-				console.log("initialLoading done");
 			}
 		} catch (error) {
 			console.error('Error fetching data:', error);
@@ -59,17 +57,26 @@ export default function Video() {
 	};
 
 	useEffect(() => {
-		if (actDate && events && users) {
+		if (actDate && events && users && actDates) {
 			// console.log(actDate);
 			// videosの最初の要素が変わるごとにページを区切るためのindexを計算
 			const actDateIndex = (actDates as string[]).indexOf(actDate);
-			const matchedEvent = events[actDateIndex];
+			const originalIndex = events.map(event => event[1]).findIndex(date => date === actDates[0]);
+			const actualIndex = actDateIndex+originalIndex;
+			let matchedEvent:string[] = [];
+			if(events.length > actualIndex){
+				matchedEvent = events[actualIndex];				
+			}
+
+			console.log("actDate:"+actDate+" matchedEvent:"+matchedEvent+" actIndex:"+actDateIndex+'orgInd:'+originalIndex);
 			setEvent(matchedEvent); // マッチしたイベントを設定
-			console.log(matchedEvent);
-			if(matchedEvent){
+			// console.log(matchedEvent);
+			if(matchedEvent.length > 0){
 				const matchedUser = (users as string[][]).find(user => user[1] === matchedEvent[5]);
 				setMipPic(matchedUser ? matchedUser[4] : '');
-				console.log(matchedUser);
+				// console.log(matchedUser);
+			} else {
+				setMipPic('');
 			}
 		}
 	}, [actDate]);
@@ -82,7 +89,6 @@ export default function Video() {
 					method: 'GET',
 				});
 				const data = await response.json();
-				console.log("shoot log",data.shootLogs);
 				setShootLog(data.shootLogs); // shootLogsを更新
 			}
 		} catch (error) {
@@ -104,11 +110,15 @@ export default function Video() {
 				}
 			}
 			setPageGroups(groups);
+			console.log("groups"+groups);
 		}
 	}, [videos]);
 
 	const handlePageChange = async (event: React.ChangeEvent<unknown>, value: number) => {
 		setCurrentPage(value);
+		console.log("event??:", event);
+		console.log("pageGroups.length",pageGroups.length);
+		console.log("pageGroups",pageGroups);
 		if(actDates){
 			const targetActDate = actDates[value - 1]; // pageGroupsからactDatesのindexを取得
 			console.log('targetActDate', targetActDate);
@@ -121,88 +131,95 @@ export default function Video() {
 	const startIndex = pageGroups[currentPage - 1] || 0;
 	const endIndex = pageGroups[currentPage] || videos?.length || 0;
 	const currentItems = videos 
-    ? videos.slice(startIndex, endIndex).sort((a, b) => {
-        // _gで始まるものを最前列に
-        const aIsG = a[0].startsWith('_g'); // ここで適切なインデックスを指定
-        const bIsG = b[0].startsWith('_g'); // ここで適切なインデックスを指定
+    ? videos.slice(startIndex, endIndex)
+	// .sort((a, b) => {
+    //     // _gで終わるものを最前列に
+    //     const aIsG = a[0].endsWith('_g'); // ここで適切なインデックスを指定
+    //     const bIsG = b[0].endsWith('_g'); // ここで適切なインデックスを指定
 
-        if (aIsG && !bIsG) return -1; // aが_gで始まる場合
-        if (!aIsG && bIsG) return 1;  // bが_gで始まる場合
+    //     if (aIsG && !bIsG) return -1; // aが_gで終わる場合
+    //     if (!aIsG && bIsG) return 1;  // bが_gで終わる場合
 
-        // それ以外の順序は昇順でソート
-        return a[1].localeCompare(b[1]); // index 1で昇順にソート
-    }) 
+    //     // それ以外の順序は昇順でソート
+    //     return a[1].localeCompare(b[1]); // index 1で昇順にソート
+    // }) 
     : [];
 
 	return (
 		<>
 			{(videos && events && actDates) ?  (
-					<>
-						<div style={{ textAlign: 'center', margin: '20px 0' }}>
-							<Typography variant="h4" style={{ fontWeight: 'bold', color: '#333' }}>
-								{event[1]} 
-							</Typography>
-						</div>
-						<Table size="small" sx={{ borderCollapse: 'collapse' }}> {/* テーブル全体のボーダーをcollapseで制御 */}
-							< TableHead sx={{ borderBottom: 'none' }}> {/* TableHeadの下線 */}
-								< TableRow sx={{ borderBottom: 'none' }}> {/* TableRowの下線 */}
-									<TableCell align="center" sx={{ borderBottom: 'none' }}>本日のMIP</TableCell> {/* TableCellの下線 */}
-								</TableRow>
-							</TableHead>
-							< TableBody sx={{ borderBottom: 'none' }}> {/* TableBodyの下線 */}
-								< TableRow sx={{ borderBottom: 'none' }}>
-									<TableCell align="center" style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', borderBottom: 'none' }}> {/* TableCellの下線 */}
-										<AvatarIcon picUrl={mipPic} name={event[5]} width={56} height={56}></AvatarIcon>
-										<Typography variant="caption" style={{ padding: '3px', fontWeight: 'bold', color: '#333', textAlign: 'center' }}>
-											{event[5]}
-										</Typography>
-									</TableCell>
-								</TableRow>
-								< TableRow sx={{ borderBottom: 'none' }}> {/* TableRowの下線 */}
-									<TableCell align="center" sx={{ borderBottom: 'none' }}> {/* TableCellの下線 */}
-										<Typography variant="caption" style={{ padding: '3px', fontWeight: 'bold', color: '#333' }}>
-										{event[6]}
-										</Typography>
-									</TableCell>
-								</TableRow>
-							</TableBody>
-						</Table>
+				<>
+					{(event && event.length > 0) ? (
+						<>
+							<Box style={{ textAlign: 'center', margin: '20px 0' }}>
+								<Typography variant="h4" style={{ fontWeight: 'bold', color: '#333' }}>
+									{event[1]}
+								</Typography>
+							</Box>
 
-						<Grid container spacing={2} style={{ margin: '5px', width:'100%' }}>
-						{currentItems.map((data, index) => (
-								<div key={index}>
-									{shootLog ? (
-										<VideoCardPlus 
-											url={data[2]} 
-											title={data[1]}
-											team1Name={data[3]} 
-											team2Name={data[4]} 
-											team1Member={data[5]} 
-											team2Member={data[6]} 
-											team1Score={data[7]} 
-											team2Score={data[8]} 
-											winTeam={data[9]} 
-											matchId={data[10]}
-											shootLog={shootLog} 
-											users={users}
-										/>
-									) : (
-										<VideoCard 
-											url={data[2]} 
-											title={data[1]} 
-											date={data[0]} 
-										/>
-									)}
-								</div>
-							))}
-						</Grid>
-						<Pagination
-							count={pageGroups.length} // ページ数をpageGroupsの長さに変更
-							page={currentPage}
-							onChange={handlePageChange}
-							style={{ display: 'flex', justifyContent: 'center', margin: '20px' }}
-						/>
-					</>
+							<Table size="small" sx={{ borderCollapse: 'collapse' }}> {/* テーブル全体のボーダーをcollapseで制御 */}
+								< TableHead sx={{ borderBottom: 'none' }}> {/* TableHeadの下線 */}
+									< TableRow sx={{ borderBottom: 'none' }}> {/* TableRowの下線 */}
+										<TableCell align="center" sx={{ borderBottom: 'none' }}>本日のMIP</TableCell> {/* TableCellの下線 */}
+									</TableRow>
+								</TableHead>
+								< TableBody sx={{ borderBottom: 'none' }}> {/* TableBodyの下線 */}
+									< TableRow sx={{ borderBottom: 'none' }}>
+										<TableCell align="center" style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', borderBottom: 'none' }}> {/* TableCellの下線 */}
+											<AvatarIcon picUrl={mipPic} name={event[5]} width={56} height={56}></AvatarIcon>
+											<Typography variant="caption" style={{ padding: '3px', fontWeight: 'bold', color: '#333', textAlign: 'center' }}>
+												{event[5]}
+											</Typography>
+										</TableCell>
+									</TableRow>
+									< TableRow sx={{ borderBottom: 'none' }}> {/* TableRowの下線 */}
+										<TableCell align="center" sx={{ borderBottom: 'none' }}> {/* TableCellの下線 */}
+											<Typography variant="caption" style={{ padding: '3px', fontWeight: 'bold', color: '#333' }}>
+											{event[6]}
+											</Typography>
+										</TableCell>
+									</TableRow>
+								</TableBody>
+							</Table>
+						</>
+					) : null}
+
+					<Grid container spacing={2} style={{ margin: '5px', width:'100%' }}>
+					{currentItems.map((data, index) => (
+							<>
+								{(shootLog && data[9]) ? (
+									<VideoCardPlus key={index}
+										url={data[2]} 
+										title={data[1]}
+										team1Name={data[3]} 
+										team2Name={data[4]} 
+										team1Member={data[5]} 
+										team2Member={data[6]} 
+										team1Score={data[7]} 
+										team2Score={data[8]} 
+										winTeam={data[9]} 
+										matchId={data[10]}
+										shootLog={shootLog} 
+										users={users}
+									/>
+								) : (
+									<VideoCard 
+										key={index}
+										url={data[2]} 
+										title={data[1]} 
+										date={data[0]} 
+									/>
+								)}
+							</>
+						))}
+					</Grid>
+					<Pagination
+						count={pageGroups.length} // ページ数をpageGroupsの長さに変更
+						page={currentPage}
+						onChange={handlePageChange}
+						style={{ display: 'flex', justifyContent: 'center', margin: '20px' }}
+					/>
+				</>
 			) : (
 				<div style={{ display: 'flex', flexDirection: 'column', justifyContent: 'center', alignItems: 'center', height: '100vh' }}>
 					<div>Loading...</div>
@@ -215,11 +232,11 @@ export default function Video() {
 					`}
 					</style>
 					<img
-					src="https://lh3.googleusercontent.com/d/1Qc2YASdbIoikuT5bNcdnObhznf-WD5rK"
-					alt="ローディング画像"
+					src="https://lh3.googleusercontent.com/d/18Y61mZsKy4WnRgN8qxsczpnlWI2k6NOh"
+					alt="ローディング"
 					style={{
-						width: '50px',  // サイズ調整
-						height: '50px', // サイズ調整
+						width: '48px',  // サイズ調整
+						height: '48px', // サイズ調整
 						borderRadius: '50%', // 画像を丸くする
 						animation: 'spin 2s linear infinite', // アニメーション
 					}}
