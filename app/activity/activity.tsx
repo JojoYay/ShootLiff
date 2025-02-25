@@ -18,7 +18,10 @@ export default function Video() {
 
 	const [actDate, setActDate] = useState<string>('');
 	const [event, setEvent]  = useState<string[]>([]);
-	const [mipPic, setMipPic] = useState<string>('');
+	const [mipPics, setMipPics] = useState<string[]>([]);
+	const [iconSize, setIconSize] = useState<number>(56); // iconSize stateを追加
+
+	// const [mipPic, setMipPic] = useState<string>('');
 	const [currentPage, setCurrentPage] = useState(1);
 	const [pageGroups, setPageGroups] = useState<number[]>([]); // ページグループを管理する新しいstate
 
@@ -46,9 +49,24 @@ export default function Video() {
 				const matchedEvent = (data.events as string[][]).find(ev => ev[1] === data.actDates[0]); // actDateとマッチするイベントを検索
 				setEvent(matchedEvent ? matchedEvent : []); // マッチしたイベントを設定
 				console.log(matchedEvent);
+				// if(matchedEvent){
+				// 	const matchedUser = (data.users.slice(1) as string[][]).find(user => user[1] === matchedEvent[5]);
+				// 	setMipPic(matchedUser ? matchedUser[4] : '');
+				// }
 				if(matchedEvent){
-					const matchedUser = (data.users.slice(1) as string[][]).find(user => user[1] === matchedEvent[5]);
-					setMipPic(matchedUser ? matchedUser[4] : '');
+					const mipPicsArray: string[] = [];
+					const userColumns = [5, 17, 18, 19, 20]; // ユーザー名が格納されている列のインデックス
+					for (const columnIndex of userColumns) {
+						const userName = matchedEvent[columnIndex];
+						if (userName) { // ユーザー名が存在する場合のみ検索
+							const matchedUser = (data.users.slice(1) as string[][]).find(user => user[1] === userName);
+							if (matchedUser) {
+								mipPicsArray.push(matchedUser[4]); // ユーザーが見つかったら5列目の画像URLを追加
+							}
+						}
+					}
+					setMipPics(mipPicsArray); // 複数のMIP写真URLをセット
+					setIconSize(calcIconSize(mipPicsArray.length));
 				}
 			}
 		} catch (error) {
@@ -72,14 +90,47 @@ export default function Video() {
 			setEvent(matchedEvent); // マッチしたイベントを設定
 			// console.log(matchedEvent);
 			if(matchedEvent.length > 0){
-				const matchedUser = (users as string[][]).find(user => user[1] === matchedEvent[5]);
-				setMipPic(matchedUser ? matchedUser[4] : '');
-				// console.log(matchedUser);
+				const mipPicsArray: string[] = [];
+				const userColumns = [5, 17, 18, 19, 20]; // ユーザー名が格納されている列のインデックス
+				for (const columnIndex of userColumns) {
+					const userName = matchedEvent[columnIndex];
+					if (userName) { // ユーザー名が存在する場合のみ検索
+						const matchedUser = (users as string[][]).find(user => user[1] === userName);
+						if (matchedUser) {
+							mipPicsArray.push(matchedUser[4]); // ユーザーが見つかったら5列目の画像URLを追加
+						}
+					}
+				}
+				setMipPics(mipPicsArray); // 複数のMIP写真URLをセット
+				// ページ変更時や初回ロード時にアイコンサイズを再計算
+				const calculatedIconSize = calcIconSize(mipPicsArray.length);
+				setIconSize(calculatedIconSize);
+
 			} else {
-				setMipPic('');
+				setMipPics([]);
 			}
 		}
 	}, [actDate]);
+
+
+	useEffect(() => {
+	}, [currentPage]); // currentPage が変更されたときに再計算
+
+	const calcIconSize = (mipNum:number):number => {
+		switch (mipNum){
+			case 1:
+				return 56;
+			case 2:
+				return 48;
+			case 3:
+				return 36;
+			case 4:
+				return 28;
+			case 5:
+				return 28;
+		}
+		return 56;
+	}
 
 	const fetchShootLog = async (actDate: string) => {
 		try {
@@ -165,11 +216,19 @@ export default function Video() {
 								</TableHead>
 								< TableBody sx={{ borderBottom: 'none' }}> {/* TableBodyの下線 */}
 									< TableRow sx={{ borderBottom: 'none' }}>
-										<TableCell align="center" style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', borderBottom: 'none' }}> {/* TableCellの下線 */}
-											<AvatarIcon picUrl={mipPic} name={event[5]} width={56} height={56}></AvatarIcon>
-											<Typography variant="caption" style={{ padding: '3px', fontWeight: 'bold', color: '#333', textAlign: 'center' }}>
-												{event[5]}
-											</Typography>
+										<TableCell align="center" style={{ display: 'flex', flexDirection: 'row', justifyContent: 'center', borderBottom: 'none' }}> {/* TableCellの下線 */}
+											{mipPics.slice(0, 5).map((picUrl, index) => {
+												const userNameColumns = [5, 17, 18, 19, 20]; // 対応するユーザー名の列インデックス
+												const userName = event[userNameColumns[index]]; // indexに対応する列からユーザー名を取得
+												return picUrl ? (
+													<div key={index} style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', margin: '0 10px' }}>
+														<AvatarIcon picUrl={picUrl} name={userName} width={iconSize} height={iconSize} /> {/* iconSize stateを使用 */}
+														<Typography variant="caption" style={{ padding: '3px', fontWeight: 'bold', color: '#333', textAlign: 'center' }}>
+															{userName}
+														</Typography>
+													</div>
+												) : null;
+											})}
 										</TableCell>
 									</TableRow>
 									< TableRow sx={{ borderBottom: 'none' }}> {/* TableRowの下線 */}
