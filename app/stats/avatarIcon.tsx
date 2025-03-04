@@ -66,14 +66,14 @@ export default function AvatarIcon(avatarIconProps: AvatarIconProps) {
           {(showName && avatarIconProps.showTooltip) && (
             <Box
                 sx={{
-                position: 'absolute', 
-                top: 0,
-                right: 0,
-                left: 'auto',
-                transform: 'translateX(0)',
+                position: 'absolute',
+                bottom: '100%', // アバターの上に表示
+                left: '50%',   // 水平方向中央に配置
+                transform: 'translateX(-50%)', // 水平方向中央に配置
                 backgroundColor: 'rgba(255, 255, 255, 0.7)', // 背景を半透明に
-                padding: '2px 5px', 
-                borderRadius: '4px' 
+                padding: '2px 5px',
+                borderRadius: '4px',
+                whiteSpace: 'nowrap', // 日本語が縦に並ぶのを防ぐ
             }}>
                 {avatarIconProps.name}
             </Box>

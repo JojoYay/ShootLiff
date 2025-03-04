@@ -290,12 +290,11 @@ export default function Video() {
 					`}
 					</style>
 					<img
-					src="https://lh3.googleusercontent.com/d/18Y61mZsKy4WnRgN8qxsczpnlWI2k6NOh"
+					src="https://lh3.googleusercontent.com/d/1THCGfK2zDU5Vp1dAMgew8VTFV1soE-x7"
 					alt="ローディング"
 					style={{
 						width: '48px',  // サイズ調整
 						height: '48px', // サイズ調整
-						borderRadius: '50%', // 画像を丸くする
 						animation: 'spin 2s linear infinite', // アニメーション
 					}}
 					/>
