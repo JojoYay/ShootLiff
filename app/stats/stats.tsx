@@ -2,7 +2,7 @@
 import { useLiff } from '@/app/liffProvider';
 import { Profile } from '@liff/get-profile';
 import { useEffect, useState } from 'react';
-import { Card, CardContent, CardHeader, CircularProgress, Grid, Table, TableBody, TableCell, TableContainer, TableRow, } from '@mui/material';
+import { Card, CardContent, CardHeader, Box, Grid, Table, TableBody, TableCell, TableContainer, TableRow, } from '@mui/material';
 import AvatarIcon from './avatarIcon';
 
 interface ProfileDen {
@@ -16,43 +16,38 @@ export default function Stats() {
 	const [statsTable, setStatsTable] = useState<StatsData[]>([]);
 	const [users, setUsers] = useState<string[][] | null>(null);
 
-	const [lang, setLang] = useState<string>('ja');
+	const [lang, setLang] = useState<string>('ja-JP');
 	const [gRanking, setGRanking] = useState<RankingData[]>([]);
 	const [aRanking, setARanking] = useState<RankingData[]>([]);
 	const [oRanking, setORanking] = useState<RankingData[]>([]);
 
 	const [eventResult, setEventResult] = useState<any[][]>([]);
 	const [profile, setProfile] = useState<ProfileDen | null>(null);
-	// const [loading, setLoading] = useState(false);
-	// const [result, setResult] = useState('');
 	const { liff } = useLiff();
 
-	if (liff) {
-		liff.ready.then(() => {
-			if (!liff.isLoggedIn()) {
-				liff.login({ redirectUri: window.location.href });
-				setLang(liff?.getLanguage());
-			}
-		})
-	}
-
-	useEffect(() => {
-		console.log("Liff login (register page)");
-		if (liff?.isLoggedIn()) {
-			(async () => {
-				const prof = await liff.getProfile();
-				if (prof) {
-					const profDen = { lineProfile: prof, densukeName: '', trophy: false };
-					setProfile(profDen);
-				}
-			})();
-		}
-	}, [liff]);
+    useEffect(() => {
+        if (liff) {
+            liff.ready.then(() => {
+                if (!liff.isLoggedIn()) {
+                    const redirectUri = new URL(window.location.href).href;
+                    liff.login({ redirectUri: redirectUri });
+                } else {
+                    liff.getProfile().then(profile => {
+						if (profile) {
+							const profDen = { lineProfile: profile, densukeName: '', trophy: false };
+							setProfile(profDen);
+						}
+                        setLang(liff.getLanguage());
+						console.log(liff.getLanguage());
+                    });
+                }
+            });
+        }
+    }, [liff]);
 
 	useEffect(() => {
 		fetchData();
-	}, []);
-
+	}, [lang]);
 
 	useEffect(() => {
 		if (users && profile && !profile?.densukeName) {
@@ -75,23 +70,23 @@ export default function Stats() {
 				let nextAssist = !nextAssistRow ? '--' : nextAssistRow[6] - yourResult[6];
 				let nextOkamoto = !nextOkamotoRow ? '--' : nextOkamotoRow[8] - yourResult[8] +1;
 
-				const siaisanka = lang === 'ja' ? '試合参加数':"No. of Matches";
-				const totalGoals = lang === 'ja' ? '通算ゴール数':"Toal Goals";
-				const totalAssists = lang === 'ja' ? '通算アシスト数':"Total Assists";
-				const goalRanking = lang === 'ja' ? '得点王ランキング':"Top Scorer Ranking";
-				const assistRanking = lang === 'ja' ? 'アシスト王ランキング':"Assist King Ranking";
-				const okamotoRanking = lang === 'ja' ? '岡本カップランキング':"Okamoto Cup Ranking";
-				const okamotoCupDetail = lang === 'ja' ? '岡本カップ詳細':"Okamoto Cup Result";
-				const ichii = lang === 'ja' ? '1位獲得数':"1st Place";
-				const biri = lang === 'ja' ? '最下位獲得数':"Last Place";
-				const okamotoCupResult = lang === 'ja' ? '岡本カップポイント':"Okamoto Point";
-				const nextRankup = lang === 'ja' ? '次のランクアップまで':"Next Rank Up";
-				const tokuten = lang === 'ja' ? '得点':"Goals";
-				const assist = lang === 'ja' ? 'アシスト':"Assists";
-				const okamotoPoint = lang === 'ja' ? '岡本ポイント':"Okamoto Point";
-				const kai =  lang === 'ja' ? '回':"";
-				const ten =  lang === 'ja' ? '点':"";
-				const ee =   lang === 'ja' ? '位':"";
+				const siaisanka = lang === 'ja-JP' ? '試合参加数':"No. of Matches";
+				const totalGoals = lang === 'ja-JP' ? '通算ゴール数':"Toal Goals";
+				const totalAssists = lang === 'ja-JP' ? '通算アシスト数':"Total Assists";
+				const goalRanking = lang === 'ja-JP' ? '得点王ランキング':"Top Scorer Ranking";
+				const assistRanking = lang === 'ja-JP' ? 'アシスト王ランキング':"Assist King Ranking";
+				const okamotoRanking = lang === 'ja-JP' ? '岡本カップランキング':"Okamoto Cup Ranking";
+				const okamotoCupDetail = lang === 'ja-JP' ? '岡本カップ詳細':"Okamoto Cup Result";
+				const ichii = lang === 'ja-JP' ? '1位獲得数':"1st Place";
+				const biri = lang === 'ja-JP' ? '最下位獲得数':"Last Place";
+				const okamotoCupResult = lang === 'ja-JP' ? '岡本カップポイント':"Okamoto Point";
+				const nextRankup = lang === 'ja-JP' ? '次のランクアップまで':"Next Rank Up";
+				const tokuten = lang === 'ja-JP' ? '得点':"Goals";
+				const assist = lang === 'ja-JP' ? 'アシスト':"Assists";
+				const okamotoPoint = lang === 'ja-JP' ? '岡本ポイント':"Okamoto Point";
+				const kai =  lang === 'ja-JP' ? '回':"";
+				const ten =  lang === 'ja-JP' ? '点':"";
+				const ee =   lang === 'ja-JP' ? '位':"";
 				
 				let statsTable: StatsData[] = [
 					createData(siaisanka, yourResult[2] + '/'+yourResult[11]+kai),
@@ -123,6 +118,7 @@ export default function Stats() {
 			if (rankRow[0] === '' || rankRow[0] === '伝助名称' || rankRow[3] == 0) {
 				continue;
 			}
+			console.log("lang "+lang);
 			let rank: RankingData = createRanking(
 				chooseMedal(rankRow[1]),
 				translatePlace(rankRow[1], lang),
@@ -150,14 +146,14 @@ export default function Stats() {
 	}
 
 	const translatePlace = (place: string, lang: string): string => {
-		if (place === '1') {
-			return lang !== 'ja' ? '1st' : '1位';
-		} else if (place === '2') {
-			return lang !== 'ja' ? '2nd' : '2位';
-		} else if (place === '3') {
-			return lang !== 'ja' ? '3rd' : '3位';
+		if (place.toString() === '1') {
+			return lang !== 'ja-JP' ? '1st' : '1位';
+		} else if (place.toString() === '2') {
+			return lang !== 'ja-JP' ? '2nd' : '2位';
+		} else if (place.toString() === '3') {
+			return lang !== 'ja-JP' ? '3rd' : '3位';
 		} else {
-			return lang !== 'ja' ? place + 'th' : place + '位';
+			return lang !== 'ja-JP' ? place + 'th' : place + '位';
 		}
 	}
 
@@ -185,8 +181,8 @@ export default function Stats() {
 				console.log(data);
 				setUsers(data.users);
 				setEventResult(data.stats);
-				const kai =  lang === 'ja' ? '回':"";
-				const ten =  lang === 'ja' ? '点':"";
+				const kai =  lang === 'ja-JP' ? '回':"";
+				const ten =  lang === 'ja-JP' ? '点':"";
 
 				setGRanking(genarateRanking(data.gRank, data.users, ten));
 				setARanking(genarateRanking(data.aRank, data.users, kai));
@@ -508,26 +504,30 @@ export default function Stats() {
 					</Grid>
 				</>
 			) : (
-				<div style={{ display: 'flex', flexDirection: 'column', justifyContent: 'center', alignItems: 'center', height: '100vh' }}>
-					<style>
-					{`
-						@keyframes spin {
-						0% { transform: rotate(0deg); }
-						100% { transform: rotate(360deg); }
-						}
-					`}
-					</style>
-					<img
-					src="https://lh3.googleusercontent.com/d/18Y61mZsKy4WnRgN8qxsczpnlWI2k6NOh"
-					alt="ローディング"
-					style={{
-						width: '48px',  // サイズ調整
-						height: '48px', // サイズ調整
-						borderRadius: '50%', // 画像を丸くする
-						animation: 'spin 2s linear infinite', // アニメーション
-					}}
-					/>
-				</div>
+<Box sx={{
+                    display: 'flex',
+                    flexDirection: 'column',
+                    justifyContent: 'center',
+                    alignItems: 'center',
+                    height: '100vh'
+                }}>
+					<Box sx={{
+                        '@keyframes spin': {
+                            '0%': { transform: 'rotate(0deg)' },
+                            '100%': { transform: 'rotate(360deg)' },
+                        },
+                    }}>
+                        <img
+                            src="https://lh3.googleusercontent.com/d/1THCGfK2zDU5Vp1dAMgew8VTFV1soE-x7"
+                            alt="ローディング"
+                            style={{
+                                width: '48px',
+                                height: '48px',
+                                animation: 'spin 2s linear infinite',
+                            }}
+                        />
+                    </Box>
+				</Box>
 			)}
 		</>
 	);

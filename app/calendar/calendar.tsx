@@ -21,6 +21,7 @@ import {
 import { useLiff } from '../liffProvider';
 import { ChevronLeft, ChevronRight, ExpandMore, ExpandLess} from '@mui/icons-material';
 import AvatarIcon from '../stats/avatarIcon';
+import CalendarGrid from './calendarGrid';
 
 interface Profile {
     userId: string;
@@ -183,7 +184,7 @@ function generateCalendar(date: Date, calendarEvents: CalendarEvent[], attendanc
         while (calendarDays.length < 6) {
             calendarDays.push(Array(7).fill(''));
         }
-        console.log(calendarDays);
+        // console.log(calendarDays);
         return calendarDays;
     }
     // 日付とイベントIDに該当する参加ステータスを取得する関数
@@ -244,7 +245,7 @@ function generateCalendar(date: Date, calendarEvents: CalendarEvent[], attendanc
                     method: 'GET',
                 });
                 const data = await response.json();
-                console.log('Calendar Events:', data);
+                // console.log('Calendar Events:', data);
                 let processedCalendarEvents: CalendarEvent[] = data.calendar.slice(1).map((item: string[]) => ({
                     ID: item[0],
                     event_type: item[1],
@@ -275,7 +276,7 @@ function generateCalendar(date: Date, calendarEvents: CalendarEvent[], attendanc
                 setAttendance(fetchedAttendance);
 
             }
-            console.log('calendar loaded with attendance');
+            // console.log('calendar loaded with attendance');
         } catch (error) {
             console.error('Error fetching calendar events:', error);
         }
@@ -324,8 +325,8 @@ function generateCalendar(date: Date, calendarEvents: CalendarEvent[], attendanc
     const handleSaveParticipation = async () => {
         try {
             setIsSaving(true); // 保存処理開始時にボタンを無効化
-            console.log('handleSavePaticipation');
-            console.log(pendingParticipationStatus);
+            // console.log('handleSavePaticipation');
+            // console.log(pendingParticipationStatus);
             let url = process.env.SERVER_URL;
             if (url && profile) {
                 const formData = new FormData();
@@ -707,156 +708,8 @@ function generateCalendar(date: Date, calendarEvents: CalendarEvent[], attendanc
                         </Grid>
 
                         {/* カレンダーグリッド */}
-                        <Grid item xs={12}>
-                            <Grid container>
-                                {daysOfWeek.map((dayOfWeek, index) => (
-                                    <Grid item xs={12/7} key={index} p={1} bgcolor={'#bbdefb'} style={{ textAlign: 'center', border: '1px solid #ccc' }}>
-                                        <Typography variant="body1" style={{ color: '#3f51b5', fontWeight: 'bold' }}>{dayOfWeek}</Typography>
-                                    </Grid>
-                                ))}
-                            </Grid>
-                            <Grid container>
-                                {/* 日付表示 */}
-                                {calendar.map((week, weekIndex) => (
-                                    <Grid container key={weekIndex}>
-                                        {week.map((dayData, dayIndex) => {
-                                            const isWeekend = dayIndex === 0 || dayIndex === 6; // 0: Sunday, 6: Saturday
-                                            const isCurrentDay = typeof dayData === 'object' && dayData.day === new Date().getDate() && currentDate.getMonth() === new Date().getMonth() && currentDate.getFullYear() === new Date().getFullYear();
-                                            let backgroundColor = 'transparent';
-                                            // if (isWeekend) {
-                                            //     backgroundColor = '#ffebee'; // 薄い赤色
-                                            // }
-                                            if (isCurrentDay) {
-                                                backgroundColor = '#e0f7fa'; // 現在の日の色
-                                            }
+                        <CalendarGrid calendar={calendar} daysOfWeek={daysOfWeek} currentDate={currentDate} BALL={BALL} BEER={BEER} />
 
-                                            return (
-                                                <Grid item xs={12/7} key={dayIndex} sx={{
-                                                    textAlign: 'center',
-                                                    border: '1px solid #ccc',
-                                                    minHeight: '60px',
-                                                    display: 'flex',
-                                                    flexDirection: 'column',
-                                                    alignItems: 'center',
-                                                    backgroundColor: backgroundColor // 背景色を適用
-                                                }}>
-                                                    <Typography variant="body1" color={isCurrentDay ? '#f44336' : '#555'} fontWeight={isCurrentDay ? 'bold' : 'normal'}>{typeof dayData === 'object' ? dayData.day : dayData}</Typography>
-                                                    {typeof dayData === 'object' && dayData.events.length > 0 && dayData.events.map((event, eventIndex) => ( // dayData.events を表示
-                                                        <Box key={eventIndex} sx={{ marginTop: '5px', display: 'flex', alignItems: 'center'} }>
-                                                            {event.event_type === 'フットサル' && (
-                                                                <img src={BALL} alt="フットサル" width={28} height={28} />
-                                                            )}
-                                                            {event.event_type === '飲み会' && (
-                                                                <img src={BEER} alt="飲み会" width={28} height={28} />
-                                                            )}
-                                                        </Box>
-                                                    ))}
-                                                </Grid>
-                                            );
-                                        })}
-                                    </Grid>
-                                ))}
-                            </Grid>
-                        </Grid>
-                        <Grid item xs={12}>
-                            <Box textAlign="center" m={'8px'} p={'8px'} sx={{ display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-                                <Typography variant="h6" component="div" sx={{ textAlign: 'center', color: '#3f51b5', fontWeight: 'bold' }}> 
-                                    {lang === 'ja-JP' ? '出席データ' : 'Attendance Data'}
-                                </Typography>
-                                {Object.keys(pendingParticipationStatus).length > 0 && <SaveButton />}
-                            </Box>
-                            
-                            <Grid container spacing={2}>
-                                {calendar.map((week, weekIndex) => (
-                                    <Grid container key={weekIndex}>
-                                        {week.map((dayData, dayIndex) => (
-                                            <>
-                                                {typeof dayData === 'object' && dayData.events.length > 0 && dayData.events.map((calendar, index) => (
-                                                    <Grid item xs={12} sm={6} md={4} key={index} sx={{border: '1px solid #eee', backgroundColor: '#fffde7', borderRadius: '8px', padding:'5px' }}>
-                                                        <Box sx={{ margin:'5px', display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
-                                                            <Box sx={{ display: 'flex', alignItems: 'center' }}>
-                                                                {calendar.event_type === 'フットサル' && (
-                                                                    <img src={BALL} alt="フットサル" width={28} height={28} style={{margin:'5px'}} />
-                                                                )}
-                                                                {calendar.event_type === '飲み会' && (
-                                                                    <img src={BEER} alt="飲み会" width={28} height={28} style={{margin:'5px'}} />
-                                                                )}
-                                                                <Typography variant="h6" sx={{ margin:'5px', color: '#757575', minWidth:'155px'}}>
-                                                                    {new Date(calendar.start_datetime).toLocaleDateString(lang, { year: 'numeric', month: '2-digit', day: '2-digit', hour:'2-digit',minute:'2-digit',hour12:false }).replace(/-/g,'/')}
-                                                                </Typography>
-                                                                <FormControl size="small" >
-                                                                    <InputLabel id="status-select-label">参加可否</InputLabel>
-                                                                    <Select
-                                                                        labelId="status-select-label"
-                                                                        id="status-select"
-                                                                        value={calendar.attendance?.status || ''}
-                                                                        label={lang === 'ja-JP' ? 'ステータス' : 'Status'}
-                                                                        onChange={(e) => {
-                                                                            if(calendar.ID){
-                                                                                handleParticipationChange(calendar, e.target.value as '〇' | '△' | '×', profile?.userId);
-                                                                                if(calendar.attendance){
-                                                                                    calendar.attendance.status = e.target.value as '〇' | '△' | '×';
-                                                                                }
-                                                                            }
-                                                                        }}
-                                                                    >
-                                                                        <MenuItem value={'〇'}>〇</MenuItem>
-                                                                        <MenuItem value={'△'}>△</MenuItem>
-                                                                        <MenuItem value={'×'}>×</MenuItem>
-                                                                    </Select>
-                                                                </FormControl>
-                                                            </Box>
-                                                            <IconButton // トグルボタン
-                                                                aria-label="expand"
-                                                                size="small"
-                                                                onClick={() => handleToggleDetails(calendar.ID)}
-                                                            >
-                                                                {expandedEventDetails[calendar.ID] ? <ExpandLess /> : <ExpandMore />}
-                                                            </IconButton>
-                                                        </Box>
-                                                        <Collapse in={expandedEventDetails[calendar.ID]} timeout="auto" unmountOnExit>
-                                                            <Box sx={{ m: '5px' }}>
-                                                                <Typography variant="body1" style={{ color: '#757575' }}>{calendar.event_name}</Typography>
-                                                                <Typography variant="body1" style={{ color: '#757575' }}>{calendar.place}</Typography>
-                                                                <Typography variant="body1" style={{ color: '#757575' }}>{calendar.remark}</Typography>
-                                                            </Box>
-                                                            <Box sx={{ m: '5px', display: 'flex', flexDirection: 'column' }}>
-                                                                <Typography variant="subtitle2" style={{ color: '#757575', fontWeight: 'bold' }}>{lang === 'ja-JP' ? '参加者' : 'Attendees'}:
-                                                                    <Typography variant="caption" style={{ color: '#757575', fontWeight: 'normal' }}> ({calendar.attendances?.filter(att => att.status === '〇').length || 0})</Typography>
-                                                                </Typography>
-                                                                <Box sx={{ display: 'flex', flexWrap: 'wrap', mb: 1 }}>
-                                                                    {calendar.attendances?.filter(att => att.status === '〇').map((attend, index) => (
-                                                                        <AvatarIcon key={index} name={attend.profile?.displayName || ''} picUrl={attend.profile?.pictureUrl}  width={24} height={24} showTooltip={true} />
-                                                                    ))}
-                                                                </Box>
-
-                                                                <Typography variant="subtitle2" style={{ color: '#757575', fontWeight: 'bold' }}>{lang === 'ja-JP' ? '保留' : 'Pending'}:
-                                                                    <Typography variant="caption" style={{ color: '#757575', fontWeight: 'normal' }}> ({calendar.attendances?.filter(att => att.status === '△').length || 0})</Typography>
-                                                                </Typography>
-                                                                <Box sx={{ display: 'flex', flexWrap: 'wrap', mb: 1 }}>
-                                                                    {calendar.attendances?.filter(att => att.status === '△').map((attend, index) => (
-                                                                        <AvatarIcon key={index} name={attend.profile?.displayName || ''} picUrl={attend.profile?.pictureUrl}  width={24} height={24} showTooltip={true} />
-                                                                    ))}
-                                                                </Box>
-
-                                                                <Typography variant="subtitle2" style={{ color: '#757575', fontWeight: 'bold' }}>{lang === 'ja-JP' ? '不参加' : 'Absent'}:
-                                                                    <Typography variant="caption" style={{ color: '#757575', fontWeight: 'normal' }}> ({calendar.attendances?.filter(att => att.status === '×').length || 0})</Typography>
-                                                                </Typography>
-                                                                <Box sx={{ display: 'flex', flexWrap: 'wrap' }}>
-                                                                    {calendar.attendances?.filter(att => att.status === '×').map((attend, index) => (
-                                                                        <AvatarIcon key={index} name={attend.profile?.displayName || ''} picUrl={attend.profile?.pictureUrl}  width={24} height={24} showTooltip={true} />
-                                                                    ))}
-                                                                </Box>
-                                                            </Box>
-                                                        </Collapse>
-                                                    </Grid>
-                                                ))}
-                                            </>
-                                        ))}
-                                    </Grid>
-                                ))}
-                            </Grid>
-                        </Grid>
                     </Grid>
                 </>
             ) : (
