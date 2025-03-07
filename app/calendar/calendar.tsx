@@ -87,10 +87,11 @@ export default function Calendar() {
     }, [liff]);
 
     const [currentDate, setCurrentDate] = useState<Date>(new Date()); // MUI Scheduler用 state
-    const daysOfWeek = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
+    const daysOfWeek = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'];
     const [calendar, setCalendar] = useState<(string | { day: number, events: CalendarEvent[] })[][]>([]);
     const BALL:string = 'https://lh3.googleusercontent.com/d/1_snlf9rvRFpCg0nx4NlW57Z9PaGcPIn-';
     const BEER:string = 'https://lh3.googleusercontent.com/d/1XrzK_UDQHB25toU-Zg0dXauXbLF-AV1T';
+    const LOGO:string = 'https://lh3.googleusercontent.com/d/1584yt922MfDFclQ9XX0MvtN91KhmQdu2';
     const [expandedEventDetails, setExpandedEventDetails] = useState<{[eventId: string]: boolean}>({});
     const [isRegistering, setIsRegistering] = useState(false);
 
@@ -115,26 +116,26 @@ export default function Calendar() {
         setCurrentDate(newDate);
     };
 
-// generateCalendar関数内のイベント生成部分を修正
-function generateCalendar(date: Date, calendarEvents: CalendarEvent[], attendance: Attendance[], userId: string | null | undefined) {
+    // generateCalendar関数内のイベント生成部分を修正
+    function generateCalendar(date: Date, calendarEvents: CalendarEvent[], attendance: Attendance[], userId: string | null | undefined) {
         const year = date.getFullYear();
         const month = date.getMonth();
-        const firstDayOfMonth = new Date(year, month, 1); // 月の最初の日
-        const lastDayOfMonth = new Date(year, month + 1, 0); // 月の最後の日
-        const firstDayOfWeek = firstDayOfMonth.getDay(); // 月の最初の日の曜日 (0:日曜, 6:土曜)
-        const daysInMonth = lastDayOfMonth.getDate(); // 月の日数
+        const firstDayOfMonth = new Date(year, month, 1);
+        const lastDayOfMonth = new Date(year, month + 1, 0);
+        const firstDayOfWeek = (firstDayOfMonth.getDay() + 6) % 7;
+        const daysInMonth = lastDayOfMonth.getDate();
         const calendarDays: (string | { day: number, events: CalendarEvent[] })[][] = [];
         let week: (string | { day: number, events: CalendarEvent[] })[] = [];
+
         // 先月の日付を埋める
         for (let i = 0; i < firstDayOfWeek; i++) {
             week.push('');
         }
-
         // 今月の日付を埋める
         for (let day = 1; day <= daysInMonth; day++) {
             const calendarDate = new Date(year, month, day);
-            let dayEvents: CalendarEvent[] = []; // この日のイベントを格納する配列
-            calendarEvents.forEach((event, index) => {
+            let dayEvents: CalendarEvent[] = [];
+            calendarEvents.forEach((event) => {
                 const eventStartDate = new Date(event.start_datetime);
                 if (eventStartDate.getDate() === day && eventStartDate.getMonth() === month && eventStartDate.getFullYear() === year) {
                     const pendingStatus = pendingParticipationStatus[event.ID];
@@ -161,10 +162,9 @@ function generateCalendar(date: Date, calendarEvents: CalendarEvent[], attendanc
                     dayEvents.push(newEvent);
                 }
             });
-                // const dayAttendanceStatus = getAttendanceForDay(calendarDate, attendance, userId); // 参加ステータスを取得
-            week.push({ day: day, events: dayEvents }); // イベントリストを格納
+            week.push({ day: day, events: dayEvents });
             if (week.length === 7) {
-                calendarDays.push([...week]); // 週のコピーを追加
+                calendarDays.push([...week]);
                 week = [];
             }
         }
@@ -176,13 +176,12 @@ function generateCalendar(date: Date, calendarEvents: CalendarEvent[], attendanc
         if (week.length > 0) {
             calendarDays.push(week);
         }
-        // 6週分の行数を確保
         while (calendarDays.length < 6) {
             calendarDays.push(Array(7).fill(''));
         }
-        // console.log(calendarDays);
         return calendarDays;
     }
+
     // 日付とイベントIDに該当する参加ステータスを取得する関数
     function getAttendanceForDayAndEvent(date: Date, attendance: Attendance[], eventId: string, userId: string | undefined | null): Attendance | null {
         const year = date.getFullYear();
@@ -522,7 +521,21 @@ function generateCalendar(date: Date, calendarEvents: CalendarEvent[], attendanc
         
     };
 
-
+    function renderRemarkWithLinks(remark: string) {
+        const urlRegex = /(https?:\/\/[^\s]+)/g;
+        const parts = remark.split(urlRegex);
+    
+        return parts.map((part, index) => {
+            if (urlRegex.test(part)) {
+                return (
+                    <a key={index} href={part} target="_blank" rel="noopener noreferrer" style={{ color: '#1e88e5' }}>
+                        {part}
+                    </a>
+                );
+            }
+            return part;
+        });
+    }
 
     return (
         <>
@@ -571,6 +584,9 @@ function generateCalendar(date: Date, calendarEvents: CalendarEvent[], attendanc
                                                     {nextEvent.event_type === '飲み会' && (
                                                         <img src={BEER} alt="飲み会" width={32} height={32} />
                                                     )}
+                                                    {nextEvent.event_type === 'いつもの' && (
+                                                        <img src={LOGO} alt="いつもの" width={32} height={32} />
+                                                    )}
                                                 </Box>
                                                 <Box sx={{ flex: 1 }}>
                                                     <Typography variant="subtitle1" sx={{ color: '#424242' }}>
@@ -584,7 +600,9 @@ function generateCalendar(date: Date, calendarEvents: CalendarEvent[], attendanc
                                                     <Typography variant="body1" sx={{ color: '#424242', mb: 2 }}>
                                                         {nextEvent.event_name} @ {nextEvent.place}
                                                     </Typography>
-
+                                                    <Typography variant="body1" style={{ color: '#757575', wordBreak: 'break-word', whiteSpace: 'pre-wrap' }}>
+                                                        {renderRemarkWithLinks(nextEvent.remark)}
+                                                    </Typography>
                                                     {/* 参加者選択コンボボックス（代理返信モード時のみ表示） */}
                                                     {isProxyReplyMode && (
                                                         <FormControl fullWidth margin="dense" size="small">
@@ -759,7 +777,7 @@ function generateCalendar(date: Date, calendarEvents: CalendarEvent[], attendanc
                         </Grid>
 
                         {/* カレンダーグリッド */}
-                        <CalendarGrid calendar={calendar} daysOfWeek={daysOfWeek} currentDate={currentDate} BALL={BALL} BEER={BEER} />
+                        <CalendarGrid calendar={calendar} daysOfWeek={daysOfWeek} currentDate={currentDate} BALL={BALL} BEER={BEER} LOGO={LOGO} />
 
                         <Grid item xs={12}>
                             <Box textAlign="center" m={'8px'} p={'8px'} sx={{ display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
@@ -783,6 +801,9 @@ function generateCalendar(date: Date, calendarEvents: CalendarEvent[], attendanc
                                                                 )}
                                                                 {calendar.event_type === '飲み会' && (
                                                                     <img src={BEER} alt="飲み会" width={28} height={28} style={{margin:'5px'}} />
+                                                                )}
+                                                                {calendar.event_type === 'いつもの' && (
+                                                                    <img src={LOGO} alt="いつもの" width={28} height={28} style={{margin:'5px'}} />
                                                                 )}
                                                                 <Typography variant="h6" sx={{ margin:'5px', color: '#757575', minWidth:'155px'}}>
                                                                     {new Date(calendar.start_datetime).toLocaleDateString(lang, { year: 'numeric', month: '2-digit', day: '2-digit', hour:'2-digit',minute:'2-digit',hour12:false }).replace(/-/g,'/')}
@@ -821,7 +842,9 @@ function generateCalendar(date: Date, calendarEvents: CalendarEvent[], attendanc
                                                             <Box sx={{ m: '5px' }}>
                                                                 <Typography variant="body1" style={{ color: '#757575' }}>{calendar.event_name}</Typography>
                                                                 <Typography variant="body1" style={{ color: '#757575' }}>{calendar.place}</Typography>
-                                                                <Typography variant="body1" style={{ color: '#757575' }}>{calendar.remark}</Typography>
+                                                                <Typography variant="body1" style={{ color: '#757575', wordBreak: 'break-word', whiteSpace: 'pre-wrap' }}>
+                                                                    {renderRemarkWithLinks(calendar.remark)}
+                                                                </Typography>
                                                             </Box>
                                                             <Box sx={{ m: '5px', display: 'flex', flexDirection: 'column' }}>
                                                                 <Typography variant="subtitle2" style={{ color: '#757575', fontWeight: 'bold' }}>{lang === 'ja-JP' ? '参加者' : 'Attendees'}:

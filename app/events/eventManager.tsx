@@ -29,7 +29,7 @@ import { DatePicker, TimePicker } from '@mui/x-date-pickers';
 
 interface Event {
     id: string;
-    event_type: 'フットサル' | '飲み会';
+    event_type: 'フットサル' | '飲み会' | 'いつもの';
     event_name: string;
     start_datetime: string;
     end_datetime: string;
@@ -45,6 +45,7 @@ export default function EventManager() {
     const [isLoading, setIsLoading] = useState(true);
     const BALL:string = 'https://lh3.googleusercontent.com/d/1_snlf9rvRFpCg0nx4NlW57Z9PaGcPIn-';
     const BEER:string = 'https://lh3.googleusercontent.com/d/1XrzK_UDQHB25toU-Zg0dXauXbLF-AV1T';
+    const LOGO:string = 'https://lh3.googleusercontent.com/d/1584yt922MfDFclQ9XX0MvtN91KhmQdu2';
     // Form state
     const [formData, setFormData] = useState<Event>({
         id: '',
@@ -238,6 +239,23 @@ export default function EventManager() {
         await updateEventStatus(event, newStatus);
     };
 
+    const handlePresetFill = () => {
+        setFormData({
+            id: '',
+            event_type: 'いつもの',
+            event_name: '日曜定期',
+            start_datetime: new Date(new Date().setHours(7, 0, 0, 0)).toISOString(),
+            end_datetime: new Date(new Date().setHours(9, 0, 0, 0)).toISOString(),
+
+            place: 'Premier Pitch Khalsa',
+            remark: 'https://maps.app.goo.gl/3Zmq48uFkPEvB6cKA',
+            event_status: 0
+        });
+        setSelectedDate(null); // 日付は空欄
+        setStartTime(new Date(new Date().setHours(7, 0, 0, 0)));
+        setEndTime(new Date(new Date().setHours(9, 0, 0, 0)));
+    };
+
     return (
         <Box width={'100%'}>
             <Paper style={{margin:'5px', padding:'5px'}}>
@@ -308,6 +326,9 @@ export default function EventManager() {
                                     {event.event_type === '飲み会' && (
                                         <img src={BEER} alt="飲み会" width={24} height={24} style={{ marginRight: 8 }} />
                                     )}
+                                    {event.event_type === 'いつもの' && (
+                                        <img src={LOGO} alt="いつもの" width={24} height={24} style={{ marginRight: 8 }} />
+                                    )}                                    
                                     <Typography variant="h6" color="text.secondary">
                                         {new Date(event.start_datetime).toLocaleDateString('ja-JP', { year: 'numeric', month: '2-digit', day: '2-digit' })}
                                     </Typography>
@@ -402,9 +423,16 @@ export default function EventManager() {
                 </DialogTitle>
                 <DialogContent>
                     <Grid container spacing={2} sx={{ mt: 1 }}>
+                        {!selectedEvent ? 
+                        <Grid item xs={12}>
+                            <Button variant="contained" onClick={handlePresetFill} fullWidth>
+                                定型入力
+                            </Button>
+                        </Grid>
+                        : null}
                         <Grid item xs={12} sm={6}>
                             <FormControl fullWidth>
-                            <InputLabel id="event-type-select-label">{'イベント種別'}</InputLabel >
+                                <InputLabel id="event-type-select-label">{'イベント種別'}</InputLabel>
                                 <Select
                                     labelId="event-type-select-label"
                                     id="event-type-select"
@@ -417,14 +445,20 @@ export default function EventManager() {
                                             <img src={BALL} alt="フットサル" width={24} height={24} style={{ marginRight: 8 }} />
                                             フットサル
                                         </Box>
-                                    </MenuItem >
+                                    </MenuItem>
                                     <MenuItem value="飲み会">
                                         <Box sx={{ display: 'flex', alignItems: 'center' }}>
                                             <img src={BEER} alt="パーティー" width={24} height={24} style={{ marginRight: 8 }} />
                                             パーティー
                                         </Box>
-                                    </MenuItem >
-                                </Select >
+                                    </MenuItem>
+                                    <MenuItem value="いつもの">
+                                        <Box sx={{ display: 'flex', alignItems: 'center' }}>
+                                            <img src={LOGO} alt="いつもの" width={24} height={24} style={{ marginRight: 8 }} />
+                                            いつもの
+                                        </Box>
+                                    </MenuItem>                                    
+                                </Select>
                             </FormControl>
                         </Grid>
                         <Grid item xs={12} sm={6}>
@@ -445,11 +479,12 @@ export default function EventManager() {
                                             setSelectedDate(newValue);
                                         }
                                     }}
+                                    
                                 />
                             </LocalizationProvider>
                         </Grid>
                         <Grid item xs={12} sm={6}>
-                           <LocalizationProvider dateAdapter={AdapterDateFns} adapterLocale={ja}>
+                            <LocalizationProvider dateAdapter={AdapterDateFns} adapterLocale={ja}>
                                 <TimePicker
                                     label={'開始時間'}
                                     value={startTime}
@@ -462,7 +497,7 @@ export default function EventManager() {
                             </LocalizationProvider>
                         </Grid>
                         <Grid item xs={12} sm={6}>
-                           <LocalizationProvider dateAdapter={AdapterDateFns} adapterLocale={ja}>
+                            <LocalizationProvider dateAdapter={AdapterDateFns} adapterLocale={ja}>
                                 <TimePicker
                                     label={'終了時間'}
                                     value={endTime}
@@ -501,6 +536,7 @@ export default function EventManager() {
                     </Button>
                 </DialogActions>
             </Dialog>
+
         </Box>
     );
 }
