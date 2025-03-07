@@ -21,9 +21,7 @@ import {
     FormControlLabel,
     Switch
 } from '@mui/material';
-import { Add as AddIcon, Edit as EditIcon, Delete as DeleteIcon, SpaceBar } from '@mui/icons-material';
-import { useLiff } from '../liffProvider';
-import { DateTimePicker } from '@mui/x-date-pickers/DateTimePicker';
+import { Add as AddIcon, Edit as EditIcon, Delete as DeleteIcon } from '@mui/icons-material';
 import { LocalizationProvider } from '@mui/x-date-pickers/LocalizationProvider';
 import { AdapterDateFns } from '@mui/x-date-pickers/AdapterDateFns';
 import ja from 'date-fns/locale/ja/index.js';
@@ -31,13 +29,13 @@ import { DatePicker, TimePicker } from '@mui/x-date-pickers';
 
 interface Event {
     id: string;
-    event_type: string;
+    event_type: 'フットサル' | '飲み会';
     event_name: string;
     start_datetime: string;
     end_datetime: string;
     place: string;
     remark: string;
-    recursive_type: number;
+    event_status: number; //0:NYS,10:WIP, 99:completed
 }
 
 export default function EventManager() {
@@ -56,7 +54,7 @@ export default function EventManager() {
         end_datetime: new Date().toISOString(),
         place: '',
         remark: '',
-        recursive_type: 0
+        event_status: 0
     });
     const [selectedDate, setSelectedDate] = useState<Date | null>(new Date());
     const [startTime, setStartTime] = useState<Date | null>(new Date());
@@ -84,7 +82,7 @@ export default function EventManager() {
                     end_datetime: item[4],
                     place: item[5],
                     remark: item[6],
-                    recursive_type: parseInt(item[7])
+                    event_status: parseInt(item[7])
                 }));
                 // 日時順にソート
                 processedEvents.sort((a: Event, b: Event) => {
@@ -110,7 +108,7 @@ export default function EventManager() {
             end_datetime: new Date().toISOString(),
             place: '',
             remark: '',
-            recursive_type: 0
+            event_status: 0
         });
         setSelectedDate(new Date());
         setStartTime(new Date());
@@ -199,6 +197,45 @@ export default function EventManager() {
         } finally {
             setIsSubmitting(false);
         }
+    };
+
+    // Add a function to update the event status
+    const updateEventStatus = async (event: Event, newStatus: number) => {
+        try {
+            setIsSubmitting(true);
+            const formDataToSend = new FormData();
+            formDataToSend.append('func', 'updateEventStatus');
+            formDataToSend.append('id', event.id);
+            formDataToSend.append('new_status', newStatus.toString());
+
+            let url = process.env.SERVER_URL;
+            if (url) {
+                const response = await fetch(url, {
+                    method: 'POST',
+                    body: formDataToSend
+                });
+
+                if (response.ok) {
+                    fetchEvents();
+                }
+            }
+        } catch (error) {
+            console.error('Error updating event status:', error);
+        } finally {
+            setIsSubmitting(false);
+        }
+    };
+
+    // Add a function to handle status change logic
+    const handleStatusChange = async (event: Event, newStatus: number) => {
+        if (newStatus === 20) {
+            // Ensure only one event can have status 20
+            const currentTargetEvent = events.find(e => e.event_status === 20);
+            if (currentTargetEvent) {
+                await updateEventStatus(currentTargetEvent, 10);
+            }
+        }
+        await updateEventStatus(event, newStatus);
     };
 
     return (
@@ -292,6 +329,28 @@ export default function EventManager() {
                                 <Typography variant="body2" component="div">
                                     {event.event_name}
                                 </Typography>
+                                <Box sx={{ width: '8px' }} />
+                                {event.event_type === 'フットサル' && (
+                                    <Typography variant="body2" color="text.secondary" sx={{ marginRight: 2 }}>
+                                    {event.event_status === 0 ? 
+                                        <Box component="span" sx={{ border: '1px solid', borderRadius: '4px', padding: '2px' }}>
+                                            {'集計前'}
+                                        </Box>
+                                    : event.event_status === 10 ? 
+                                        <Box component="span" sx={{ border: '1px solid', borderRadius: '4px', padding: '2px' }}>
+                                            {'集計開始'}
+                                        </Box>
+                                    : event.event_status === 20 ? (
+                                        <Box component="span" sx={{ color: 'orange', border: '1px solid orange', borderRadius: '4px', padding: '2px' }}>
+                                            {'集計対象'}
+                                        </Box>
+                                    ) : event.event_status === 99 ? (
+                                        <Box component="span" sx={{ color: 'grey', border: '1px solid grey', borderRadius: '4px', padding: '2px' }}>
+                                            {'集計完了'}
+                                        </Box>
+                                    ) : null}
+                                </Typography>
+                                )}
                             </Box>
                             {event.place && (
                                 <Typography variant="body2" color="text.secondary">
@@ -302,7 +361,32 @@ export default function EventManager() {
                                 <Typography variant="body2" color="text.secondary">
                                     備考: {event.remark}
                                 </Typography>
-                            )}                            
+                            )}
+                            {event.event_type === 'フットサル' && (
+                                <Box sx={{ display: 'flex', justifyContent: 'flex-end', marginTop: 1 }}>
+                                    {event.event_status !== 20 && (
+                                        <Button
+                                            variant="contained"
+                                            size="small"
+                                            onClick={() => handleStatusChange(event, 20)}
+                                            disabled={isSubmitting || isPastEvent}
+                                            sx={{ marginRight: 1 }}
+                                        >
+                                            集計対象にする
+                                        </Button>
+                                    )}
+                                    {event.event_status === 20 && (
+                                        <Button
+                                            variant="contained"
+                                            size="small"
+                                            onClick={() => handleStatusChange(event, 99)}
+                                            disabled={isSubmitting || isPastEvent}
+                                        >
+                                            集計完了にする
+                                        </Button>
+                                    )}
+                                </Box>
+                            )}
                         </CardContent>
                     </Card>
                     )

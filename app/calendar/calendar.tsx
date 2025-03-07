@@ -22,6 +22,7 @@ import { useLiff } from '../liffProvider';
 import { ChevronLeft, ChevronRight, ExpandMore, ExpandLess} from '@mui/icons-material';
 import AvatarIcon from '../stats/avatarIcon';
 import CalendarGrid from './calendarGrid';
+import RegistrationDialog from './registrationDialog';
 
 interface Profile {
     userId: string;
@@ -69,7 +70,6 @@ export default function Calendar() {
     const [proxyReplyUser, setProxyReplyUser] = useState<Profile | null>(null); // 代理返信ユーザー state
     const [isResetDialogOpen, setIsResetDialogOpen] = useState<boolean>(false); // リセット確認ダイアログ state // 追加
 
-
     useEffect(() => {
         if (liff) {
             liff.ready.then(() => {
@@ -80,24 +80,24 @@ export default function Calendar() {
                     liff.getProfile().then(profile => {
                         setProfile(profile);
                         setLang(liff.getLanguage());
-                        // alert(liff.getLanguage());
-                        // alert(navigator.language);
                     });
                 }
             });
         }
     }, [liff]);
+
     const [currentDate, setCurrentDate] = useState<Date>(new Date()); // MUI Scheduler用 state
     const daysOfWeek = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
-    const [calendar, setCalendar] = useState< (string | { day: number, events: CalendarEvent[] })[][] >([]);
+    const [calendar, setCalendar] = useState<(string | { day: number, events: CalendarEvent[] })[][]>([]);
     const BALL:string = 'https://lh3.googleusercontent.com/d/1_snlf9rvRFpCg0nx4NlW57Z9PaGcPIn-';
     const BEER:string = 'https://lh3.googleusercontent.com/d/1XrzK_UDQHB25toU-Zg0dXauXbLF-AV1T';
-    const [expandedEventDetails, setExpandedEventDetails] = useState<{ [eventId: string]: boolean }>({}); // state for toggle button // 追加
+    const [expandedEventDetails, setExpandedEventDetails] = useState<{[eventId: string]: boolean}>({});
+    const [isRegistering, setIsRegistering] = useState(false);
 
 
     // 月または年が変わったときにカレンダーを再生成
     useEffect(() => {
-        if(calendarEvents.length && attendance.length && profile?.userId){
+        if(profile?.userId){
             setCalendar(generateCalendar(currentDate, calendarEvents, attendance, profile?.userId));
         }
     }, [currentDate, calendarEvents, attendance, profile?.userId]);
@@ -117,16 +117,14 @@ export default function Calendar() {
 
 // generateCalendar関数内のイベント生成部分を修正
 function generateCalendar(date: Date, calendarEvents: CalendarEvent[], attendance: Attendance[], userId: string | null | undefined) {
-
         const year = date.getFullYear();
         const month = date.getMonth();
         const firstDayOfMonth = new Date(year, month, 1); // 月の最初の日
         const lastDayOfMonth = new Date(year, month + 1, 0); // 月の最後の日
         const firstDayOfWeek = firstDayOfMonth.getDay(); // 月の最初の日の曜日 (0:日曜, 6:土曜)
         const daysInMonth = lastDayOfMonth.getDate(); // 月の日数
-        const calendarDays: (string | { day: number, events: CalendarEvent[] })[][] = []; // events を追加
-        let week: (string | { day: number, events: CalendarEvent[] })[] = []; // events を追加
-
+        const calendarDays: (string | { day: number, events: CalendarEvent[] })[][] = [];
+        let week: (string | { day: number, events: CalendarEvent[] })[] = [];
         // 先月の日付を埋める
         for (let i = 0; i < firstDayOfWeek; i++) {
             week.push('');
@@ -136,35 +134,33 @@ function generateCalendar(date: Date, calendarEvents: CalendarEvent[], attendanc
         for (let day = 1; day <= daysInMonth; day++) {
             const calendarDate = new Date(year, month, day);
             let dayEvents: CalendarEvent[] = []; // この日のイベントを格納する配列
-
-        // イベントの処理部分を修正
-        calendarEvents.forEach((event, index) => {
-            const eventStartDate = new Date(event.start_datetime);
-            if (eventStartDate.getDate() === day && eventStartDate.getMonth() === month && eventStartDate.getFullYear() === year) {
-                const pendingStatus = pendingParticipationStatus[event.ID];
-                const existingAttendance = getAttendanceForDayAndEvent(eventStartDate, attendance, event.ID, userId);
-                
-                const newEvent: CalendarEvent = {
-                    ...event,
-                    attendance: pendingStatus ? (existingAttendance ? {
-                        ...existingAttendance,
-                        status: pendingStatus
-                    } : {
-                        attendance_id: '',
-                        user_id: profile?.userId ? profile.userId : '',
-                        year: String(eventStartDate.getFullYear()),
-                        month: String(eventStartDate.getMonth() + 1),
-                        date: String(eventStartDate.getDate()),
-                        calendar_id: event.ID,
-                        status: pendingStatus,
-                        calendar: null,
-                        profile: null
-                    }) : existingAttendance,
-                    attendances: getAllAttendanceForDayAndEvent(eventStartDate, attendance, event.ID, users)
-                };
-                dayEvents.push(newEvent);
-            }
-        });
+            calendarEvents.forEach((event, index) => {
+                const eventStartDate = new Date(event.start_datetime);
+                if (eventStartDate.getDate() === day && eventStartDate.getMonth() === month && eventStartDate.getFullYear() === year) {
+                    const pendingStatus = pendingParticipationStatus[event.ID];
+                    const existingAttendance = getAttendanceForDayAndEvent(eventStartDate, attendance, event.ID, userId);
+                    
+                    const newEvent: CalendarEvent = {
+                        ...event,
+                        attendance: pendingStatus ? (existingAttendance ? {
+                            ...existingAttendance,
+                            status: pendingStatus
+                        } : {
+                            attendance_id: '',
+                            user_id: profile?.userId ? profile.userId : '',
+                            year: String(eventStartDate.getFullYear()),
+                            month: String(eventStartDate.getMonth() + 1),
+                            date: String(eventStartDate.getDate()),
+                            calendar_id: event.ID,
+                            status: pendingStatus,
+                            calendar: null,
+                            profile: null
+                        }) : existingAttendance,
+                        attendances: getAllAttendanceForDayAndEvent(eventStartDate, attendance, event.ID, users)
+                    };
+                    dayEvents.push(newEvent);
+                }
+            });
                 // const dayAttendanceStatus = getAttendanceForDay(calendarDate, attendance, userId); // 参加ステータスを取得
             week.push({ day: day, events: dayEvents }); // イベントリストを格納
             if (week.length === 7) {
@@ -192,7 +188,6 @@ function generateCalendar(date: Date, calendarEvents: CalendarEvent[], attendanc
         const year = date.getFullYear();
         const month = date.getMonth() + 1; // 月は0から始まるため+1
         const day = date.getDate();
-
         const userAttendance = attendance.find(
             (attend) =>
             attend.user_id === userId &&
@@ -245,7 +240,7 @@ function generateCalendar(date: Date, calendarEvents: CalendarEvent[], attendanc
                     method: 'GET',
                 });
                 const data = await response.json();
-                // console.log('Calendar Events:', data);
+                console.log('Calendar Events:', data);
                 let processedCalendarEvents: CalendarEvent[] = data.calendar.slice(1).map((item: string[]) => ({
                     ID: item[0],
                     event_type: item[1],
@@ -254,10 +249,10 @@ function generateCalendar(date: Date, calendarEvents: CalendarEvent[], attendanc
                     end_datetime: item[4],
                     place: item[5],
                     remark: item[6],
-                    recursive_type: item[7],
+                    event_status: item[7],
                 }));
+                // console.log(processedCalendarEvents);
                 setCalendarEvents(processedCalendarEvents);
- 
                 setUsers(data.users.slice(1));
                 const fetchedAttendance = data.attendance.slice(1).map((item: string[]) => {
                     const calendar_id = item[6];
@@ -273,8 +268,8 @@ function generateCalendar(date: Date, calendarEvents: CalendarEvent[], attendanc
                         calendar: relatedCalendarEvent,
                     };
                 });
+                // console.log(fetchedAttendance);
                 setAttendance(fetchedAttendance);
-
             }
             // console.log('calendar loaded with attendance');
         } catch (error) {
@@ -325,40 +320,38 @@ function generateCalendar(date: Date, calendarEvents: CalendarEvent[], attendanc
     const handleSaveParticipation = async () => {
         try {
             setIsSaving(true); // 保存処理開始時にボタンを無効化
-            // console.log('handleSavePaticipation');
-            // console.log(pendingParticipationStatus);
             let url = process.env.SERVER_URL;
             if (url && profile) {
                 const formData = new FormData();
                 formData.append('func', 'updateParticipation');
                 
                 // attendance配列から該当する参加情報を検索するヘルパー関数
-                const findAttendance = (eventId: string, date: Date) => {
+                const findAttendance = (eventId: string, date: Date, userId: string) => {
                     return attendance.find(att => 
                         att.calendar_id === (eventId.includes('_') ? eventId.split('_')[0] : eventId) &&
                         parseInt(att.year) === date.getFullYear() &&
                         parseInt(att.month) === (date.getMonth() + 1) &&
                         parseInt(att.date) === date.getDate() &&
-                        att.user_id === profile.userId
+                        att.user_id === userId
                     );
                 };
-    
+
+                const userIdToUse = proxyReplyUser ? proxyReplyUser.userId : profile.userId;
+
                 Object.entries(pendingParticipationStatus).forEach(([eventId, status], index) => {
                     const eid = eventId.includes('_') ? eventId.split('_')[0] : eventId;
-
-                    // calendarEvents から直接イベントを検索 (修正点)
                     const cal = calendarEvents.find(event => event.ID.toString() === eid);
 
                     if (cal) {
                         const startDate = new Date(cal.start_datetime as string);
-                        const existingAttendance = findAttendance(eventId, startDate);
+                        const existingAttendance = findAttendance(eventId, startDate, userIdToUse);
     
                         formData.append('calendar_id_'+index, eid);
                         formData.append('year_'+index, String(startDate.getFullYear()));
                         formData.append('month_'+index, String(startDate.getMonth() + 1));
                         formData.append('date_'+index, String(startDate.getDate()));
                         formData.append('attendance_id_'+index, existingAttendance?.attendance_id || '');
-                        formData.append('user_id_'+index, profile.userId);
+                        formData.append('user_id_'+index, userIdToUse);
                         formData.append('status_'+index, status);
                     } else {
                         console.error(`Calendar event with ID ${eventId} not found in calendarEvents.`);
@@ -369,7 +362,7 @@ function generateCalendar(date: Date, calendarEvents: CalendarEvent[], attendanc
                     console.log(pair[0] + ', ' + pair[1]);
                 }
 
-                const responses = await Promise.all([ // Promise.allでfetchを実行
+                const responses = await Promise.all([
                     fetch(url, {
                         method: 'POST',
                         body: formData,
@@ -393,6 +386,7 @@ function generateCalendar(date: Date, calendarEvents: CalendarEvent[], attendanc
             setIsSaving(false); // 保存処理完了時にボタンを有効化
         }
     };
+
 
     const handleToggleDetails = (eventId: string) => { // トグルボタンの処理関数 // 追加
         setExpandedEventDetails(prevState => ({
@@ -470,6 +464,65 @@ function generateCalendar(date: Date, calendarEvents: CalendarEvent[], attendanc
             {lang === 'ja-JP' ? '代' : 'P'}
         </Button>
     );
+
+
+    const [showRegistrationDialog, setShowRegistrationDialog] = useState(false);
+    const [nickname, setNickname] = useState('');
+    const [nicknameError, setNicknameError] = useState('');
+
+    useEffect(() => {
+        if (profile && users.length > 0) {
+            const userExists = users.some(user => user[2] === profile.userId);
+            if (!userExists) {
+                setNickname(profile.displayName || '');
+                setShowRegistrationDialog(true);
+            }
+        }
+    }, [profile, users]);
+
+    const handleNicknameChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+        setNickname(e.target.value);
+        setNicknameError('');
+    };
+
+    const handleRegister = () => {
+        try{
+            setIsRegistering(true);
+            const isNameTaken = users.some(user => user[1] === nickname);
+            if (isNameTaken) {
+                setNicknameError('This nickname is already in use.');
+            } else {
+                setIsRegistering(true); // 登録処理開始時にtrueにする
+                const formData = new FormData();
+                formData.append('func', 'registrationFromApp');
+                formData.append('userId', profile?.userId || '');
+                formData.append('nickname', nickname);
+                formData.append('line_name',profile?.displayName || '');
+                formData.append('pic_url', profile?.pictureUrl || '');
+                if(process.env.SERVER_URL){
+                    fetch(process.env.SERVER_URL, {
+                        method: 'POST',
+                        body: formData,
+                    })
+                    .then(response => response.json())
+                    .then(data => {
+                        console.log('Registration successful:', data);
+                        setShowRegistrationDialog(false); // 成功時にダイアログを閉じる
+                        setIsRegistering(false); // 成功時にfalseに戻す
+                    })
+                    .catch(error => {
+                        console.error('Registration failed:', error);
+                        setIsRegistering(false); // エラー時にもfalseに戻す
+                    });
+                }
+            }
+        } finally {
+            setIsRegistering(false);
+        }
+        
+    };
+
+
 
     return (
         <>
@@ -707,7 +760,7 @@ function generateCalendar(date: Date, calendarEvents: CalendarEvent[], attendanc
 
                         {/* カレンダーグリッド */}
                         <CalendarGrid calendar={calendar} daysOfWeek={daysOfWeek} currentDate={currentDate} BALL={BALL} BEER={BEER} />
-                        
+
                         <Grid item xs={12}>
                             <Box textAlign="center" m={'8px'} p={'8px'} sx={{ display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
                                 <Typography variant="h6" component="div" sx={{ textAlign: 'center', color: '#3f51b5', fontWeight: 'bold' }}> 
@@ -834,6 +887,16 @@ function generateCalendar(date: Date, calendarEvents: CalendarEvent[], attendanc
                         />
                     </Box>
 				</Box>
+            )}
+            {showRegistrationDialog && (
+                <RegistrationDialog
+                    nickname={nickname}
+                    onNicknameChange={handleNicknameChange}
+                    onRegister={handleRegister}
+                    nicknameError={nicknameError}
+                    disabledM={isRegistering}
+                    onClose={() => setShowRegistrationDialog(false)} // ダイアログを閉じるための関数を渡す
+                />
             )}
         </>
     );
