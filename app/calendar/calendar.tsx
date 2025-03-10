@@ -23,6 +23,7 @@ import { ChevronLeft, ChevronRight, ExpandMore, ExpandLess} from '@mui/icons-mat
 import AvatarIcon from '../stats/avatarIcon';
 import CalendarGrid from './calendarGrid';
 import RegistrationDialog from './registrationDialog';
+import LoadingSpinner from './loadingSpinner';
 
 interface Profile {
     userId: string;
@@ -38,7 +39,7 @@ interface CalendarEvent {
     end_datetime: string;
     place: string;
     remark: string;
-    recursive_type: number;
+    event_status: number;
     attendance?: Attendance | null;
     attendances?: Attendance[] | [];
 }
@@ -411,29 +412,26 @@ export default function Calendar() {
         </Button>
     );
    
-    // 次回のイベントを取得する関数を追加
-    const getNextEvent = (): CalendarEvent | null => {
+    function getNextEvent(): CalendarEvent | null {
         const now = new Date();
         let nextEvent: CalendarEvent | null = null;
-        let earliestDate: Date | null = null;
-
-        calendarEvents.forEach(event => { // calendarEvents を直接参照するように変更
-            const eventDate = new Date(event.start_datetime);
-            if (eventDate >= now) {
-                if (!earliestDate || eventDate < earliestDate) {
-                    earliestDate = eventDate;
-                    // nextEvent = event;
-                    nextEvent = {
-                        ...event,
-                        attendance: getAttendanceForDayAndEvent(eventDate, attendance, event.ID, profile?.userId), // attendance を追加
-                        attendances: getAllAttendanceForDayAndEvent(eventDate, attendance, event.ID, users)
-                    };
-                }
-            }
-        });
-
+    
+        // Filter out completed events and sort by start date
+        const upcomingEvents = calendarEvents
+            .filter(event => event.event_status !== 99)
+            .sort((a, b) => new Date(a.start_datetime).getTime() - new Date(b.start_datetime).getTime());
+    
+        if (upcomingEvents.length > 0) {
+            const earliestEvent = upcomingEvents[0];
+            nextEvent = {
+                ...earliestEvent,
+                attendance: getAttendanceForDayAndEvent(new Date(earliestEvent.start_datetime), attendance, earliestEvent.ID, profile?.userId),
+                attendances: getAllAttendanceForDayAndEvent(new Date(earliestEvent.start_datetime), attendance, earliestEvent.ID, users)
+            };
+        }
+    
         return nextEvent;
-    };
+    }
 
     const ProxyReplyButton = () => ( // 代理返信モード切り替えボタン
         <Button
@@ -537,6 +535,8 @@ export default function Calendar() {
         });
     }
 
+    const isUserManager = users.some(user => user[2] === profile?.userId && user[3] === '幹事');
+
     return (
         <>
             {(calendarEvents.length > 0 && profile)? (
@@ -572,7 +572,9 @@ export default function Calendar() {
                                                 </Box>
                                                 <Box>
                                                     {Object.keys(pendingParticipationStatus).length > 0 && <SaveButton />}
-                                                    <ProxyReplyButton />
+                                                    {isUserManager && (
+                                                        <ProxyReplyButton />
+                                                    )}
                                                 </Box>
                                             </Box>
 
@@ -589,16 +591,25 @@ export default function Calendar() {
                                                     )}
                                                 </Box>
                                                 <Box sx={{ flex: 1 }}>
-                                                    <Typography variant="subtitle1" sx={{ color: '#424242' }}>
+                                                    <Typography variant="h6" sx={{ color: '#757575', minWidth: '160px'}}>
                                                         {new Date(nextEvent.start_datetime).toLocaleDateString(lang, {
                                                             year: 'numeric',
-                                                            month: 'long',
-                                                            day: 'numeric',
-                                                            weekday: 'long'
+                                                            month: '2-digit',
+                                                            day: '2-digit',
+                                                        }).replace(/-/g, '/')} 
+                                                        {new Date(nextEvent.start_datetime).toLocaleTimeString(lang, {
+                                                            hour: '2-digit',
+                                                            minute: '2-digit',
+                                                            hour12: false
                                                         })}
                                                     </Typography>
-                                                    <Typography variant="body1" sx={{ color: '#424242', mb: 2 }}>
+                                                    <Typography variant="body1" sx={{ color: '#424242' }}>
                                                         {nextEvent.event_name} @ {nextEvent.place}
+                                                    </Typography>
+                                                    <Typography variant="body1" sx={{ color: '#757575'}}>
+                                                        〇: {nextEvent.attendances?.filter(att => att.status === '〇').length || 0}, 
+                                                        △: {nextEvent.attendances?.filter(att => att.status === '△').length || 0}, 
+                                                        ×: {nextEvent.attendances?.filter(att => att.status === '×').length || 0}
                                                     </Typography>
                                                     <Typography variant="body1" style={{ color: '#757575', wordBreak: 'break-word', whiteSpace: 'pre-wrap' }}>
                                                         {renderRemarkWithLinks(nextEvent.remark)}
@@ -805,9 +816,25 @@ export default function Calendar() {
                                                                 {calendar.event_type === 'いつもの' && (
                                                                     <img src={LOGO} alt="いつもの" width={28} height={28} style={{margin:'5px'}} />
                                                                 )}
-                                                                <Typography variant="h6" sx={{ margin:'5px', color: '#757575', minWidth:'155px'}}>
-                                                                    {new Date(calendar.start_datetime).toLocaleDateString(lang, { year: 'numeric', month: '2-digit', day: '2-digit', hour:'2-digit',minute:'2-digit',hour12:false }).replace(/-/g,'/')}
-                                                                </Typography>
+                                                                <Box sx={{ display: 'flex', flexDirection: 'column', margin:'5px' }}>
+                                                                    <Typography variant="h6" sx={{ color: '#757575', minWidth: '160px', mr:'5px'}}>
+                                                                        {new Date(calendar.start_datetime).toLocaleDateString(lang, {
+                                                                            year: 'numeric',
+                                                                            month: '2-digit',
+                                                                            day: '2-digit',
+                                                                        }).replace(/-/g, '/')} 
+                                                                        {new Date(calendar.start_datetime).toLocaleTimeString(lang, {
+                                                                            hour: '2-digit',
+                                                                            minute: '2-digit',
+                                                                            hour12: false
+                                                                        })}
+                                                                    </Typography>
+                                                                    <Typography variant="body2" sx={{ color: '#757575' }}>
+                                                                        〇: {calendar.attendances?.filter(att => att.status === '〇').length || 0}, 
+                                                                        △: {calendar.attendances?.filter(att => att.status === '△').length || 0}, 
+                                                                        ×: {calendar.attendances?.filter(att => att.status === '×').length || 0}
+                                                                    </Typography>
+                                                                </Box>
                                                                 <FormControl size="small" >
                                                                     <InputLabel id="status-select-label">参加可否</InputLabel>
                                                                     <Select
@@ -886,30 +913,7 @@ export default function Calendar() {
                     </Grid>
                 </>
             ) : (
-				<Box sx={{
-                    display: 'flex',
-                    flexDirection: 'column',
-                    justifyContent: 'center',
-                    alignItems: 'center',
-                    height: '100vh'
-                }}>
-					<Box sx={{
-                        '@keyframes spin': {
-                            '0%': { transform: 'rotate(0deg)' },
-                            '100%': { transform: 'rotate(360deg)' },
-                        },
-                    }}>
-                        <img
-                            src="https://lh3.googleusercontent.com/d/1THCGfK2zDU5Vp1dAMgew8VTFV1soE-x7"
-                            alt="ローディング"
-                            style={{
-                                width: '48px',
-                                height: '48px',
-                                animation: 'spin 2s linear infinite',
-                            }}
-                        />
-                    </Box>
-				</Box>
+                <LoadingSpinner />
             )}
             {showRegistrationDialog && (
                 <RegistrationDialog

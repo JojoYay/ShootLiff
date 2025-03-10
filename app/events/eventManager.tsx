@@ -26,6 +26,7 @@ import { LocalizationProvider } from '@mui/x-date-pickers/LocalizationProvider';
 import { AdapterDateFns } from '@mui/x-date-pickers/AdapterDateFns';
 import ja from 'date-fns/locale/ja/index.js';
 import { DatePicker, TimePicker } from '@mui/x-date-pickers';
+import LoadingSpinner from '../calendar/loadingSpinner';
 
 interface Event {
     id: string;
@@ -284,34 +285,11 @@ export default function EventManager() {
                 </Box>
             </Paper>
             {isLoading ? (
-                <Box sx={{
-                    display: 'flex',
-                    flexDirection: 'column',
-                    justifyContent: 'center',
-                    alignItems: 'center',
-                    height: '80vh'
-                }}>
-                    <Box sx={{
-                        '@keyframes spin': {
-                            '0%': { transform: 'rotate(0deg)' },
-                            '100%': { transform: 'rotate(360deg)' },
-                        },
-                    }}>
-                        <img
-                            src="https://lh3.googleusercontent.com/d/1THCGfK2zDU5Vp1dAMgew8VTFV1soE-x7"
-                            alt="ローディング"
-                            style={{
-                                width: '48px',
-                                height: '48px',
-                                animation: 'spin 2s linear infinite',
-                            }}
-                        />
-                    </Box>
-                </Box>
+                <LoadingSpinner />
             ) : (
                 
                 events.map((event) => {
-                    const isPastEvent = new Date(event.end_datetime) < new Date();
+                    const isPastEvent = new Date(event.end_datetime) < new Date() && event.event_status === 99
                     if (!showFinishedEvents && isPastEvent) {
                         return null; // 過去イベントを非表示
                     }
@@ -320,7 +298,7 @@ export default function EventManager() {
                         <CardContent style={{ textAlign: 'left', padding:'3px', margin:'3px' }}>
                             <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
                                 <Box sx={{ display: 'flex', alignItems: 'center' }}>
-                                    {event.event_type === 'フットサル' && (
+                                    {(event.event_type === 'フットサル' || event.event_type === 'いつもの') && (
                                         <img src={BALL} alt="フットサル" width={24} height={24} style={{ marginRight: 8 }} />
                                     )}
                                     {event.event_type === '飲み会' && (
@@ -351,7 +329,7 @@ export default function EventManager() {
                                     {event.event_name}
                                 </Typography>
                                 <Box sx={{ width: '8px' }} />
-                                {event.event_type === 'フットサル' && (
+                                {(event.event_type === 'フットサル' || event.event_type === 'いつもの') && (
                                     <Typography variant="body2" color="text.secondary" sx={{ marginRight: 2 }}>
                                     {event.event_status === 0 ? 
                                         <Box component="span" sx={{ border: '1px solid', borderRadius: '4px', padding: '2px' }}>
@@ -383,7 +361,7 @@ export default function EventManager() {
                                     備考: {event.remark}
                                 </Typography>
                             )}
-                            {event.event_type === 'フットサル' && (
+                            {(event.event_type === 'フットサル' || event.event_type === 'いつもの') && (
                                 <Box sx={{ display: 'flex', justifyContent: 'flex-end', marginTop: 1 }}>
                                     {event.event_status !== 20 && (
                                         <Button

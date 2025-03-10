@@ -4,6 +4,7 @@ import { Profile } from '@liff/get-profile';
 import { useEffect, useState } from 'react';
 import { Card, CardContent, CardHeader, Box, Grid, Table, TableBody, TableCell, TableContainer, TableRow, } from '@mui/material';
 import AvatarIcon from './avatarIcon';
+import LoadingSpinner from '../calendar/loadingSpinner';
 
 interface ProfileDen {
 	lineProfile: Profile;
@@ -504,30 +505,7 @@ export default function Stats() {
 					</Grid>
 				</>
 			) : (
-<Box sx={{
-                    display: 'flex',
-                    flexDirection: 'column',
-                    justifyContent: 'center',
-                    alignItems: 'center',
-                    height: '100vh'
-                }}>
-					<Box sx={{
-                        '@keyframes spin': {
-                            '0%': { transform: 'rotate(0deg)' },
-                            '100%': { transform: 'rotate(360deg)' },
-                        },
-                    }}>
-                        <img
-                            src="https://lh3.googleusercontent.com/d/1THCGfK2zDU5Vp1dAMgew8VTFV1soE-x7"
-                            alt="ローディング"
-                            style={{
-                                width: '48px',
-                                height: '48px',
-                                animation: 'spin 2s linear infinite',
-                            }}
-                        />
-                    </Box>
-				</Box>
+                <LoadingSpinner />
 			)}
 		</>
 	);

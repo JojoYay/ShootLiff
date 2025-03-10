@@ -5,6 +5,7 @@ import { Box, Grid, Pagination, Table, TableBody, TableCell, TableHead, TableRow
 import VideoCardPlus from './videoCardPlus';
 import VideoCard from '../video/videoCard';
 import AvatarIcon from '../stats/avatarIcon';
+import LoadingSpinner from '../calendar/loadingSpinner';
 
 export default function Video() {
 	useEffect(() => {
@@ -280,25 +281,7 @@ export default function Video() {
 					/>
 				</>
 			) : (
-				<div style={{ display: 'flex', flexDirection: 'column', justifyContent: 'center', alignItems: 'center', height: '100vh' }}>
-					<style>
-					{`
-						@keyframes spin {
-						0% { transform: rotate(0deg); }
-						100% { transform: rotate(360deg); }
-						}
-					`}
-					</style>
-					<img
-					src="https://lh3.googleusercontent.com/d/1THCGfK2zDU5Vp1dAMgew8VTFV1soE-x7"
-					alt="ローディング"
-					style={{
-						width: '48px',  // サイズ調整
-						height: '48px', // サイズ調整
-						animation: 'spin 2s linear infinite', // アニメーション
-					}}
-					/>
-				</div>
+                <LoadingSpinner />
 			)}
 		</>
 	);
