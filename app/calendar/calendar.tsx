@@ -24,6 +24,7 @@ import AvatarIcon from '../stats/avatarIcon';
 import CalendarGrid from './calendarGrid';
 import RegistrationDialog from './registrationDialog';
 import LoadingSpinner from './loadingSpinner';
+import Comment from './comment';
 
 interface Profile {
     userId: string;
@@ -909,6 +910,7 @@ export default function Calendar() {
                                     </Grid>
                                 ))}
                             </Grid>
+                            <Comment componentId='calendar' users={users} user={profile} category='calendar_all' lang={lang} />
                         </Grid>
                     </Grid>
                 </>

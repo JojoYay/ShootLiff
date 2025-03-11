@@ -131,6 +131,7 @@ export default function EventManager() {
         if (window.confirm('本当に削除しますか？')) {
             try {
                 setIsSubmitting(true);
+                const eventToDelete = events.find(event => event.id === id); // 削除対象のイベントを取得
                 const formData = new FormData();
                 formData.append('func', 'deleteCalendar');
                 formData.append('id', id);
@@ -143,6 +144,15 @@ export default function EventManager() {
                     });
 
                     if (response.ok) {
+                        if (eventToDelete && eventToDelete.event_status === 20) {
+                            // Find the earliest event that is not 99 and set its status to 20
+                            const earliestEvent = events
+                                .filter(e => e.event_status !== 99 && e.id !== id) // 削除対象を除外
+                                .sort((a, b) => new Date(a.start_datetime).getTime() - new Date(b.start_datetime).getTime())[0];
+                            if (earliestEvent) {
+                                await updateEventStatus(earliestEvent, 20);
+                            }
+                        }
                         fetchEvents();
                     }
                 }
@@ -234,7 +244,15 @@ export default function EventManager() {
             // Ensure only one event can have status 20
             const currentTargetEvent = events.find(e => e.event_status === 20);
             if (currentTargetEvent) {
-                await updateEventStatus(currentTargetEvent, 10);
+                await updateEventStatus(currentTargetEvent, 0);
+            }
+        } else if (newStatus === 99) {
+            // Find the earliest event that is not 99 and set its status to 20
+            const earliestEvent = events
+                .filter(e => e.event_status !== 99)
+                .sort((a, b) => new Date(a.start_datetime).getTime() - new Date(b.start_datetime).getTime())[0];
+            if (earliestEvent) {
+                await updateEventStatus(earliestEvent, 20);
             }
         }
         await updateEventStatus(event, newStatus);
@@ -289,7 +307,7 @@ export default function EventManager() {
             ) : (
                 
                 events.map((event) => {
-                    const isPastEvent = new Date(event.end_datetime) < new Date() && event.event_status === 99
+                    const isPastEvent = event.event_status === 99
                     if (!showFinishedEvents && isPastEvent) {
                         return null; // 過去イベントを非表示
                     }
@@ -298,7 +316,7 @@ export default function EventManager() {
                         <CardContent style={{ textAlign: 'left', padding:'3px', margin:'3px' }}>
                             <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
                                 <Box sx={{ display: 'flex', alignItems: 'center' }}>
-                                    {(event.event_type === 'フットサル' || event.event_type === 'いつもの') && (
+                                    {(event.event_type === 'いつもの') && (
                                         <img src={BALL} alt="フットサル" width={24} height={24} style={{ marginRight: 8 }} />
                                     )}
                                     {event.event_type === '飲み会' && (
@@ -368,7 +386,7 @@ export default function EventManager() {
                                             variant="contained"
                                             size="small"
                                             onClick={() => handleStatusChange(event, 20)}
-                                            disabled={isSubmitting || isPastEvent}
+                                            disabled={isSubmitting}
                                             sx={{ marginRight: 1 }}
                                         >
                                             集計対象にする
@@ -379,7 +397,7 @@ export default function EventManager() {
                                             variant="contained"
                                             size="small"
                                             onClick={() => handleStatusChange(event, 99)}
-                                            disabled={isSubmitting || isPastEvent}
+                                            disabled={isSubmitting}
                                         >
                                             集計完了にする
                                         </Button>

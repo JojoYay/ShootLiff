@@ -6,27 +6,52 @@ import VideoCardPlus from './videoCardPlus';
 import VideoCard from '../video/videoCard';
 import AvatarIcon from '../stats/avatarIcon';
 import LoadingSpinner from '../calendar/loadingSpinner';
+import Comment from '../calendar/comment';
+import { useLiff } from '../liffProvider';
 
 export default function Video() {
 	useEffect(() => {
 		fetchVideo();
 	}, []);
 
+	interface Profile {
+		userId: string;
+		displayName: string;
+		pictureUrl?: string;
+	}
+
 	const [videos, setVideos] = useState<string[][] | null>(null);
 	const [actDates, setActDates] = useState<string[] | null>(null);
 	const [events, setEvents] = useState<string[][] | null>(null);
 	const [shootLog, setShootLog] = useState<string[][] | null>(null);//１回分のみ（毎回ロードする必要がある）
-
+    const { liff } = useLiff();
 	const [actDate, setActDate] = useState<string>('');
 	const [event, setEvent]  = useState<string[]>([]);
 	const [mipPics, setMipPics] = useState<string[]>([]);
 	const [iconSize, setIconSize] = useState<number>(56); // iconSize stateを追加
+    const [profile, setProfile] = useState<Profile | null>(null);
 
 	// const [mipPic, setMipPic] = useState<string>('');
 	const [currentPage, setCurrentPage] = useState(1);
 	const [pageGroups, setPageGroups] = useState<number[]>([]); // ページグループを管理する新しいstate
 
 	const [users, setUsers] = useState<string[][]>([]);
+
+    useEffect(() => {
+        if (liff) {
+            liff.ready.then(() => {
+                if (!liff.isLoggedIn()) {
+                    const redirectUri = new URL(window.location.href).href;
+                    liff.login({ redirectUri: redirectUri });
+                } else {
+                    liff.getProfile().then(profile => {
+                        setProfile(profile);
+                        // setLang(liff.getLanguage());
+                    });
+                }
+            });
+        }
+    }, [liff]);
 
 	const fetchVideo = async () => {
 		try {
@@ -248,20 +273,25 @@ export default function Video() {
 					{currentItems.map((data, index) => (
 							<>
 								{(shootLog && data[9]) ? (
-									<VideoCardPlus key={index}
-										url={data[2]} 
-										title={data[1]}
-										team1Name={data[3]} 
-										team2Name={data[4]} 
-										team1Member={data[5]} 
-										team2Member={data[6]} 
-										team1Score={data[7]} 
-										team2Score={data[8]} 
-										winTeam={data[9]} 
-										matchId={data[10]}
-										shootLog={shootLog} 
-										users={users}
-									/>
+									<>
+										<VideoCardPlus key={index}
+											url={data[2]} 
+											title={data[1]}
+											team1Name={data[3]} 
+											team2Name={data[4]} 
+											team1Member={data[5]} 
+											team2Member={data[6]} 
+											team1Score={data[7]} 
+											team2Score={data[8]} 
+											winTeam={data[9]} 
+											matchId={data[10]}
+											shootLog={shootLog} 
+											users={users}
+										/>
+										{profile ? 
+											<Comment componentId='videos' users={users} user={profile} category={data[10]} lang={liff?.getLanguage() || 'ja-JP'} />
+										 : null}
+									</>
 								) : (
 									<VideoCard 
 										key={index}
