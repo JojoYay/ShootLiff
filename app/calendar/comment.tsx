@@ -145,9 +145,7 @@ const Comment: React.FC<CommentProps> = ({ componentId, category, users, user, l
                                         showTooltip={true} 
                                     />
                                 )}
-                                <Typography variant="body2" marginLeft={'3px'}>
-                                    {new Date(comment[5]).toLocaleString()}
-                                </Typography>
+                                <Typography marginLeft={'3px'}>{renderWithLinks(comment[4])}</Typography>
                                 {user.userId === comment[3] && (
                                     <IconButton 
                                     onClick={() => handleCommentDelete(comment[0])} 
@@ -159,7 +157,9 @@ const Comment: React.FC<CommentProps> = ({ componentId, category, users, user, l
                                     </IconButton>
                                 )}
                             </Box>
-                            <Typography>{renderWithLinks(comment[4])}</Typography>
+                            <Typography variant="caption" fontStyle='italic' marginLeft={'3px'}>
+                                {new Date(comment[5]).toLocaleString()}
+                            </Typography>
                         </Box>
                     ) : null;
                 })}
@@ -169,11 +169,12 @@ const Comment: React.FC<CommentProps> = ({ componentId, category, users, user, l
                     label={lang === 'ja-JP' ? 'コメントを追加' : 'Add a comment'}
                     variant="outlined"
                     fullWidth
+                    size='small'
                     value={newComment}
                     onChange={(e) => setNewComment(e.target.value)}
                     sx={{ marginBottom: 1 }}
                 />
-                <Button variant="contained" onClick={handleCommentSubmit} disabled={isSubmitting}>
+                <Button variant="contained" onClick={handleCommentSubmit} disabled={isSubmitting} size='small' style={{marginLeft:'2px'}}>
                    {lang === 'ja-JP' ? '投稿' : 'Post'}
                 </Button>
             </Box>

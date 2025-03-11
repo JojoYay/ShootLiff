@@ -316,7 +316,7 @@ export default function EventManager() {
                         <CardContent style={{ textAlign: 'left', padding:'3px', margin:'3px' }}>
                             <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
                                 <Box sx={{ display: 'flex', alignItems: 'center' }}>
-                                    {(event.event_type === 'いつもの') && (
+                                    {(event.event_type === 'フットサル') && (
                                         <img src={BALL} alt="フットサル" width={24} height={24} style={{ marginRight: 8 }} />
                                     )}
                                     {event.event_type === '飲み会' && (
