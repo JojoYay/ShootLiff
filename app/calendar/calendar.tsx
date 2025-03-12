@@ -792,21 +792,34 @@ export default function Calendar() {
                         <CalendarGrid calendar={calendar} daysOfWeek={daysOfWeek} currentDate={currentDate} BALL={BALL} BEER={BEER} LOGO={LOGO} />
 
                         <Grid item xs={12}>
-                            <Box textAlign="center" m={'8px'} p={'8px'} sx={{ display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                            <Box textAlign="center" m={'3px'} p={'3px'} sx={{ display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
                                 <Typography variant="h6" component="div" sx={{ textAlign: 'center', color: '#3f51b5', fontWeight: 'bold' }}> 
                                     {lang === 'ja-JP' ? '出席データ' : 'Attendance Data'}
                                 </Typography>
                                 {Object.keys(pendingParticipationStatus).length > 0 && <SaveButton />}
                             </Box>
-                            
-                            <Grid container spacing={2}>
+
+                            {/* カレンダーナビゲーション */}
+                            <Paper elevation={3} sx={{ display: 'flex', justifyContent: 'center', alignItems: 'center', mb: 2, p: 1, bgcolor: '#e3f2fd', borderRadius: '20px' }}>
+                                <IconButton onClick={goToPreviousMonth} aria-label="previous month" style={{ color: '#3f51b5' }}>
+                                    <ChevronLeft />
+                                </IconButton>
+                                <Typography variant="h6" component="div" sx={{ mx: 2, color: '#3f51b5', fontWeight: 'bold' }}> 
+                                    {currentDate.getFullYear()}/{currentDate.getMonth() + 1}
+                                </Typography>
+                                <IconButton onClick={goToNextMonth} aria-label="next month" style={{ color: '#3f51b5' }}> 
+                                    <ChevronRight />
+                                </IconButton>
+                            </Paper>
+
+                            {/* <Grid container spacing={2}> */}
                                 {calendar.map((week, weekIndex) => (
                                     <Grid container key={weekIndex}>
                                         {week.map((dayData, dayIndex) => (
                                             <>
                                                 {typeof dayData === 'object' && dayData.events.length > 0 && dayData.events.map((calendar, index) => (
                                                     <Grid item xs={12} sm={6} md={4} key={index} sx={{border: '1px solid #eee', backgroundColor: '#fffde7', borderRadius: '8px', padding:'5px' }}>
-                                                        <Box sx={{ margin:'5px', display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+                                                        <Box sx={{ margin:'3px', display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
                                                             <Box sx={{ display: 'flex', alignItems: 'center' }}>
                                                                 {calendar.event_type === 'フットサル' && (
                                                                     <img src={BALL} alt="フットサル" width={28} height={28} style={{margin:'5px'}} />
@@ -818,46 +831,60 @@ export default function Calendar() {
                                                                     <img src={LOGO} alt="いつもの" width={28} height={28} style={{margin:'5px'}} />
                                                                 )}
                                                                 <Box sx={{ display: 'flex', flexDirection: 'column', margin:'5px' }}>
-                                                                    <Typography variant="h6" sx={{ color: '#757575', minWidth: '160px', mr:'5px'}}>
-                                                                        {new Date(calendar.start_datetime).toLocaleDateString(lang, {
-                                                                            year: 'numeric',
-                                                                            month: '2-digit',
-                                                                            day: '2-digit',
-                                                                        }).replace(/-/g, '/')} 
-                                                                        {new Date(calendar.start_datetime).toLocaleTimeString(lang, {
-                                                                            hour: '2-digit',
-                                                                            minute: '2-digit',
-                                                                            hour12: false
-                                                                        })}
-                                                                    </Typography>
+                                                                    <Box sx={{ display: 'flex', alignItems: 'center' }}>
+                                                                        <Typography variant="h6" sx={{ color: '#757575', mr:'5px'}}>
+                                                                            {new Date(calendar.start_datetime).toLocaleDateString(lang, {
+                                                                                month: '2-digit',
+                                                                                day: '2-digit',
+                                                                                weekday: 'short'
+                                                                            }).replace(/-/g, '/')}
+                                                                        </Typography>
+                                                                        <Typography variant="body2" sx={{ color: '#757575', mr:'5px'}}>
+                                                                            {new Date(calendar.start_datetime).toLocaleTimeString(lang, {
+                                                                                hour: '2-digit',
+                                                                                minute: '2-digit',
+                                                                                hour12: false
+                                                                            })}
+                                                                        </Typography>
+                                                                        {/* <Typography variant="body2" sx={{ color: '#757575'}}>
+                                                                            -
+                                                                        </Typography>
+                                                                        <Typography variant="body2" sx={{ color: '#757575',ml:'5px'}}>
+                                                                            {new Date(calendar.end_datetime).toLocaleTimeString(lang, {
+                                                                                hour: '2-digit',
+                                                                                minute: '2-digit',
+                                                                                hour12: false
+                                                                            })}
+                                                                        </Typography> */}
+                                                                    </Box>
                                                                     <Typography variant="body2" sx={{ color: '#757575' }}>
                                                                         〇: {calendar.attendances?.filter(att => att.status === '〇').length || 0}, 
                                                                         △: {calendar.attendances?.filter(att => att.status === '△').length || 0}, 
                                                                         ×: {calendar.attendances?.filter(att => att.status === '×').length || 0}
                                                                     </Typography>
                                                                 </Box>
-                                                                <FormControl size="small" >
-                                                                    <InputLabel id="status-select-label">参加可否</InputLabel>
-                                                                    <Select
-                                                                        labelId="status-select-label"
-                                                                        id="status-select"
-                                                                        value={calendar.attendance?.status || ''}
-                                                                        label={lang === 'ja-JP' ? 'ステータス' : 'Status'}
-                                                                        onChange={(e) => {
-                                                                            if(calendar.ID){
-                                                                                handleParticipationChange(calendar, e.target.value as '〇' | '△' | '×', profile?.userId);
-                                                                                if(calendar.attendance){
-                                                                                    calendar.attendance.status = e.target.value as '〇' | '△' | '×';
-                                                                                }
-                                                                            }
-                                                                        }}
-                                                                    >
-                                                                        <MenuItem value={'〇'}>〇</MenuItem>
-                                                                        <MenuItem value={'△'}>△</MenuItem>
-                                                                        <MenuItem value={'×'}>×</MenuItem>
-                                                                    </Select>
-                                                                </FormControl>
                                                             </Box>
+                                                            <FormControl size="small" >
+                                                                <InputLabel id="status-select-label">参加可否</InputLabel>
+                                                                <Select
+                                                                    labelId="status-select-label"
+                                                                    id="status-select"
+                                                                    value={calendar.attendance?.status || ''}
+                                                                    label={lang === 'ja-JP' ? 'ステータス' : 'Status'}
+                                                                    onChange={(e) => {
+                                                                        if(calendar.ID){
+                                                                            handleParticipationChange(calendar, e.target.value as '〇' | '△' | '×', profile?.userId);
+                                                                            if(calendar.attendance){
+                                                                                calendar.attendance.status = e.target.value as '〇' | '△' | '×';
+                                                                            }
+                                                                        }
+                                                                    }}
+                                                                >
+                                                                    <MenuItem value={'〇'}>〇</MenuItem>
+                                                                    <MenuItem value={'△'}>△</MenuItem>
+                                                                    <MenuItem value={'×'}>×</MenuItem>
+                                                                </Select>
+                                                            </FormControl>
                                                             <IconButton // トグルボタン
                                                                 aria-label="expand"
                                                                 size="small"
@@ -909,7 +936,7 @@ export default function Calendar() {
                                         ))}
                                     </Grid>
                                 ))}
-                            </Grid>
+                            {/* </Grid> */}
                             <Comment componentId='calendar' users={users} user={profile} category='calendar_all' lang={lang} />
                         </Grid>
                     </Grid>

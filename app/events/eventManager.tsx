@@ -37,9 +37,9 @@ interface Event {
     place: string;
     remark: string;
     event_status: number; //0:NYS,10:WIP, 99:completed
-    pitch_fee: number | null; // ピッチ代を追加
+    pitch_fee: string; // ピッチ代を追加
     paynow_link: string; // paynow先を追加
-    paticipation_fee: number | null;
+    paticipation_fee: string;
 }
 
 export default function EventManager() {
@@ -60,9 +60,9 @@ export default function EventManager() {
         place: '',
         remark: '',
         event_status: 0,
-        pitch_fee: null, // 初期値を追加
+        pitch_fee: '', // 初期値を追加
         paynow_link: '', // 初期値を追加
-        paticipation_fee: null
+        paticipation_fee: ''
     
     });
     const [selectedDate, setSelectedDate] = useState<Date | null>(new Date());
@@ -92,7 +92,7 @@ export default function EventManager() {
                     place: item[5],
                     remark: item[6],
                     event_status: parseInt(item[7]),
-                    pitch_fee: parseInt(item[8]) || null,
+                    pitch_fee: parseInt(item[8]) || '',
                     paynow_link: item[9] || '',
                     paticipation_fee: item[10] || ''
                 }));
@@ -121,9 +121,9 @@ export default function EventManager() {
             place: '',
             remark: '',
             event_status: 0,
-            pitch_fee: null,
+            pitch_fee: '',
             paynow_link: '',
-            paticipation_fee: null,
+            paticipation_fee: '',
         });
         setSelectedDate(new Date());
         setStartTime(new Date());
@@ -298,9 +298,9 @@ export default function EventManager() {
             place: 'Premier Pitch Khalsa',
             remark: 'https://maps.app.goo.gl/3Zmq48uFkPEvB6cKA',
             event_status: 0,
-            pitch_fee: null,
+            pitch_fee: '',
             paynow_link: '',
-            paticipation_fee: null,
+            paticipation_fee: '',
         });
         setSelectedDate(null); // 日付は空欄
         setStartTime(new Date(new Date().setHours(7, 0, 0, 0)));
@@ -571,7 +571,7 @@ export default function EventManager() {
                                 label={'ピッチ代'}
                                 type="number"
                                 value={formData.pitch_fee}
-                                onChange={(e) => setFormData({ ...formData, pitch_fee: Number(e.target.value) })}
+                                onChange={(e) => setFormData({ ...formData, pitch_fee: e.target.value })}
                             />
                         </Grid>
                         <Grid item xs={12} sm={6}>
@@ -581,7 +581,7 @@ export default function EventManager() {
                                 label={'参加費'}
                                 type="number"
                                 value={formData.paticipation_fee}
-                                onChange={(e) => setFormData({ ...formData, paticipation_fee: Number(e.target.value) })}
+                                onChange={(e) => setFormData({ ...formData, paticipation_fee: e.target.value })}
                             />
                         </Grid>
                         <Grid item xs={12} sm={6}>
