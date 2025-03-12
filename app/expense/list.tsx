@@ -76,8 +76,6 @@ export default function ExpenseList() {
                     setLoading(false);
                 }
             }
-                // }
-            // };
         } else {
             setLoading(false);
         }
@@ -131,10 +129,8 @@ export default function ExpenseList() {
                     console.log(data);
                 } catch (error) {
                     console.error('Error loading Expense list:', error);
-                    // setResult('Error uploading file:'+error);
                 } finally {
                     setLoading(false);
-                    // After deletion, you might want to refresh the list
                     loadExList();
                 }
             }
@@ -142,7 +138,6 @@ export default function ExpenseList() {
             setLoading(false);
         }
     };
-
 
     const handleDeleteCancel = () => {
         setDeleteConfirmOpen(false);
@@ -174,12 +169,12 @@ export default function ExpenseList() {
                                 </Typography>
                             </CardContent>
                             <CardActions>
-                                <IconButton aria-label="goInput" onClick={() => handleGoInput(infoElement.title)}>
-                                    <EditIcon />
-                                </IconButton>
-                                <IconButton aria-label="spreadsheet" onClick={() => handleOpenSpreadsheet(infoElement.url)}>
-                                    <TableChartIcon />
-                                </IconButton>
+                                <Button variant="contained" color="primary" aria-label="goInput" onClick={() => handleGoInput(infoElement.title)}>
+                                    PayNow画面
+                                </Button>
+                                <Button variant="contained" color="secondary" aria-label="spreadsheet" onClick={() => handleOpenSpreadsheet(infoElement.url)}>
+                                    レポート
+                                </Button>
                                 <IconButton aria-label="delete" onClick={() => handleDeleteClick(infoElement.title)}>
                                     <DeleteIcon />
                                 </IconButton>

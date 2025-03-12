@@ -27,6 +27,7 @@ import { AdapterDateFns } from '@mui/x-date-pickers/AdapterDateFns';
 import ja from 'date-fns/locale/ja/index.js';
 import { DatePicker, TimePicker } from '@mui/x-date-pickers';
 import LoadingSpinner from '../calendar/loadingSpinner';
+import Link from 'next/link';
 
 interface Event {
     id: string;
@@ -412,9 +413,9 @@ export default function EventManager() {
                                 </Typography>
                             )}
                             {event.pitch_fee && (
-                                <Typography variant="body2" color="text.secondary">
-                                    Pitch代: {event.pitch_fee}
-                                </Typography>
+                                    <Typography variant="body2" color="text.secondary">
+                                        {event.event_type === 'フットサル' || event.event_type === 'いつもの' ? 'ピッチ代' : '部費拠出金'}:{event.pitch_fee}
+                                    </Typography>
                             )}
                             {event.paticipation_fee && (
                                 <Typography variant="body2" color="text.secondary">
@@ -450,6 +451,20 @@ export default function EventManager() {
                                             集計完了にする
                                         </Button>
                                     )}
+                                </Box>
+                            )}
+                            {event.event_type === '飲み会' && ( // 飲み会の場合のみ表示
+                                <Box sx={{ display: 'flex', justifyContent: 'flex-end', marginTop: 1 }}>
+                                    <Link href={`/expense/create?calendarId=${event.id}`} passHref>
+                                        <Button
+                                            variant="contained"
+                                            size="small"
+                                            component="a" // Link を Button としてレンダリング
+                                            disabled={isSubmitting}
+                                        >
+                                            経費作成
+                                        </Button>
+                                    </Link>
                                 </Box>
                             )}
                         </CardContent>
@@ -568,7 +583,7 @@ export default function EventManager() {
                             <TextField
                                 size='small'
                                 fullWidth
-                                label={'ピッチ代'}
+                                label={'ピッチ代・部費拠出金'}
                                 type="number"
                                 value={formData.pitch_fee}
                                 onChange={(e) => setFormData({ ...formData, pitch_fee: e.target.value })}

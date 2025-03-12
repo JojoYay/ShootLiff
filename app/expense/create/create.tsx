@@ -1,4 +1,5 @@
 'use client';
+import LoadingSpinner from '@/app/calendar/loadingSpinner';
 import { Autocomplete, Box, Button, CircularProgress, FormControl, FormControlLabel, FormLabel, MenuItem, Radio, RadioGroup, Select, SelectChangeEvent, TextField, Typography } from '@mui/material';
 import { useRouter } from 'next/navigation';
 import React, { useEffect, useState } from 'react';
@@ -13,10 +14,50 @@ export default function CreateExpense() {
 	// const [result, setResult] = useState('');
     const [loading, setLoading] = useState(false);
     const [receiveColumn, setReceiveColumn] = useState('false');
+    const [isSubmitAttempted, setIsSubmitAttempted] = useState(false); // 送信試行状態を管理する state を追加
+    const [calendarId, setCalendarId] = useState<string>('');
+
+    useEffect(() => {
+        const urlParams = new URLSearchParams(window.location.search);
+        setCalendarId(urlParams.get('calendarId') || '');
+    }, [])
 
     useEffect(() => {
         fetchMembers();
-    }, []);
+        if (calendarId) {
+            fetchEventParticipants(calendarId);
+        }
+    }, [calendarId]);
+
+    const fetchEventParticipants = async (calendarId: string) => {
+        setLoading(true);
+        try {
+            const url = process.env.SERVER_URL + `?func=getAttendees&func=getCalendar&calendarId=${calendarId}`;
+            if (url) {
+                const response = await fetch(url, {
+                    method: 'GET',
+                });
+                const data = await response.json();
+                console.log(data);
+                if (data.attendees) {
+                    const calendarEventMembers = data.attendees.map((member: any) => member[1]);
+                    // const preSelectedOptions = members
+                    //     .filter(member => calendarEventMembers.includes(member[1]))
+                    //     .map(member => member[1]);
+                    // console.log(preSelectedOptions);
+                    // setSelectedOptions(preSelectedOptions);
+                    setSelectedOptions(calendarEventMembers);
+                    setPayNow(data.event[9]);
+                    setAmount(data.event[10]);
+                    setTitle(data.event[2]);
+                }
+            }
+        } catch (error) {
+            console.error('Error fetching event participants:', error);
+        } finally {
+            setLoading(false);
+        }
+    };
 
     const fetchMembers = async () => {
         try {
@@ -28,8 +69,11 @@ export default function CreateExpense() {
                 });
                 const data = await response.json();
                 const sortedMembers = data.members.slice(1).sort((a:any[], b:any[]) => a[0].localeCompare(b[0], 'ja-JP'));
-                setMembers(sortedMembers); 
-                setPayNow(data.payNow)
+                console.log(sortedMembers);
+                setMembers(sortedMembers);
+                if(!calendarId){
+                    setPayNow(data.payNow);
+                }
             }
         } catch (error) {
             console.error('Error fetching data:', error);
@@ -46,6 +90,10 @@ export default function CreateExpense() {
     };
 
     const generateExpenseReport = async () => {
+        setIsSubmitAttempted(true); // 送信試行状態を true に設定
+        if (!title.trim() || !amount.trim() || !payNow.trim() || selectedOptions.length === 0) {
+            return; // いずれかの項目が空の場合はここで処理を中断し、エラーメッセージを表示
+        }
         setLoading(true);
         try {
             let url = process.env.SERVER_URL + `?func=generateExReport`;
@@ -80,7 +128,7 @@ export default function CreateExpense() {
             {members.length > 0 ? (
                 <div style={{margin:'5px'}}>
                     <div style={{margin:'5px'}}>
-                        {(!title.trim() && <Typography variant="body2" color="error">この清算の名称を入力して下さい</Typography>)}
+                        {(isSubmitAttempted && !title.trim() && <Typography variant="body2" color="error">この清算の名称を入力して下さい</Typography>)}
                         <Typography variant="body2">清算タイトル:</Typography>
                         <TextField type="text" id="title" value={title} onChange={(e) => setTitle(e.target.value)} placeholder="Enter title" />
                     </div>
@@ -93,7 +141,7 @@ export default function CreateExpense() {
                         }}
                     >
                         <Typography variant="subtitle1" gutterBottom>清算対象を選択 {selectedOptions.length} 件</Typography>
-                        {selectedOptions.length === 0 && (
+                        {isSubmitAttempted && selectedOptions.length === 0 && (
                             <Typography variant="body2" color="error" gutterBottom>対象を選択してください</Typography>
                         )}
                         <Autocomplete
@@ -105,7 +153,7 @@ export default function CreateExpense() {
                             renderInput={(params) => (
                                 <TextField 
                                     {...params} 
-                                    label="伝助上の名称を選択" 
+                                    label="参加者を選択" 
                                     variant="standard"
                                     error={selectedOptions.length === 0}
                                 />
@@ -115,12 +163,12 @@ export default function CreateExpense() {
                         />
                     </Box>
                     <div style={{margin:'5px'}}>
-                        {(!amount.trim() && <Typography variant="body2" color="error">金額を入力して下さい</Typography>)}
+                        {(isSubmitAttempted && !amount.trim() && <Typography variant="body2" color="error">金額を入力して下さい</Typography>)}
                         <Typography variant="body2">とりあえずの金額（一人当たり）:</Typography>
                         <TextField type="text" id="amount" value={amount} onChange={(e) => setAmount(e.target.value)} placeholder="Enter amount" />
                     </div>
                     <div style={{margin:'5px'}}>
-                        {(!payNow.trim() && <Typography variant="body2" color="error">PayNow先を入力して下さい</Typography>)}
+                        {(isSubmitAttempted && !payNow.trim() && <Typography variant="body2" color="error">PayNow先を入力して下さい</Typography>)}
                         <Typography variant="body2">PayNow先を入力:
                         </Typography>
                         <TextField type="text" id="paynow" value={payNow} onChange={(e) => setPayNow(e.target.value)} placeholder="Enter PayNow" />
@@ -161,10 +209,7 @@ export default function CreateExpense() {
                     </div> */}
                 </div>
             ) : (
-                <div style={{ display: 'flex', justifyContent: 'center', alignItems: 'center', height: '100vh' }}>
-                    <div>Loading Form... </div>
-                    <CircularProgress />
-                </div>
+                <LoadingSpinner />
             )}
         </>
     );
