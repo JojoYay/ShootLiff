@@ -37,6 +37,9 @@ interface Event {
     place: string;
     remark: string;
     event_status: number; //0:NYS,10:WIP, 99:completed
+    pitch_fee: number | null; // ピッチ代を追加
+    paynow_link: string; // paynow先を追加
+    paticipation_fee: number | null;
 }
 
 export default function EventManager() {
@@ -56,7 +59,11 @@ export default function EventManager() {
         end_datetime: new Date().toISOString(),
         place: '',
         remark: '',
-        event_status: 0
+        event_status: 0,
+        pitch_fee: null, // 初期値を追加
+        paynow_link: '', // 初期値を追加
+        paticipation_fee: null
+    
     });
     const [selectedDate, setSelectedDate] = useState<Date | null>(new Date());
     const [startTime, setStartTime] = useState<Date | null>(new Date());
@@ -84,7 +91,10 @@ export default function EventManager() {
                     end_datetime: item[4],
                     place: item[5],
                     remark: item[6],
-                    event_status: parseInt(item[7])
+                    event_status: parseInt(item[7]),
+                    pitch_fee: parseInt(item[8]) || null,
+                    paynow_link: item[9] || '',
+                    paticipation_fee: item[10] || ''
                 }));
                 // 日時順にソート
                 processedEvents.sort((a: Event, b: Event) => {
@@ -110,11 +120,14 @@ export default function EventManager() {
             end_datetime: new Date().toISOString(),
             place: '',
             remark: '',
-            event_status: 0
+            event_status: 0,
+            pitch_fee: null,
+            paynow_link: '',
+            paticipation_fee: null,
         });
         setSelectedDate(new Date());
         setStartTime(new Date());
-        setEndTime(new Date(new Date().getTime() + 60 * 60 * 1000));
+        setEndTime(new Date(new Date().getTime() + 120 * 60 * 1000));
         setOpen(true);
     };
 
@@ -165,6 +178,21 @@ export default function EventManager() {
     };
 
     const handleSubmit = async () => {
+        // イベント名のバリデーション
+        if (!formData.event_name) {
+            alert('イベント名を入力してください。');
+            return; // 空の場合は処理を中断
+        }
+        if (!selectedDate) {
+            alert('日程を入力してください。');
+            return; // 空の場合は処理を中断
+        }
+        if (!startTime) {
+            alert('開始時刻を入力してください。');
+            return; // 空の場合は処理を中断
+        }
+
+        
         try {
             setIsSubmitting(true);
             const formDataToSend = new FormData();
@@ -190,6 +218,7 @@ export default function EventManager() {
             Object.entries(formData).forEach(([key, value]) => {
                 if (key === 'id' && !selectedEvent) return; // Skip ID for new events
                 formDataToSend.append(key, value.toString());
+                console.log(key, value.toString());
             });
 
             let url = process.env.SERVER_URL;
@@ -268,7 +297,10 @@ export default function EventManager() {
 
             place: 'Premier Pitch Khalsa',
             remark: 'https://maps.app.goo.gl/3Zmq48uFkPEvB6cKA',
-            event_status: 0
+            event_status: 0,
+            pitch_fee: null,
+            paynow_link: '',
+            paticipation_fee: null,
         });
         setSelectedDate(null); // 日付は空欄
         setStartTime(new Date(new Date().setHours(7, 0, 0, 0)));
@@ -379,6 +411,22 @@ export default function EventManager() {
                                     備考: {event.remark}
                                 </Typography>
                             )}
+                            {event.pitch_fee && (
+                                <Typography variant="body2" color="text.secondary">
+                                    Pitch代: {event.pitch_fee}
+                                </Typography>
+                            )}
+                            {event.paticipation_fee && (
+                                <Typography variant="body2" color="text.secondary">
+                                    参加費: {event.paticipation_fee}
+                                </Typography>
+                            )}
+                            {event.paynow_link && (
+                                <Typography variant="body2" color="text.secondary">
+                                    PayNow先: {event.paynow_link}
+                                </Typography>
+                            )}
+
                             {(event.event_type === 'フットサル' || event.event_type === 'いつもの') && (
                                 <Box sx={{ display: 'flex', justifyContent: 'flex-end', marginTop: 1 }}>
                                     {event.event_status !== 20 && (
@@ -459,6 +507,8 @@ export default function EventManager() {
                         </Grid>
                         <Grid item xs={12} sm={6}>
                             <TextField
+                                required
+                                size='small'
                                 fullWidth
                                 label={'イベント名'}
                                 value={formData.event_name}
@@ -475,7 +525,6 @@ export default function EventManager() {
                                             setSelectedDate(newValue);
                                         }
                                     }}
-                                    
                                 />
                             </LocalizationProvider>
                         </Grid>
@@ -489,6 +538,7 @@ export default function EventManager() {
                                             setStartTime(newValue);
                                         }
                                     }}
+                                    
                                 />
                             </LocalizationProvider>
                         </Grid>
@@ -507,6 +557,7 @@ export default function EventManager() {
                         </Grid>
                         <Grid item xs={12} sm={6}>
                             <TextField
+                                size='small'
                                 fullWidth
                                 label={'場所'}
                                 value={formData.place}
@@ -515,6 +566,36 @@ export default function EventManager() {
                         </Grid>
                         <Grid item xs={12} sm={6}>
                             <TextField
+                                size='small'
+                                fullWidth
+                                label={'ピッチ代'}
+                                type="number"
+                                value={formData.pitch_fee}
+                                onChange={(e) => setFormData({ ...formData, pitch_fee: Number(e.target.value) })}
+                            />
+                        </Grid>
+                        <Grid item xs={12} sm={6}>
+                            <TextField
+                                size='small'
+                                fullWidth
+                                label={'参加費'}
+                                type="number"
+                                value={formData.paticipation_fee}
+                                onChange={(e) => setFormData({ ...formData, paticipation_fee: Number(e.target.value) })}
+                            />
+                        </Grid>
+                        <Grid item xs={12} sm={6}>
+                            <TextField
+                                size='small'
+                                fullWidth
+                                label={'PayNow先'}
+                                value={formData.paynow_link}
+                                onChange={(e) => setFormData({ ...formData, paynow_link: e.target.value })}
+                            />
+                        </Grid>                        
+                        <Grid item xs={12} sm={6}>
+                            <TextField
+                                size='small'
                                 fullWidth
                                 label={'備考'}
                                 value={formData.remark}
