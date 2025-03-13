@@ -223,8 +223,8 @@ export default function Stats() {
 		if (users) {
 			const userData = users.find(item => item[1] === densukeName);
 			if (userData) {
-				// Assuming userData[2] is userId, userData[4] is displayName, userData[?] is pictureUrl (you might need to adjust the index)
-				const lineProfile = { userId: userData[2], displayName: userData[1], pictureUrl: userData[4] /* adjust index if pictureUrl is elsewhere */, language: lang } as Profile;
+				
+				const lineProfile = { userId: userData[2], displayName: userData[1], pictureUrl: userData[4], language: lang } as Profile;
 				const yourResult = eventResult.find(item => item[0] === userData[2]);
 				let trophy:boolean = false;
 				if(yourResult){

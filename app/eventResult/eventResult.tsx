@@ -203,7 +203,7 @@ const EventResult = () => {
                     ) : null}
                     <Divider sx={{ margin: '16px 0' }} />
                     <Box sx={{ marginBottom: 2 }}>
-                        <Typography variant="h6" gutterBottom>{event[1]}</Typography>
+                        {/* <Typography variant="h6" gutterBottom>{event[1]}</Typography> */}
 
                         <FormControl fullWidth sx={{ marginBottom: 2 }}>
                             <InputLabel>天気</InputLabel>

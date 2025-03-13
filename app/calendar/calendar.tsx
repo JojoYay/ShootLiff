@@ -811,15 +811,17 @@ export default function Calendar() {
                                     <ChevronRight />
                                 </IconButton>
                             </Paper>
-
-                            {/* <Grid container spacing={2}> */}
                                 {calendar.map((week, weekIndex) => (
-                                    <Grid container key={weekIndex}>
+                                    <Box key={weekIndex}>
                                         {week.map((dayData, dayIndex) => (
                                             <>
                                                 {typeof dayData === 'object' && dayData.events.length > 0 && dayData.events.map((calendar, index) => (
-                                                    <Grid item xs={12} sm={6} md={4} key={index} sx={{border: '1px solid #eee', backgroundColor: '#fffde7', borderRadius: '8px', padding:'5px' }}>
-                                                        <Box sx={{ margin:'3px', display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+                                                    // <Grid item xs={12} sm={6} md={4} key={index} sx={{border: '1px solid #eee', backgroundColor: '#fffde7', borderRadius: '8px', padding:'5px' }}>
+                                                    <>
+                                                    {/* <Box sx={{ margin:'3px', display: 'flex', flexDirection: 'column',alignItems: 'flex-start', justifyContent: 'space-between', border: '1px solid #eee', backgroundColor: '#fffde7', borderRadius: '8px', width: '100%' }}> */}
+                                                    <Box sx={{ margin:'3px', display: 'flex', flexDirection: 'column',alignItems: 'flex-start', justifyContent: 'space-between', border: '1px solid #eee', backgroundColor: calendar.event_status === 99 ? '#e0e0e0' : '#fffde7', borderRadius: '8px', width: '100%' }}>
+
+                                                        <Box sx={{ margin:'3px', display: 'flex', alignItems: 'center', justifyContent: 'space-between', width: '100%' }}>
                                                             <Box sx={{ display: 'flex', alignItems: 'center' }}>
                                                                 {calendar.event_type === 'フットサル' && (
                                                                     <img src={BALL} alt="フットサル" width={28} height={28} style={{margin:'5px'}} />
@@ -846,16 +848,6 @@ export default function Calendar() {
                                                                                 hour12: false
                                                                             })}
                                                                         </Typography>
-                                                                        {/* <Typography variant="body2" sx={{ color: '#757575'}}>
-                                                                            -
-                                                                        </Typography>
-                                                                        <Typography variant="body2" sx={{ color: '#757575',ml:'5px'}}>
-                                                                            {new Date(calendar.end_datetime).toLocaleTimeString(lang, {
-                                                                                hour: '2-digit',
-                                                                                minute: '2-digit',
-                                                                                hour12: false
-                                                                            })}
-                                                                        </Typography> */}
                                                                     </Box>
                                                                     <Typography variant="body2" sx={{ color: '#757575' }}>
                                                                         〇: {calendar.attendances?.filter(att => att.status === '〇').length || 0}, 
@@ -930,11 +922,12 @@ export default function Calendar() {
                                                                 </Box>
                                                             </Box>
                                                         </Collapse>
-                                                    </Grid>
+                                                    </Box>
+                                                    </>
                                                 ))}
                                             </>
                                         ))}
-                                    </Grid>
+                                    </Box>
                                 ))}
                             {/* </Grid> */}
                             <Comment componentId='calendar' users={users} user={profile} category='calendar_all' lang={lang} />

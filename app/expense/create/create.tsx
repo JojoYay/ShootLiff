@@ -47,7 +47,9 @@ export default function CreateExpense() {
                     // console.log(preSelectedOptions);
                     // setSelectedOptions(preSelectedOptions);
                     setSelectedOptions(calendarEventMembers);
-                    setPayNow(data.event[9]);
+                    if(data.event[9]){
+                        setPayNow(data.event[9]);
+                    }
                     setAmount(data.event[10]);
                     setTitle(data.event[2]);
                 }
