@@ -28,7 +28,7 @@ export const LiffProvider: FC<PropsWithChildren<{ liffId: string }>> = ({
     try {
       const liffModule = await import('@line/liff');
       const liff = liffModule.default;
-      console.log('LIFF init...') + liffId;
+      console.log('LIFF init...' + liffId);
       await liff.init({ liffId });
       // console.log('LIFF init succeeded.');
       setLiff(liff);

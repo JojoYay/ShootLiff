@@ -10,7 +10,8 @@
     "lint": "next lint",
     "deploy": "firebase use test && npm run set-env && next build && firebase deploy --project test-8120f",
     "deploy:test": "firebase use test && npm run set-env && next build && firebase deploy --project test-8120f",
-    "deploy:prod": "firebase use prod && npm run set-env && next build && firebase deploy --project shootsundayfront"
+    "deploy:prod": "firebase use prod && npm run set-env && next build && firebase deploy --project shootsundayfront",
+    "deploy:bvs": "firebase use bvsfront && npm run set-env && next build && firebase deploy --project bvsfront"
   },
   "dependencies": {
     "@emotion/react": "^11.11.4",
@@ -39,5 +40,10 @@
     "postcss": "^8",
     "tailwindcss": "^3.4.1",
     "typescript": "^5"
+  },
+  "config": {
+    "firebase_project_test": "test-8120f",
+    "firebase_project_prod": "shootsundayfront",
+    "firebase_project_bvs": "bvsfront"
   }
 }
