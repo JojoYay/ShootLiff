@@ -85,7 +85,7 @@ export default function VideoCardPlus(props: VideoProps) {
         ) : (
           <CardActionArea>
             <Typography height={'160px'}  variant="h4" style={{ color: 'white', fontWeight: 'bold', backgroundColor: 'grey', borderRadius: '15px', display: 'flex', justifyContent: 'center', alignItems: 'flex-end' }}>
-              Coming Soon!
+              No Video
             </Typography>
           <Overlay>
             <Typography variant="h5" style={{ color: 'white', paddingTop: '10px', paddingLeft: '10px' }}>

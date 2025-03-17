@@ -50,7 +50,7 @@ const EventResult = () => {
             const currentEvent = events[currentPage];
             console.log(currentEvent);
             setEvent(currentEvent);
-            const relatedVideos = videos.filter(video => (video[0] === currentEvent[1] && !video[10].endsWith('_g'))).reverse(); // 試合タイトルに基づいて関連する動画をフィルタリング
+            const relatedVideos = videos.filter(video => (video[0] === currentEvent[1] && (!video[10].endsWith('_g') && !video[10].endsWith('d')))).reverse(); // 試合タイトルに基づいて関連する動画をフィルタリング
             setRelatedVideos(relatedVideos);
             // Extracting data from the event
             const eventWeather = currentEvent[4]; // Weather is at index 4
@@ -131,7 +131,9 @@ const EventResult = () => {
             formDataToSend.append('mip3', event[18]);
             formDataToSend.append('mip4', event[19]);
             formDataToSend.append('mip5', event[20]);
-
+            for (const pair of Array.from(formDataToSend.entries())) {
+                console.log(pair[0] + ', ' + pair[1]);
+            }
             let url = process.env.SERVER_URL;
             if (url) {
                 const response = await fetch(url, {
@@ -201,6 +203,80 @@ const EventResult = () => {
                             </Table>
                         </TableContainer>
                     ) : null}
+
+                    {relatedVideos.length === 4 ? (
+                        <TableContainer component={Paper}>
+                            <Table>
+                                <TableHead>
+                                    <TableRow>
+                                        <TableCell>順位</TableCell>
+                                        <TableCell>チーム名</TableCell>
+                                        <TableCell>結果</TableCell>
+                                    </TableRow>
+                                </TableHead>
+                                <TableBody>
+                                    {(() => {
+                                        // トーナメントの試合結果から順位を決定
+                                        const teamResults: Record<string, { name: string, rank: number, resultText: string }> = {};
+                                        const teams = ['Team1', 'Team2', 'Team3', 'Team4', 'Team5', 'Team6', 'Team7', 'Team8', 'Team9', 'Team10'];
+                                        relatedVideos.forEach((video, index) => {
+                                            const team1 = video[3];
+                                            const team2 = video[4];
+                                            const winner = video[9];
+
+                                            if (!teamResults[team1]) teamResults[team1] = { name: team1, rank: 0, resultText: '' };
+                                            if (!teamResults[team2]) teamResults[team2] = { name: team2, rank: 0, resultText: '' };
+
+                                            if (index === 0) { // 準決勝1試合目
+                                                teamResults[team1].resultText = winner === team1 ? '準決勝勝利' : '準決勝敗退';
+                                                teamResults[team2].resultText = winner === team2 ? '準決勝勝利' : '準決勝敗退';
+                                            } else if (index === 1) { // 準決勝2試合目
+                                                teamResults[team1].resultText = winner === team1 ? '準決勝勝利' : '準決勝敗退';
+                                                teamResults[team2].resultText = winner === team2 ? '準決勝勝利' : '準決勝敗退';
+                                            } else if (index === 2) { // 3位決定戦
+                                                teamResults[team1].resultText = winner === team1 ? '3位決定戦勝利 (3位)' : '3位決定戦敗退 (4位)';
+                                                teamResults[team2].resultText = winner === team2 ? '3位決定戦勝利 (3位)' : '3位決定戦敗退 (4位)';
+                                            } else if (index === 3) { // 決勝
+                                                teamResults[team1].resultText = winner === team1 ? '決勝勝利 (1位)' : '決勝敗退 (2位)';
+                                                teamResults[team2].resultText = winner === team2 ? '決勝勝利 (1位)' : '決勝敗退 (2位)';
+                                            }
+                                        });
+
+                                        // 順位をresultTextから設定 (簡易的な方法)
+                                        const rankedTeams = Object.values(teamResults).sort((a, b) => {
+                                            const rankOrder = ['(1位)', '(2位)', '(3位)', '(4位)'];
+                                            const rankA = rankOrder.findIndex(rank => a.resultText.includes(rank));
+                                            const rankB = rankOrder.findIndex(rank => b.resultText.includes(rank));
+                                            return rankA - rankB; // rankAとrankBが-1の場合は考慮が必要ですが、今回は簡易的に
+                                        });
+
+
+                                        return rankedTeams.map((teamResult, index) => {
+                                            if (teams.includes(teamResult.name)) { // 念のためteamsに含まれるチームのみ表示
+                                                let rankText = '';
+                                                if (teamResult.resultText.includes('(1位)')) rankText = '1位';
+                                                else if (teamResult.resultText.includes('(2位)')) rankText = '2位';
+                                                else if (teamResult.resultText.includes('(3位)')) rankText = '3位';
+                                                else if (teamResult.resultText.includes('(4位)')) rankText = '4位';
+
+                                                return (
+                                                    <TableRow key={index}>
+                                                        <TableCell>{rankText}</TableCell>
+                                                        <TableCell>{teamResult.name}</TableCell>
+                                                        <TableCell>{teamResult.resultText}</TableCell>
+                                                    </TableRow>
+                                                );
+                                            } else {
+                                                return null;
+                                            }
+                                        });
+                                    })()}
+                                </TableBody>
+                            </Table>
+                        </TableContainer>
+                    ) : null}
+
+
                     <Divider sx={{ margin: '16px 0' }} />
                     <Box sx={{ marginBottom: 2 }}>
                         {/* <Typography variant="h6" gutterBottom>{event[1]}</Typography> */}
@@ -209,7 +285,12 @@ const EventResult = () => {
                             <InputLabel>天気</InputLabel>
                             <Select
                                 value={weather}
-                                onChange={(e) => setWeather(e.target.value)}
+                                onChange={(e) => {
+                                    const updatedEvent = [...event];
+                                    updatedEvent[4] = e.target.value; // 天気を event[4] に反映
+                                    setEvent(updatedEvent);
+                                    setWeather(e.target.value);
+                                }}
                             >
                                 <MenuItem value="晴れ">晴れ</MenuItem>
                                 <MenuItem value="曇り">曇り</MenuItem>
@@ -228,6 +309,9 @@ const EventResult = () => {
                                                 const newPoints = [...points];
                                                 newPoints[teamIndex] = e.target.value as number;
                                                 setPoints(newPoints);
+                                                const updatedEvent = [...event];
+                                                updatedEvent[7 + teamIndex] = String(e.target.value); // チームポイントを event[7+] に反映
+                                                setEvent(updatedEvent);
                                             }}
                                         >
                                             {Array.from({ length: 11 }, (_, num) => (
@@ -250,8 +334,17 @@ const EventResult = () => {
                                     value={mipPlayer}
                                     onChange={(e) => {
                                         const newMipPlayers = [...mipPlayers];
-                                        newMipPlayers[mipIndex] = e.target.value as string;
+                                        const selectedValue = e.target.value as string;
+                                        // 削除処理: 現在選択中のプレイヤーが再度選択された場合、空文字列にする
+                                        newMipPlayers[mipIndex] = mipPlayer === selectedValue ? '' : selectedValue;
                                         setMipPlayers(newMipPlayers);
+                                        const updatedEvent = [...event];
+                                        if(mipIndex === 0){
+                                            updatedEvent[5] = newMipPlayers[mipIndex]; // MIP1 を event[5] に反映
+                                        } else {
+                                            updatedEvent[17 + mipIndex - 1] = newMipPlayers[mipIndex]; // MIP2-5 を event[17+] に反映
+                                        }
+                                        setEvent(updatedEvent);
                                     }}
                                 >
                                     {participants.filter((participant, idx) => !mipPlayers.includes(participant) || mipPlayers[mipIndex] === participant).map((participant, idx) => (
@@ -266,6 +359,11 @@ const EventResult = () => {
                             value={event[6]}
                             size="small"
                             fullWidth
+                            onChange={(e) => {
+                                const updatedEvent = [...event];
+                                updatedEvent[6] = e.target.value;
+                                setEvent(updatedEvent);
+                            }}
                         />
                     </Box>
                 </Box>
@@ -288,7 +386,7 @@ const EventResult = () => {
                 <Box sx={{ display: 'flex', justifyContent: 'space-between', marginBottom: 2}} >
                     <Button variant="contained" color="primary" onClick={handleSaveEvent} disabled={isSubmitting}>
                         イベントを保存して集計
-                            </Button>
+                    </Button>
                 </Box>
             </Box>
         </>

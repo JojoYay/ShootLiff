@@ -25,6 +25,7 @@ import {
     Typography
 } from '@mui/material';
 import { useEffect, useState } from 'react';
+import LoadingSpinner from '../calendar/loadingSpinner';
 
 
 export default function ScoreInput() {
@@ -115,19 +116,7 @@ export default function ScoreInput() {
                 }
 
             }
-            // url = process.env.SERVER_URL + `?func=getTodayMatch&func=getScores`;
-            // if (url) {
-            //     const response = await fetch(url, {
-            //         method: 'GET',
-            //     });
-            //     const data = await response.json();
-                // console.log(data.match);
-                // console.log(data.scores);
-                // // console.log(data);
 
-                // setVideos(data.match as string[][]);
-                // setScores(data.scores as string[][]);
-            // }
         } catch (error) {
             console.error('Error fetching Teams:', error);
         }
@@ -158,15 +147,10 @@ export default function ScoreInput() {
         // isUnassigned?: boolean,
         imageUrl?: string | null
     }) => (
-        // ... existing UserCard component ...
-        // ... 変更なし ...
         <Card sx={{
             minWidth: 100,
             margin: 1,
             backgroundColor: 'white', // 選択状態の背景色を削除
-            // minHeight: isUnassigned ? '50px' : 'auto', // 未所属の場合のみ高さを固定
-            // maxHeight: isUnassigned ? '50px' : 'auto', // 未所属の場合のみ高さを固定
-            // overflowY: isUnassigned ? 'scroll' : 'hidden', // 未所属の場合のみスクロールバーを表示
         }} >
             <CardActionArea>
                 <CardContent sx={
@@ -608,7 +592,6 @@ export default function ScoreInput() {
         <>
             {videos && teams && users ? (
                 <>
-                    {/* 画面上部のコンボボックスとボタン */}
                     <Grid container spacing={2} alignItems="center" sx={{ mb: 2 }}>
                         <Grid item xs={8} sm={6} md={4}>
                             <FormControl fullWidth margin="normal">
@@ -688,8 +671,6 @@ export default function ScoreInput() {
                                     <Button variant="contained" onClick={() => setEditMode('delete')}  sx={{ ...(editMode === 'delete' && { backgroundColor: 'lightblue' }) }}>削除</Button>
                                 </Grid>
                             </Grid>
-
-
                             {editMode !== 'delete' && ( // 削除モード以外の場合の入力フォーム
                                 <>
                                     {editMode === 'edit' && ( // 修正モードの場合のみ表示
@@ -843,15 +824,24 @@ export default function ScoreInput() {
                                 <DialogContent>
                                     <Button onClick={() => handleDialogWinningTeamSelect(videos.find(video => video[10] === selectedVideo)?.[3] || '')}
                                             variant={dialogWinningTeam === videos.find(video => video[10] === selectedVideo)?.[3] ? 'contained' : 'outlined'}
-                                    >
+                                            size='small'
+                                        >
                                         {videos.find(video => video[10] === selectedVideo)?.[3]}
                                     </Button>
                                     <Button onClick={() => handleDialogWinningTeamSelect(videos.find(video => video[10] === selectedVideo)?.[4] || '')}
                                             variant={dialogWinningTeam === videos.find(video => video[10] === selectedVideo)?.[4] ? 'contained' : 'outlined'}
-                                            sx={{ ml: 2 }}
+                                            sx={{ ml: 1 }} size='small'
                                     >
                                         {videos.find(video => video[10] === selectedVideo)?.[4]}
                                     </Button>
+                                    {(!selectedVideo.endsWith('-4_1') && !selectedVideo.endsWith('-4_2')) && (
+                                        <Button onClick={() => handleDialogWinningTeamSelect('draw')}
+                                                variant={dialogWinningTeam === 'draw' ? 'contained' : 'outlined'}
+                                                sx={{ ml: 1 }} size='small'
+                                        >
+                                            draw
+                                        </Button>
+                                    )}                                    
                                 </DialogContent>
                                 <DialogActions>
                                     <Button onClick={handleDialogCancel} color="primary">
@@ -867,16 +857,7 @@ export default function ScoreInput() {
                     )}
                 </>
             ) : (
-                <div style={
-                    {
-                        display: 'flex',
-                        justifyContent: 'center',
-                        alignItems: 'center',
-                        height: '100vh'
-                    }
-                } >
-                    <div> Preparing Score Input Console... </div> <CircularProgress />
-                </div>
+                <LoadingSpinner />
             )} 
         </>
     );
