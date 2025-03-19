@@ -210,17 +210,6 @@ export default function Video() {
 	const endIndex = pageGroups[currentPage] || videos?.length || 0;
 	const currentItems = videos 
     ? videos.slice(startIndex, endIndex)
-	// .sort((a, b) => {
-    //     // _gで終わるものを最前列に
-    //     const aIsG = a[0].endsWith('_g'); // ここで適切なインデックスを指定
-    //     const bIsG = b[0].endsWith('_g'); // ここで適切なインデックスを指定
-
-    //     if (aIsG && !bIsG) return -1; // aが_gで終わる場合
-    //     if (!aIsG && bIsG) return 1;  // bが_gで終わる場合
-
-    //     // それ以外の順序は昇順でソート
-    //     return a[1].localeCompare(b[1]); // index 1で昇順にソート
-    // }) 
     : [];
 
 	return (
