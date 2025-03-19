@@ -290,8 +290,6 @@ export default function Video() {
 											users={users}
 											actDate={actDate}
 											fetchVideo={fetchVideo}
-											// clientId='621267969814-utjhvm74lqa8hmhfiat8a67j5m2ga48l.apps.googleusercontent.com'
-											// clientSecret='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'
 											kanji={isUserManager}
 										/>
 										{profile ? 
