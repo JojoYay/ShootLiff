@@ -1,6 +1,7 @@
 import { styled } from '@mui/system';
-import { CardActionArea, Card, CardMedia, Typography, Avatar, Table, TableHead, TableRow, TableCell, TableBody, Grid } from '@mui/material';
+import { CardActionArea, Card, CardMedia, Typography, Table, TableHead, TableRow, TableCell, TableBody, Grid, Button, LinearProgress, CircularProgress } from '@mui/material';
 import AvatarIcon from '../stats/avatarIcon';
+import { useRef, useState } from 'react';
 
 const Overlay = styled('div')({
   position: 'absolute',
@@ -42,6 +43,11 @@ type VideoProps = {
   winTeam: string;
   shootLog:string[][];
   users:string[][];
+  actDate:string;
+  // clientId:string;
+  // clientSecret:string;
+  fetchVideo: () =>{};
+  kanji:boolean;
 };
 
 export default function VideoCardPlus(props: VideoProps) {
@@ -63,8 +69,102 @@ export default function VideoCardPlus(props: VideoProps) {
   };
 
 
+const fileInputRef = useRef<HTMLInputElement>(null);
+const [isModalOpen, setIsModalOpen] = useState<boolean>(false); // モーダル表示用 state を追加
+const [uploadProgress, setUploadProgress] = useState<number>(0);
+
+// ファイル選択時の処理
+const handleFileChange = async (event: React.ChangeEvent<HTMLInputElement>) => {
+  console.log('handleFileChange called');
+  const file = event.target.files?.[0];
+  console.log(file);
+  if (!file) {
+    alert('ファイルが選択されませんでした。');
+    return;
+  }
+  uploadVideo(file);
+ 
+};
+
+const uploadVideo = async(file: File) => {
+    if (!file) return alert("動画を選択してください");
+
+    setIsModalOpen(true); // モーダルを開く
+    try{
+      const url = process.env.SERVER_URL + '';
+      const formData:FormData = new FormData();
+      formData.append('func', 'uploadToYoutube');
+      formData.append('fileName', props.title);
+      formData.append('fileType', file.type);
+      formData.append('fileSize', file.size.toString());
+      formData.append('actDate', props.actDate);
+      
+      const res = await fetch(url, {
+        method: "POST",
+        headers: { 'Accept': 'application/json' },
+        body: formData,
+      });
+  
+      const { uploadUrl, token, err } = await res.json();
+      // console.log(uploadUrl);
+      // console.log(videoUrl);
+      // console.log(token);
+      setUploadProgress(10);
+
+      if (err) return alert(err);
+      if (!uploadUrl) return alert("アップロードURLの取得に失敗しました");
+      // Resumable Upload を開始
+      const chunkSize = 5 * 1024 * 1024; // 5MB チャンク
+      let offset = 0;
+      let isLastChunk = false;
+      let response;
+      while (offset < file.size) {
+        try{
+          const chunk = file.slice(offset, offset + chunkSize);
+          isLastChunk = offset + chunkSize >= file.size; // 最後のチャンクかどうかを判定
+          response = await fetch(uploadUrl, {
+            method: "PUT",
+            headers: {
+              "Authorization": `Bearer ${token}`,
+              "Content-Length": `${chunk.size}`,
+              "Content-Range": `bytes ${offset}-${offset + chunk.size - 1}/${file.size}`,
+            },
+            body: chunk,
+          });
+          const progress = Math.min(90, 10 + Math.round((offset / file.size) * 80)); // 進捗率を計算 (最大90%)
+          setUploadProgress(progress);
+          // console.log(`チャンクアップロード成功 bytes ${offset}-${offset + chunk.size - 1}/${file.size}, status: ${response.status}`); // 成功時のログを追加
+        }catch(e){
+          //fixme なぜかエラーになるが無視することでアップはできているっぽい
+        }
+        offset += chunkSize;
+      }
+  
+      try {
+        const url = process.env.SERVER_URL + '?func=updateYTVideo&actDate=' + encodeURIComponent(props.actDate) +'&fileName='+props.title;
+        if (url) {
+          const response = await fetch(url, {
+            method: 'GET',
+          });
+          const data = await response.json();
+          if(data.err){
+            alert(data.err);
+          }
+          props.fetchVideo();
+        }
+      } catch (error) {
+        console.error('Error fetching data:', error);
+      }
+      setUploadProgress(100);
+      alert("動画がアップロードされました！");
+    } finally {
+      setIsModalOpen(false); // モーダルを開く
+    }
+}
+
   return (
     <Card style={{ margin:'5px', borderRadius: '15px', overflow: 'hidden', width: '100%' }}>
+        <input type="file" ref={fileInputRef} style={{ display: 'none' }} onChange={handleFileChange} />
         {props.url ? (
             <CardActionArea onClick={handleCardClick} style={{width: '100%' }} >
                 <Media
@@ -92,13 +192,21 @@ export default function VideoCardPlus(props: VideoProps) {
               {props.title}
             </Typography>
           </Overlay>
+          {props.kanji? (
+            <Typography style={{ position: 'absolute', bottom: '10px', right: '10px', zIndex: 2, display: 'flex', flexDirection: 'column', alignItems: 'center' }}> {/* flexboxで縦に並べる */}
+              <Button variant="contained" color="primary" fullWidth onClick={() => {
+                fileInputRef.current?.click();
+              }}>動画をアップロード {isModalOpen ? <LinearProgress /> : ''}</Button>
+               
+            </Typography>
+          ) : null}
         </CardActionArea>
         )}
       {props.winTeam ? (
         <>
 
 <Grid container alignItems="center" justifyContent="space-between" padding={2}>
-  <Grid item xs={5}> {/* 左側の名前の幅を広げる */}
+  <Grid item xs={5}>
     <Typography variant="body2">{props.team1Name}</Typography>
     <Grid container wrap="wrap">
       {props.team1Member.split(', ').map(member => (

@@ -36,6 +36,7 @@ export default function Video() {
 	const [pageGroups, setPageGroups] = useState<number[]>([]); // ページグループを管理する新しいstate
 
 	const [users, setUsers] = useState<string[][]>([]);
+	const isUserManager:boolean = users.some(user => user[2] === profile?.userId && user[3] === '幹事');
 
     useEffect(() => {
         if (liff) {
@@ -160,7 +161,7 @@ export default function Video() {
 
 	const fetchShootLog = async (actDate: string) => {
 		try {
-			const url = process.env.SERVER_URL + '?func=getInfoOfTheDay&actDate=' + actDate;
+			const url = process.env.SERVER_URL + '?func=getInfoOfTheDay&actDate=' + encodeURIComponent(actDate);
 			if (url) {
 				const response = await fetch(url, {
 					method: 'GET',
@@ -272,7 +273,7 @@ export default function Video() {
 					<Grid container spacing={2} style={{ margin: '5px', width:'100%' }}>
 					{currentItems.map((data, index) => (
 							<>
-								{(shootLog && data[9]) ? (
+								{(shootLog && data[10]) ? (
 									<>
 										<VideoCardPlus key={index}
 											url={data[2]} 
@@ -287,6 +288,11 @@ export default function Video() {
 											matchId={data[10]}
 											shootLog={shootLog} 
 											users={users}
+											actDate={actDate}
+											fetchVideo={fetchVideo}
+											// clientId='621267969814-utjhvm74lqa8hmhfiat8a67j5m2ga48l.apps.googleusercontent.com'
+											// clientSecret='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'
+											kanji={isUserManager}
 										/>
 										{profile ? 
 											<Comment componentId='videos' users={users} user={profile} category={data[10]} lang={liff?.getLanguage() || 'ja-JP'} />
