@@ -34,7 +34,7 @@ const Comment: React.FC<CommentProps> = ({ componentId, category, users, user, l
                     method: 'GET',
                 });
                 const data = await response.json();
-                console.log(data);
+                // console.log(data);
                 setComments(data.comments);
             } catch (error) {
                 console.error('Error fetching comments:', error);

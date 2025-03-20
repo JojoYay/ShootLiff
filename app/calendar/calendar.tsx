@@ -25,37 +25,11 @@ import CalendarGrid from './calendarGrid';
 import RegistrationDialog from './registrationDialog';
 import LoadingSpinner from './loadingSpinner';
 import Comment from './comment';
+import { Attendance, CalendarEvent } from '../types/calendar';
+import { Profile } from '../types/user';
+import { BALL, BEER, LOGO } from '../utils/constants';
+import { NextEventCard } from './nextEventCard';
 
-interface Profile {
-    userId: string;
-    displayName: string;
-    pictureUrl?: string;
-}
-
-interface CalendarEvent {
-    ID: string;
-    event_type: string;
-    event_name: string;
-    start_datetime: string;
-    end_datetime: string;
-    place: string;
-    remark: string;
-    event_status: number;
-    attendance?: Attendance | null;
-    attendances?: Attendance[] | [];
-}
-
-interface Attendance {
-    attendance_id: string;
-    user_id: string;
-    year: string;
-    month: string;
-    date: string;
-    status: string;
-    calendar_id: string;
-    calendar: CalendarEvent | null;
-    profile?: Profile | null; // Profile を追加
-}
 
 export default function Calendar() {
     const [calendarEvents, setCalendarEvents] = useState<CalendarEvent[]>([]); // カレンダーイベントデータ
@@ -91,9 +65,6 @@ export default function Calendar() {
     const [currentDate, setCurrentDate] = useState<Date>(new Date()); // MUI Scheduler用 state
     const daysOfWeek = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'];
     const [calendar, setCalendar] = useState<(string | { day: number, events: CalendarEvent[] })[][]>([]);
-    const BALL:string = 'https://lh3.googleusercontent.com/d/1_snlf9rvRFpCg0nx4NlW57Z9PaGcPIn-';
-    const BEER:string = 'https://lh3.googleusercontent.com/d/1XrzK_UDQHB25toU-Zg0dXauXbLF-AV1T';
-    const LOGO:string = 'https://lh3.googleusercontent.com/d/1584yt922MfDFclQ9XX0MvtN91KhmQdu2';
     const [expandedEventDetails, setExpandedEventDetails] = useState<{[eventId: string]: boolean}>({});
     const [isRegistering, setIsRegistering] = useState(false);
 
@@ -537,234 +508,31 @@ export default function Calendar() {
     }
 
     const isUserManager = users.some(user => user[2] === profile?.userId && user[3] === '幹事');
-
+    const nextEvent = getNextEvent();
     return (
         <>
             {(calendarEvents.length > 0 && profile)? (
                 <>
                     <Grid container spacing={1} justifyContent="center" alignItems="center">
-                        {/* 次回イベントの表示を追加 */}
                         <Grid item xs={12}>
-                            {(() => {
-                                const nextEvent = getNextEvent();
-                                console.log(nextEvent);
-                                if (nextEvent) {
-                                    return (
-                                        <Paper elevation={3} sx={{
-                                            p: 2,
-                                            m: 2,
-                                            bgcolor: '#e8eaf6',
-                                            borderRadius: '10px',
-                                            border: '1px solid #c5cae9'
-                                        }}>
-                                            {/* ヘッダー部分を横並びに */}
-                                            <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 1 }}>
-                                                <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
-                                                    <Typography variant="h6" sx={{ color: '#3f51b5' }}>
-                                                        {lang === 'ja-JP' ? '次回の予定' : 'Next Event'}
-                                                    </Typography>
-                                                    <IconButton
-                                                        size="small"
-                                                        onClick={() => handleToggleDetails('next_event')}
-                                                        sx={{ color: '#3f51b5' }}
-                                                    >
-                                                        {expandedEventDetails['next_event'] ? <ExpandLess /> : <ExpandMore />}
-                                                    </IconButton>
-                                                </Box>
-                                                <Box>
-                                                    {Object.keys(pendingParticipationStatus).length > 0 && <SaveButton />}
-                                                    {isUserManager && (
-                                                        <ProxyReplyButton />
-                                                    )}
-                                                </Box>
-                                            </Box>
-
-                                            <Box sx={{ display: 'flex', alignItems: 'flex-start', gap: 2 }}>
-                                                <Box sx={{ display: 'flex', alignItems: 'center' }}>
-                                                    {nextEvent.event_type === 'フットサル' && (
-                                                        <img src={BALL} alt="フットサル" width={32} height={32} />
-                                                    )}
-                                                    {nextEvent.event_type === '飲み会' && (
-                                                        <img src={BEER} alt="飲み会" width={32} height={32} />
-                                                    )}
-                                                    {nextEvent.event_type === 'いつもの' && (
-                                                        <img src={LOGO} alt="いつもの" width={32} height={32} />
-                                                    )}
-                                                </Box>
-                                                <Box sx={{ flex: 1 }}>
-                                                    <Typography variant="h6" sx={{ color: '#757575', minWidth: '160px'}}>
-                                                        {new Date(nextEvent.start_datetime).toLocaleDateString(lang, {
-                                                            year: 'numeric',
-                                                            month: '2-digit',
-                                                            day: '2-digit',
-                                                        }).replace(/-/g, '/')} 
-                                                        {new Date(nextEvent.start_datetime).toLocaleTimeString(lang, {
-                                                            hour: '2-digit',
-                                                            minute: '2-digit',
-                                                            hour12: false
-                                                        })}
-                                                    </Typography>
-                                                    <Typography variant="body1" sx={{ color: '#424242' }}>
-                                                        {nextEvent.event_name} @ {nextEvent.place}
-                                                    </Typography>
-                                                    <Typography variant="body1" sx={{ color: '#757575'}}>
-                                                        〇: {nextEvent.attendances?.filter(att => att.status === '〇').length || 0}, 
-                                                        △: {nextEvent.attendances?.filter(att => att.status === '△').length || 0}, 
-                                                        ×: {nextEvent.attendances?.filter(att => att.status === '×').length || 0}
-                                                    </Typography>
-                                                    <Typography variant="body1" style={{ color: '#757575', wordBreak: 'break-word', whiteSpace: 'pre-wrap' }}>
-                                                        {renderRemarkWithLinks(nextEvent.remark)}
-                                                    </Typography>
-                                                    {/* 参加者選択コンボボックス（代理返信モード時のみ表示） */}
-                                                    {isProxyReplyMode && (
-                                                        <FormControl fullWidth margin="dense" size="small">
-                                                            <InputLabel id="proxy-user-select-label">{lang === 'ja-JP' ? '代理ユーザーを選択' : 'Select Proxy User'}</InputLabel>
-                                                            <Select
-                                                                labelId="proxy-user-select-label"
-                                                                id="proxy-user-select"
-                                                                value={proxyReplyUser ? proxyReplyUser.userId : ''}
-                                                                label={lang === 'ja-JP' ? '代理ユーザーを選択' : 'Select Proxy User'}
-                                                                onChange={(e) => {
-                                                                    const selectedUser = users.find(user => user[2] === e.target.value);
-                                                                    if (selectedUser) {
-                                                                        setProxyReplyUser({
-                                                                            userId: selectedUser[2],
-                                                                            displayName: selectedUser[1],
-                                                                            pictureUrl: selectedUser[4],
-                                                                        });
-                                                                    } else {
-                                                                        setProxyReplyUser(null);
-                                                                    }
-                                                                }}
-                                                            >
-                                                                {users.map((user, index) => (
-                                                                    <MenuItem key={index} value={user[2]}>
-                                                                        {user[1]}
-                                                                    </MenuItem>
-                                                                ))}
-                                                            </Select>
-                                                        </FormControl>
-                                                    )}
-                                                    {/* 参加ステータス選択 */}
-                                                    <Box sx={{ display: 'flex', alignItems: 'center', gap: 2, mb: 2 }}>
-                                                        <Typography variant="body2" sx={{ color: '#424242' }}>
-                                                            {lang === 'ja-JP' ? '参加状況:' : 'Participation:'}
-                                                        </Typography>
-                                                        <FormControl size="small" sx={{ minWidth: 120 }}>
-                                                            <Select
-                                                                value={
-                                                                    isProxyReplyMode && proxyReplyUser
-                                                                        ? (nextEvent.attendances?.find(att => att.user_id === proxyReplyUser.userId)?.status || '')
-                                                                        : (nextEvent.attendance?.status || '')
-                                                                }
-                                                                onChange={(e) => {
-                                                                    handleParticipationChange(
-                                                                        nextEvent,
-                                                                        e.target.value as '〇' | '△' | '×',
-                                                                        isProxyReplyMode ? proxyReplyUser?.userId : profile?.userId // ユーザーIDを渡す
-                                                                    );
-                                                                }}
-                                                                disabled={isProxyReplyMode && !proxyReplyUser} // 代理返信モードでユーザーが選択されていない場合はdisabled
-                                                            >
-                                                                <MenuItem value={'〇'}>〇</MenuItem>
-                                                                <MenuItem value={'△'}>△</MenuItem>
-                                                                <MenuItem value={'×'}>×</MenuItem>
-                                                            </Select>
-                                                        </FormControl>
-                                                    </Box>
-                                                    <Collapse in={expandedEventDetails['next_event']} timeout="auto" unmountOnExit>
-                                                        {/* 参加者リスト */}
-                                                        <Box sx={{ display: 'flex', flexDirection: 'column', gap: 1 }}>
-                                                            <Box>
-                                                                <Typography variant="body2" sx={{ color: '#424242', display: 'flex', alignItems: 'center' }}>
-                                                                    {lang === 'ja-JP' ? '参加' : 'Attend'} ({nextEvent.attendances?.filter(att => att.status === '〇').length || 0}):
-                                                                </Typography>
-                                                                <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 1 }}>
-                                                                    {nextEvent.attendances?.filter(att => att.status === '〇').map((attend, index) => (
-                                                                        <AvatarIcon
-                                                                            key={index}
-                                                                            name={attend.profile?.displayName || ''}
-                                                                            picUrl={attend.profile?.pictureUrl}
-                                                                            width={24}
-                                                                            height={24}
-                                                                            showTooltip={true}
-                                                                        />
-                                                                    ))}
-                                                                </Box>
-                                                            </Box>
-                                                            <Box>
-                                                                <Typography variant="body2" sx={{ color: '#424242' }}>
-                                                                    {lang === 'ja-JP' ? '保留' : 'Pending'} ({nextEvent.attendances?.filter(att => att.status === '△').length || 0}):
-                                                                </Typography>
-                                                                <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 1 }}>
-                                                                    {nextEvent.attendances?.filter(att => att.status === '△').map((attend, index) => (
-                                                                        <AvatarIcon
-                                                                            key={index}
-                                                                            name={attend.profile?.displayName || ''}
-                                                                            picUrl={attend.profile?.pictureUrl}
-                                                                            width={24}
-                                                                            height={24}
-                                                                            showTooltip={true}
-                                                                        />
-                                                                    ))}
-                                                                </Box>
-                                                            </Box>
-                                                            <Box>
-                                                                <Typography variant="body2" sx={{ color: '#424242' }}>
-                                                                    {lang === 'ja-JP' ? '不参加' : 'Absent'} ({nextEvent.attendances?.filter(att => att.status === '×').length || 0}):
-                                                                </Typography>
-                                                                <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 1 }}>
-                                                                    {nextEvent.attendances?.filter(att => att.status === '×').map((attend, index) => (
-                                                                        <AvatarIcon
-                                                                            key={index}
-                                                                            name={attend.profile?.displayName || ''}
-                                                                            picUrl={attend.profile?.pictureUrl}
-                                                                            width={24}
-                                                                            height={24}
-                                                                            showTooltip={true}
-                                                                        />
-                                                                    ))}
-                                                                </Box>
-                                                            </Box>
-                                                        </Box>
-                                                    </Collapse>
-                                                </Box>
-                                            </Box>
-                                        </Paper>
-                                    );
-                                }
-                                return null;
-                            })()}
+                            <NextEventCard
+                                ProxyReplyButton={ProxyReplyButton}
+                                SaveButton={SaveButton}
+                                expandedEventDetails={expandedEventDetails}
+                                handleParticipationChange={handleParticipationChange}
+                                handleToggleDetails={handleToggleDetails}
+                                isProxyReplyMode={isProxyReplyMode}
+                                isUserManager={isUserManager}
+                                lang={lang}
+                                nextEvent={nextEvent}
+                                pendingParticipationStatus={pendingParticipationStatus}
+                                profile={profile}
+                                proxyReplyUser={proxyReplyUser}
+                                setProxyReplyUser={setProxyReplyUser}
+                                users={users}
+                                 />
                         </Grid>
 
-                        <Dialog // 確認ダイアログを追加
-                            open={isResetDialogOpen}
-                            onClose={() => setIsResetDialogOpen(false)}
-                            aria-labelledby="reset-dialog-title"
-                            aria-describedby="reset-dialog-description"
-                        >
-                            <DialogTitle id="reset-dialog-title">
-                                {lang === 'ja-JP' ? "変更のリセット" : "Reset Proxy Reply Mode"}
-                            </DialogTitle>
-                            <DialogContent>
-                                <DialogContentText id="reset-dialog-description">
-                                    {lang === 'ja-JP' ? "モードを切り替えるため、今までの変更は破棄されます。リセットしてもよろしいですか？" : "Are you sure you want to reset changes to switch mode?"}
-                                </DialogContentText>
-                            </DialogContent>
-                            <DialogActions>
-                                <Button onClick={() => setIsResetDialogOpen(false)} color="primary">
-                                    {lang === 'ja-JP' ? 'キャンセル' : 'Cancel'}
-                                </Button>
-                                <Button onClick={() => {
-                                    setIsResetDialogOpen(false); // ダイアログを閉じる
-                                    setIsProxyReplyMode(!isProxyReplyMode); // 代理返信モードを無効にする
-                                    setProxyReplyUser(null);     // 代理ユーザーをクリア
-                                    setPendingParticipationStatus({}); // 保留中のステータスもクリア (オプション)
-                                }} color="primary">
-                                    {lang === 'ja-JP' ? 'リセット' : 'Reset'}
-                                </Button>
-                            </DialogActions>
-                        </Dialog>
 
                         {/* カレンダー表示領域 */}
                         <Grid item xs={12} style={{ textAlign: 'center' }}>
@@ -816,11 +584,8 @@ export default function Calendar() {
                                         {week.map((dayData, dayIndex) => (
                                             <>
                                                 {typeof dayData === 'object' && dayData.events.length > 0 && dayData.events.map((calendar, index) => (
-                                                    // <Grid item xs={12} sm={6} md={4} key={index} sx={{border: '1px solid #eee', backgroundColor: '#fffde7', borderRadius: '8px', padding:'5px' }}>
                                                     <>
-                                                    {/* <Box sx={{ margin:'3px', display: 'flex', flexDirection: 'column',alignItems: 'flex-start', justifyContent: 'space-between', border: '1px solid #eee', backgroundColor: '#fffde7', borderRadius: '8px', width: '100%' }}> */}
                                                     <Box sx={{ margin:'3px', display: 'flex', flexDirection: 'column',alignItems: 'flex-start', justifyContent: 'space-between', border: '1px solid #eee', backgroundColor: calendar.event_status === 99 ? '#e0e0e0' : '#fffde7', borderRadius: '8px', width: '100%' }}>
-
                                                         <Box sx={{ margin:'3px', display: 'flex', alignItems: 'center', justifyContent: 'space-between', width: '100%' }}>
                                                             <Box sx={{ display: 'flex', alignItems: 'center' }}>
                                                                 {calendar.event_type === 'フットサル' && (
@@ -933,6 +698,34 @@ export default function Calendar() {
                             <Comment componentId='calendar' users={users} user={profile} category='calendar_all' lang={lang} />
                         </Grid>
                     </Grid>
+                    <Dialog // 確認ダイアログを追加
+                        open={isResetDialogOpen}
+                        onClose={() => setIsResetDialogOpen(false)}
+                        aria-labelledby="reset-dialog-title"
+                        aria-describedby="reset-dialog-description"
+                    >
+                        <DialogTitle id="reset-dialog-title">
+                            {lang === 'ja-JP' ? "変更のリセット" : "Reset Proxy Reply Mode"}
+                        </DialogTitle>
+                        <DialogContent>
+                            <DialogContentText id="reset-dialog-description">
+                                {lang === 'ja-JP' ? "モードを切り替えるため、今までの変更は破棄されます。リセットしてもよろしいですか？" : "Are you sure you want to reset changes to switch mode?"}
+                            </DialogContentText>
+                        </DialogContent>
+                        <DialogActions>
+                            <Button onClick={() => setIsResetDialogOpen(false)} color="primary">
+                                {lang === 'ja-JP' ? 'キャンセル' : 'Cancel'}
+                            </Button>
+                            <Button onClick={() => {
+                                setIsResetDialogOpen(false); // ダイアログを閉じる
+                                setIsProxyReplyMode(!isProxyReplyMode); // 代理返信モードを無効にする
+                                setProxyReplyUser(null);     // 代理ユーザーをクリア
+                                setPendingParticipationStatus({}); // 保留中のステータスもクリア (オプション)
+                            }} color="primary">
+                                {lang === 'ja-JP' ? 'リセット' : 'Reset'}
+                            </Button>
+                        </DialogActions>
+                    </Dialog>
                 </>
             ) : (
                 <LoadingSpinner />

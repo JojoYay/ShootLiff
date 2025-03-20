@@ -5,8 +5,6 @@ import { Button, Card, CardActions, CardContent, CircularProgress, Dialog, Dialo
 import { Profile } from '@liff/get-profile';
 import { useLiff } from '@/app/liffProvider';
 import DeleteIcon from '@mui/icons-material/Delete';
-import EditIcon from '@mui/icons-material/Edit';
-import TableChartIcon from '@mui/icons-material/TableChart';
 // Existing code for InputExpense component
 
 export default function ExpenseList() {

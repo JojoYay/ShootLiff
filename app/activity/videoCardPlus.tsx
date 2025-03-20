@@ -114,7 +114,7 @@ const uploadVideo = async(file: File) => {
       if (err) return alert(err);
       if (!uploadUrl) return alert("アップロードURLの取得に失敗しました");
       // Resumable Upload を開始
-      const chunkSize = 5 * 1024 * 1024; // 5MB チャンク
+      const chunkSize = 100 * 1024 * 1024; // 100MB チャンク
       let offset = 0;
       let isLastChunk = false;
       let response;

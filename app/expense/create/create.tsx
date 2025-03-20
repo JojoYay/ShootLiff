@@ -41,11 +41,6 @@ export default function CreateExpense() {
                 console.log(data);
                 if (data.attendees) {
                     const calendarEventMembers = data.attendees.map((member: any) => member[1]);
-                    // const preSelectedOptions = members
-                    //     .filter(member => calendarEventMembers.includes(member[1]))
-                    //     .map(member => member[1]);
-                    // console.log(preSelectedOptions);
-                    // setSelectedOptions(preSelectedOptions);
                     setSelectedOptions(calendarEventMembers);
                     if(data.event[9]){
                         setPayNow(data.event[9]);
