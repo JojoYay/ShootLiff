@@ -177,7 +177,7 @@ const uploadVideo = async(file: File) => {
 
   return (
     <>
-      <Card style={{ borderRadius: '15px', overflow: 'hidden', width: '100%' }}>
+      <Card style={{ borderRadius: '15px', overflow: 'hidden', width: '100%', marginBottom:'10px' }}>
           <input type="file" ref={fileInputRef} style={{ display: 'none' }} onChange={handleFileChange} />
           {props.url ? (
             <>
@@ -261,11 +261,12 @@ const uploadVideo = async(file: File) => {
                 <TableBody>
                 {props.shootLog
                   .filter(log => {
-                    let logMatchId = log[1];
+                    let logMatchId = props.matchId;
                     if (logMatchId.endsWith('d')) {
                       logMatchId = logMatchId.slice(0, -1); // 末尾の "d" を削除
                     }
-                    return logMatchId === props.matchId;
+                    console.log(logMatchId);
+                    return logMatchId === log[1];
                   })// 該当のmatchIdを持つデータをフィルタリング
                   .map((log, index) => (
                         <TableRow key={index}> {/* 行クリックで編集モードにする場合はここを修正 */}

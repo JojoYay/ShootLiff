@@ -1,14 +1,14 @@
 'use client';
 import { useEffect, useState } from 'react';
 
-import { Box, Grid, Pagination, Table, TableBody, TableCell, TableHead, TableRow, Typography } from '@mui/material';
+import { Box, Pagination, Table, TableBody, TableCell, TableHead, TableRow, Typography } from '@mui/material';
 import VideoCardPlus from './videoCardPlus';
 import VideoCard from '../video/videoCard';
 import AvatarIcon from '../stats/avatarIcon';
 import LoadingSpinner from '../calendar/loadingSpinner';
-import Comment from '../calendar/comment';
+// import Comment from '../calendar/comment';
 import { useLiff } from '../liffProvider';
-import YouTubeComment from '../calendar/youTubeComment';
+// import YouTubeComment from '../calendar/youTubeComment';
 
 export default function Video() {
 	useEffect(() => {
@@ -259,7 +259,7 @@ export default function Video() {
 							</Table>
 						</>
 					) : null}
-					<Box marginBottom="5px">
+					<Box>
 						{currentItems.map((data, index) => (
 							<>
 								{(shootLog && data[10]) ? (

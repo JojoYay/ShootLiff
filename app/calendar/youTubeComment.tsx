@@ -54,7 +54,7 @@ const YouTubeComment: React.FC<CommentProps> = ({ videoUrl }) => {
 
     return (
         <Box>                                                    
-            <Box sx={{maxHeight: '200px', overflow:'scroll', width:"100%"}}>
+            <Box sx={{maxHeight: '200px', overflow:'scroll', width:"100%", marginBottom:'10px'}}>
                 {comments.map((comment, index) => {
                     return (
                         <Box key={index} sx={{ borderTop: '1px solid #ccc', borderBottom: '1px solid #ccc', width:"100%"}}>
