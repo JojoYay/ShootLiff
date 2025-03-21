@@ -76,7 +76,7 @@ export default function Video() {
 				setShootLog(data.shootLogs); // 初回ロード時にshootLogsも取得
 				const matchedEvent = (data.events as string[][]).find(ev => ev[1] === data.actDates[0]); // actDateとマッチするイベントを検索
 				setEvent(matchedEvent ? matchedEvent : []); // マッチしたイベントを設定
-				console.log(matchedEvent);
+				// console.log(matchedEvent);
 				// if(matchedEvent){
 				// 	const matchedUser = (data.users.slice(1) as string[][]).find(user => user[1] === matchedEvent[5]);
 				// 	setMipPic(matchedUser ? matchedUser[4] : '');
@@ -114,7 +114,7 @@ export default function Video() {
 				matchedEvent = events[actualIndex];				
 			}
 
-			console.log("actDate:"+actDate+" matchedEvent:"+matchedEvent+" actIndex:"+actDateIndex+'orgInd:'+originalIndex);
+			// console.log("actDate:"+actDate+" matchedEvent:"+matchedEvent+" actIndex:"+actDateIndex+'orgInd:'+originalIndex);
 			setEvent(matchedEvent); // マッチしたイベントを設定
 			// console.log(matchedEvent);
 			if(matchedEvent.length > 0){
@@ -189,18 +189,18 @@ export default function Video() {
 				}
 			}
 			setPageGroups(groups);
-			console.log("groups"+groups);
+			// console.log("groups"+groups);
 		}
 	}, [videos]);
 
 	const handlePageChange = async (event: React.ChangeEvent<unknown>, value: number) => {
 		setCurrentPage(value);
-		console.log("event??:", event);
-		console.log("pageGroups.length",pageGroups.length);
-		console.log("pageGroups",pageGroups);
+		// console.log("event??:", event);
+		// console.log("pageGroups.length",pageGroups.length);
+		// console.log("pageGroups",pageGroups);
 		if(actDates){
 			const targetActDate = actDates[value - 1]; // pageGroupsからactDatesのindexを取得
-			console.log('targetActDate', targetActDate);
+			// console.log('targetActDate', targetActDate);
 			setActDate(targetActDate);
 			await fetchShootLog(targetActDate); // actDateを指定してfetchShootLogを呼び出す
 		}

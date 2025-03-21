@@ -27,7 +27,7 @@ const YouTubeComment: React.FC<CommentProps> = ({ videoUrl }) => {
                     method: 'GET',
                 });
                 const data = await response.json();
-                console.log(data);
+                // console.log(data);
                 setComments(data.comments);
             } catch (error) {
                 console.error('Error fetching comments:', error);

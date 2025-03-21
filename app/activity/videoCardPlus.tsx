@@ -87,9 +87,9 @@ const [uploadProgress, setUploadProgress] = useState<number>(0);
 
 // ファイル選択時の処理
 const handleFileChange = async (event: React.ChangeEvent<HTMLInputElement>) => {
-  console.log('handleFileChange called');
+  // console.log('handleFileChange called');
   const file = event.target.files?.[0];
-  console.log(file);
+  // console.log(file);
   if (!file) {
     alert('ファイルが選択されませんでした。');
     return;
@@ -265,7 +265,6 @@ const uploadVideo = async(file: File) => {
                     if (logMatchId.endsWith('d')) {
                       logMatchId = logMatchId.slice(0, -1); // 末尾の "d" を削除
                     }
-                    console.log(logMatchId);
                     return logMatchId === log[1];
                   })// 該当のmatchIdを持つデータをフィルタリング
                   .map((log, index) => (
