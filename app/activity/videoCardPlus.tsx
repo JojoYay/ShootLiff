@@ -2,6 +2,7 @@ import { Box, styled } from '@mui/system';
 import { CardActionArea, Card, CardMedia, Typography, Table, TableHead, TableRow, TableCell, TableBody, Grid, Button, LinearProgress, CircularProgress } from '@mui/material';
 import AvatarIcon from '../stats/avatarIcon';
 import { useRef, useState } from 'react';
+import YouTubeComment from '../calendar/youTubeComment';
 
 const Overlay2 = styled('div')({
   position: 'absolute',
@@ -52,7 +53,7 @@ type VideoProps = {
   team1Score: string;
   team2Score: string;
   winTeam: string;
-  shootLog:string[][];
+  shootLog:string[][] | null;
   users:string[][];
   actDate:string;
   // clientId:string;
@@ -175,105 +176,114 @@ const uploadVideo = async(file: File) => {
 }
 
   return (
-    <Card style={{ margin:'5px', borderRadius: '15px', overflow: 'hidden', width: '100%' }}>
-        <input type="file" ref={fileInputRef} style={{ display: 'none' }} onChange={handleFileChange} />
-        {props.url ? (
-            <CardActionArea onClick={handleCardClick} style={{width: '100%' }} >
-                <Media
-                    component="img"
-                    alt="Image"
-                    height="160"
-                    width='100%'
-                    image={getPicUrl(props.url)}
-                    title="Image"
-                    style={{ borderRadius: '15px' }} // ここでもborderRadiusを設定
-                />
-                <Overlay>
-                    <Typography variant="h5" style={{ color: 'white', paddingTop: '10px', paddingLeft: '10px', borderRadius: '15px' }}>
-                        {props.title}
-                    </Typography>
-                </Overlay>
-            </CardActionArea>
-        ) : (
-          <>
-          <CardActionArea>
-            <Typography height={'160px'}  variant="h4" style={{ color: 'white', fontWeight: 'bold', backgroundColor: 'grey', borderRadius: '15px', display: 'flex', justifyContent: 'center', alignItems: 'flex-end' }}>
-              No Video
-            </Typography>
-            <Overlay>
-              <Typography variant="h5" style={{ color: 'white', paddingTop: '10px', paddingLeft: '10px' }}>
-                {props.title}
+    <>
+      <Card style={{ borderRadius: '15px', overflow: 'hidden', width: '100%' }}>
+          <input type="file" ref={fileInputRef} style={{ display: 'none' }} onChange={handleFileChange} />
+          {props.url ? (
+            <>
+              <CardActionArea onClick={handleCardClick} style={{width: '100%' }} >
+                  <Media
+                      component="img"
+                      alt="Image"
+                      height="160"
+                      width='100%'
+                      image={getPicUrl(props.url)}
+                      title="Image"
+                      style={{ borderRadius: '15px' }} // ここでもborderRadiusを設定
+                  />
+                  <Overlay>
+                      <Typography variant="h5" style={{ color: 'white', paddingTop: '10px', paddingLeft: '10px', borderRadius: '15px' }}>
+                          {props.title}
+                      </Typography>
+                  </Overlay>
+              </CardActionArea>
+            </>
+          ) : (
+            <CardActionArea>
+              <Typography height={'160px'}  variant="h4" style={{ color: 'white', fontWeight: 'bold', backgroundColor: 'grey', borderRadius: '15px', display: 'flex', justifyContent: 'center', alignItems: 'flex-end' }}>
+                No Video
               </Typography>
-            </Overlay>
-            {props.kanji? (
-            <Overlay2>
-              <Box style={{ zIndex: 2, display: 'flex', flexDirection: 'column', justifyContent: 'center', alignItems: 'center', height: '90%', padding: '20px' }}>
-                {isModalOpen ? (<LinearProgress style={{width:'250px', height:'8px', marginBottom:'8px'}} variant="determinate" value={uploadProgress}/>) : null}
-                <Typography style={{ zIndex: 2, display: 'flex', flexDirection: 'column', alignItems: 'center' }}> {/* flexboxで縦に並べる */}
-                  <Button variant="contained" color="primary" fullWidth onClick={() => {
-                    fileInputRef.current?.click();
-                  }}>動画をアップロード
-                  </Button>
+              <Overlay>
+                <Typography variant="h5" style={{ color: 'white', paddingTop: '10px', paddingLeft: '10px' }}>
+                  {props.title}
                 </Typography>
-              </Box>
-            </Overlay2>
-            ) : null}
-          </CardActionArea>
-
-
+              </Overlay>
+              {props.kanji? (
+              <Overlay2>
+                <Box style={{ zIndex: 2, display: 'flex', flexDirection: 'column', justifyContent: 'center', alignItems: 'center', height: '90%', padding: '20px' }}>
+                  {isModalOpen ? (<LinearProgress style={{width:'250px', height:'8px', marginBottom:'8px'}} variant="determinate" value={uploadProgress}/>) : null}
+                  <Typography style={{ zIndex: 2, display: 'flex', flexDirection: 'column', alignItems: 'center' }}> {/* flexboxで縦に並べる */}
+                    <Button variant="contained" color="primary" fullWidth onClick={() => {
+                      fileInputRef.current?.click();
+                    }}>動画をアップロード
+                    </Button>
+                  </Typography>
+                </Box>
+              </Overlay2>
+              ) : null}
+            </CardActionArea>
+          )}
+        {props.winTeam ? (
+          <>
+            {props.shootLog && (
+            <>
+              <Grid container alignItems="center" justifyContent="space-between" padding={2}>
+                <Grid item xs={5}>
+                  <Typography variant="body2">{props.team1Name}</Typography>
+                  <Grid container wrap="wrap">
+                    {props.team1Member.split(', ').map(member => (
+                      <UserIcon key={member} userName={member} /> // 名前をUserIconに渡す
+                    ))}
+                  </Grid>
+                </Grid>
+                <Grid item xs={2} textAlign="center"> {/* スコアの幅を狭める */}
+                  <Typography variant="h5">
+                    {props.team1Score} - {props.team2Score}
+                  </Typography>
+                </Grid>
+                <Grid item xs={5}> {/* 右側の名前の幅を広げる */}
+                  <Typography variant="body2">{props.team2Name}</Typography>
+                  <Grid container wrap="wrap">
+                    {props.team2Member.split(', ').map(member => (
+                      <UserIcon key={member} userName={member} /> // 名前をUserIconに渡す
+                    ))}
+                  </Grid>
+                </Grid>
+              </Grid>
+              <Table size="small" >
+                <TableHead>
+                    <TableRow>
+                        <TableCell>チーム</TableCell>
+                        <TableCell>得点者</TableCell>
+                        <TableCell>アシスト</TableCell>
+                    </TableRow>
+                </TableHead>
+                <TableBody>
+                {props.shootLog
+                  .filter(log => {
+                    let logMatchId = log[1];
+                    if (logMatchId.endsWith('d')) {
+                      logMatchId = logMatchId.slice(0, -1); // 末尾の "d" を削除
+                    }
+                    return logMatchId === props.matchId;
+                  })// 該当のmatchIdを持つデータをフィルタリング
+                  .map((log, index) => (
+                        <TableRow key={index}> {/* 行クリックで編集モードにする場合はここを修正 */}
+                            <TableCell>{log[2]}</TableCell>
+                            <TableCell>{log[4]}</TableCell>
+                            <TableCell>{log[3] || '-'}</TableCell> { /* アシストがない場合は '-' を表示 */ }
+                        </TableRow>
+                    ))}
+                </TableBody>
+              </Table>
+            </>
+            )}
           </>
-        )}
-      {props.winTeam ? (
-        <>
-
-<Grid container alignItems="center" justifyContent="space-between" padding={2}>
-  <Grid item xs={5}>
-    <Typography variant="body2">{props.team1Name}</Typography>
-    <Grid container wrap="wrap">
-      {props.team1Member.split(', ').map(member => (
-        <UserIcon key={member} userName={member} /> // 名前をUserIconに渡す
-      ))}
-    </Grid>
-  </Grid>
-  <Grid item xs={2} textAlign="center"> {/* スコアの幅を狭める */}
-    <Typography variant="h5">
-      {props.team1Score} - {props.team2Score}
-    </Typography>
-  </Grid>
-  <Grid item xs={5}> {/* 右側の名前の幅を広げる */}
-    <Typography variant="body2">{props.team2Name}</Typography>
-    <Grid container wrap="wrap">
-      {props.team2Member.split(', ').map(member => (
-        <UserIcon key={member} userName={member} /> // 名前をUserIconに渡す
-      ))}
-    </Grid>
-  </Grid>
-</Grid>
-
-<Table size="small" >
-    <TableHead>
-        <TableRow>
-            <TableCell>チーム</TableCell>
-            <TableCell>得点者</TableCell>
-            <TableCell>アシスト</TableCell>
-        </TableRow>
-    </TableHead>
-    <TableBody>
-    {props.shootLog
-      .filter(log => log[1] === props.matchId) // 該当のmatchIdを持つデータをフィルタリング
-      .map((log, index) => (
-            <TableRow key={index}> {/* 行クリックで編集モードにする場合はここを修正 */}
-                <TableCell>{log[2]}</TableCell>
-                <TableCell>{log[4]}</TableCell>
-                <TableCell>{log[3] || '-'}</TableCell> { /* アシストがない場合は '-' を表示 */ }
-            </TableRow>
-        ))}
-    </TableBody>
-</Table>
-
-
-        </>
-      ) : (<></>)}
-    </Card>
+        ) : (<></>)}
+      </Card>
+      {props.url && (
+        <YouTubeComment videoUrl={props.url} />
+      )}
+    </>
   );
 }

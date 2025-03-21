@@ -8,6 +8,7 @@ import AvatarIcon from '../stats/avatarIcon';
 import LoadingSpinner from '../calendar/loadingSpinner';
 import Comment from '../calendar/comment';
 import { useLiff } from '../liffProvider';
+import YouTubeComment from '../calendar/youTubeComment';
 
 export default function Video() {
 	useEffect(() => {
@@ -250,7 +251,7 @@ export default function Video() {
 									< TableRow sx={{ borderBottom: 'none' }}> {/* TableRowの下線 */}
 										<TableCell align="center" sx={{ borderBottom: 'none' }}> {/* TableCellの下線 */}
 											<Typography variant="caption" style={{ padding: '3px', fontWeight: 'bold', color: '#333' }}>
-											{event[6]}
+												{event[6]}
 											</Typography>
 										</TableCell>
 									</TableRow>
@@ -258,33 +259,27 @@ export default function Video() {
 							</Table>
 						</>
 					) : null}
-
-					<Grid container spacing={2} style={{ margin: '5px', width:'100%' }}>
-					{currentItems.map((data, index) => (
+					<Box marginBottom="5px">
+						{currentItems.map((data, index) => (
 							<>
 								{(shootLog && data[10]) ? (
-									<>
-										<VideoCardPlus key={index}
-											url={data[2]} 
-											title={data[1]}
-											team1Name={data[3]} 
-											team2Name={data[4]} 
-											team1Member={data[5]} 
-											team2Member={data[6]} 
-											team1Score={data[7]} 
-											team2Score={data[8]} 
-											winTeam={data[9]} 
-											matchId={data[10]}
-											shootLog={shootLog} 
-											users={users}
-											actDate={actDate}
-											fetchVideo={fetchVideo}
-											kanji={isUserManager}
-										/>
-										{profile ? 
-											<Comment componentId='videos' users={users} user={profile} category={data[10]} lang={liff?.getLanguage() || 'ja-JP'} />
-										 : null}
-									</>
+									<VideoCardPlus key={index}
+										url={data[2]} 
+										title={data[1]}
+										team1Name={data[3]} 
+										team2Name={data[4]} 
+										team1Member={data[5]} 
+										team2Member={data[6]} 
+										team1Score={data[7]} 
+										team2Score={data[8]} 
+										winTeam={data[9]} 
+										matchId={data[10]}
+										shootLog={shootLog} 
+										users={users}
+										actDate={actDate}
+										fetchVideo={fetchVideo}
+										kanji={isUserManager}
+									/>
 								) : (
 									<VideoCard 
 										key={index}
@@ -295,7 +290,7 @@ export default function Video() {
 								)}
 							</>
 						))}
-					</Grid>
+					</Box>
 					<Pagination
 						count={pageGroups.length} // ページ数をpageGroupsの長さに変更
 						page={currentPage}
