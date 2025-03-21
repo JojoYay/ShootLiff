@@ -1,7 +1,18 @@
-import { styled } from '@mui/system';
+import { Box, styled } from '@mui/system';
 import { CardActionArea, Card, CardMedia, Typography, Table, TableHead, TableRow, TableCell, TableBody, Grid, Button, LinearProgress, CircularProgress } from '@mui/material';
 import AvatarIcon from '../stats/avatarIcon';
 import { useRef, useState } from 'react';
+
+const Overlay2 = styled('div')({
+  position: 'absolute',
+  top: 0,
+  left: 0,
+  width: '100%',
+  height: '100%',
+  // background: 'linear-gradient(rgba(0,0,0,1),rgba(0,0,0,0))',
+  zIndex: 2,
+
+});
 
 const Overlay = styled('div')({
   position: 'absolute',
@@ -114,7 +125,7 @@ const uploadVideo = async(file: File) => {
       if (err) return alert(err);
       if (!uploadUrl) return alert("アップロードURLの取得に失敗しました");
       // Resumable Upload を開始
-      const chunkSize = 100 * 1024 * 1024; // 100MB チャンク
+      const chunkSize = 30 * 1024 * 1024; // 30MB チャンク
       let offset = 0;
       let isLastChunk = false;
       let response;
@@ -122,6 +133,8 @@ const uploadVideo = async(file: File) => {
         try{
           const chunk = file.slice(offset, offset + chunkSize);
           isLastChunk = offset + chunkSize >= file.size; // 最後のチャンクかどうかを判定
+          const progress = Math.min(90, 10 + Math.round((offset / file.size) * 80)); // 進捗率を計算 (最大90%)
+          setUploadProgress(progress);
           response = await fetch(uploadUrl, {
             method: "PUT",
             headers: {
@@ -131,16 +144,15 @@ const uploadVideo = async(file: File) => {
             },
             body: chunk,
           });
-          const progress = Math.min(90, 10 + Math.round((offset / file.size) * 80)); // 進捗率を計算 (最大90%)
-          setUploadProgress(progress);
           // console.log(`チャンクアップロード成功 bytes ${offset}-${offset + chunk.size - 1}/${file.size}, status: ${response.status}`); // 成功時のログを追加
         }catch(e){
           //fixme なぜかエラーになるが無視することでアップはできているっぽい
+        } finally {
+          setUploadProgress(90);
         }
         offset += chunkSize;
       }
-  
-      try {
+        try {
         const url = process.env.SERVER_URL + '?func=updateYTVideo&actDate=' + encodeURIComponent(props.actDate) +'&fileName='+props.title;
         if (url) {
           const response = await fetch(url, {
@@ -183,24 +195,33 @@ const uploadVideo = async(file: File) => {
                 </Overlay>
             </CardActionArea>
         ) : (
+          <>
           <CardActionArea>
             <Typography height={'160px'}  variant="h4" style={{ color: 'white', fontWeight: 'bold', backgroundColor: 'grey', borderRadius: '15px', display: 'flex', justifyContent: 'center', alignItems: 'flex-end' }}>
               No Video
             </Typography>
-          <Overlay>
-            <Typography variant="h5" style={{ color: 'white', paddingTop: '10px', paddingLeft: '10px' }}>
-              {props.title}
-            </Typography>
-          </Overlay>
-          {props.kanji? (
-            <Typography style={{ position: 'absolute', bottom: '10px', right: '10px', zIndex: 2, display: 'flex', flexDirection: 'column', alignItems: 'center' }}> {/* flexboxで縦に並べる */}
-              <Button variant="contained" color="primary" fullWidth onClick={() => {
-                fileInputRef.current?.click();
-              }}>動画をアップロード {isModalOpen ? <LinearProgress /> : ''}</Button>
-               
-            </Typography>
-          ) : null}
-        </CardActionArea>
+            <Overlay>
+              <Typography variant="h5" style={{ color: 'white', paddingTop: '10px', paddingLeft: '10px' }}>
+                {props.title}
+              </Typography>
+            </Overlay>
+            {props.kanji? (
+            <Overlay2>
+              <Box style={{ zIndex: 2, display: 'flex', flexDirection: 'column', justifyContent: 'center', alignItems: 'center', height: '90%', padding: '20px' }}>
+                {isModalOpen ? (<LinearProgress style={{width:'250px', height:'8px', marginBottom:'8px'}} variant="determinate" value={uploadProgress}/>) : null}
+                <Typography style={{ zIndex: 2, display: 'flex', flexDirection: 'column', alignItems: 'center' }}> {/* flexboxで縦に並べる */}
+                  <Button variant="contained" color="primary" fullWidth onClick={() => {
+                    fileInputRef.current?.click();
+                  }}>動画をアップロード
+                  </Button>
+                </Typography>
+              </Box>
+            </Overlay2>
+            ) : null}
+          </CardActionArea>
+
+
+          </>
         )}
       {props.winTeam ? (
         <>
