@@ -1,5 +1,6 @@
 import React from 'react';
 import { Box } from '@mui/material';
+import { LOADING } from '../utils/constants';
 
 const LoadingSpinner: React.FC = () => {
     return (
@@ -17,7 +18,7 @@ const LoadingSpinner: React.FC = () => {
                 },
             }}>
                 <img
-                    src="https://lh3.googleusercontent.com/d/1_dFkD99lTQeQEFVwWfIBadXkApYGBGmt"
+                    src={LOADING}
                     alt="ローディング"
                     style={{
                         width: '48px',

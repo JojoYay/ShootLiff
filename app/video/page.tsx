@@ -2,7 +2,7 @@ import { Metadata } from "next"
 import Video from "./video"
 
 export const metadata: Metadata = {
-    title: "Video Footage | Shoot Sunday",
+    title: "Video Footage | " + process.env.NEXT_PUBLIC_APP_TITLE,
 }
 
 const VideoPage = () => {

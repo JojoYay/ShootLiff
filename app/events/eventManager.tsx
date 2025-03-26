@@ -28,6 +28,7 @@ import ja from 'date-fns/locale/ja/index.js';
 import { DatePicker, TimePicker } from '@mui/x-date-pickers';
 import LoadingSpinner from '../calendar/loadingSpinner';
 import Link from 'next/link';
+import { BALL, BEER, LOGO } from '../utils/constants';
 
 interface Event {
     id: string;
@@ -48,9 +49,6 @@ export default function EventManager() {
     const [open, setOpen] = useState(false);
     const [selectedEvent, setSelectedEvent] = useState<Event | null>(null);
     const [isLoading, setIsLoading] = useState(true);
-    const BALL:string = 'https://lh3.googleusercontent.com/d/1_snlf9rvRFpCg0nx4NlW57Z9PaGcPIn-';
-    const BEER:string = 'https://lh3.googleusercontent.com/d/1XrzK_UDQHB25toU-Zg0dXauXbLF-AV1T';
-    const LOGO:string = 'https://lh3.googleusercontent.com/d/1584yt922MfDFclQ9XX0MvtN91KhmQdu2';
     // Form state
     const [formData, setFormData] = useState<Event>({
         id: '',
@@ -409,7 +407,7 @@ export default function EventManager() {
                             )}
                             {event.remark && (
                                 <Typography variant="body2" color="text.secondary">
-                                    備考: {event.remark}
+                                    {process.env.CUSTOMER === 'Scout' ? '特別な持ち物:' : '備考:'} {event.remark}
                                 </Typography>
                             )}
                             {event.pitch_fee && (

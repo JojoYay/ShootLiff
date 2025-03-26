@@ -2,7 +2,7 @@ import { Metadata } from "next"
 import Activity from "./activity"
 
 export const metadata: Metadata = {
-    title: "Activity | Shoot Sunday",
+    title: "Activity | " + process.env.NEXT_PUBLIC_APP_TITLE,
 }
 
 const ActivityPage = () => {

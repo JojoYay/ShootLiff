@@ -5,13 +5,16 @@
   "scripts": {
     "dev": "next dev",
     "set-env": "node scripts/setEnv.js",
+    "set-env:test": "node scripts/setEnv.js test",
+    "set-env:prod": "node scripts/setEnv.js prod",
+    "set-env:bvs": "node scripts/setEnv.js bvs",  
     "build": "npm run set-env && next build",
     "start": "next start",
     "lint": "next lint",
     "deploy": "firebase use test && npm run set-env && next build && firebase deploy --project test-8120f",
-    "deploy:test": "firebase use test && npm run set-env && next build && firebase deploy --project test-8120f",
-    "deploy:prod": "firebase use prod && npm run set-env && next build && firebase deploy --project shootsundayfront",
-    "deploy:bvs": "firebase use bvsfront && npm run set-env && next build && firebase deploy --project bvsfront"
+    "deploy:test": "firebase use test && npm run set-env:test && next build && firebase deploy --project test-8120f",
+    "deploy:prod": "firebase use prod && npm run set-env:prod && next build && firebase deploy --project shootsundayfront",
+    "deploy:bvs": "firebase use bvsfront && npm run set-env:bvs && next build && firebase deploy --project bvsfront"
   },
   "dependencies": {
     "@emotion/react": "^11.11.4",
