@@ -7,7 +7,7 @@
     "set-env": "node scripts/setEnv.js",
     "set-env:test": "node scripts/setEnv.js test",
     "set-env:prod": "node scripts/setEnv.js prod",
-    "set-env:bvs": "node scripts/setEnv.js bvs",  
+    "set-env:bvs": "node scripts/setEnv.js bvs",
     "build": "npm run set-env && next build",
     "start": "next start",
     "lint": "next lint",
@@ -37,7 +37,8 @@
     "react-dom": "^18",
     "react-swipeable": "^7.0.2",
     "styled-components": "^6.1.11",
-    "ts-node": "^10.9.2"
+    "ts-node": "^10.9.2",
+    "uuid": "^11.1.0"
   },
   "devDependencies": {
     "@types/node": "^20",

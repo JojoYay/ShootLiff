@@ -26,24 +26,25 @@ import RegistrationDialog from './registrationDialog';
 import LoadingSpinner from './loadingSpinner';
 import Comment from './comment';
 import { Attendance, CalendarEvent } from '../types/calendar';
-import { Profile } from '../types/user';
+import { User } from '../types/user';
 import { BALL, BEER, LOGO } from '../utils/constants';
 import { NextEventCard } from './nextEventCard';
-
+import { useRouter } from 'next/navigation';
 
 export default function Calendar() {
+    const router = useRouter();
     const [calendarEvents, setCalendarEvents] = useState<CalendarEvent[]>([]); // カレンダーイベントデータ
     const [attendance, setAttendance] = useState<Attendance[]>([]);
     // const [participationStatus, setParticipationStatus] = useState<{ [eventId: string]: '〇' | '△' | '×' }>({}); // 参加状況
     const [pendingParticipationStatus, setPendingParticipationStatus] = useState<{ [eventId: string]: '〇' | '△' | '×' }>({}); // 保留中の参加状況
  
-    const [profile, setProfile] = useState<Profile | null>(null);
+    const [profile, setProfile] = useState<User | null>(null);
     const [lang, setLang] = useState<string>('ja-JP');
 	const [users, setUsers] = useState<string[][]>([]);
     const [isSaving, setIsSaving] = useState<boolean>(false);
     const { liff } = useLiff();
     const [isProxyReplyMode, setIsProxyReplyMode] = useState<boolean>(false); // 代理返信モード state
-    const [proxyReplyUser, setProxyReplyUser] = useState<Profile | null>(null); // 代理返信ユーザー state
+    const [proxyReplyUser, setProxyReplyUser] = useState<User | null>(null); // 代理返信ユーザー state
     const [isResetDialogOpen, setIsResetDialogOpen] = useState<boolean>(false); // リセット確認ダイアログ state // 追加
 
     useEffect(() => {
@@ -54,7 +55,14 @@ export default function Calendar() {
                     liff.login({ redirectUri: redirectUri });
                 } else {
                     liff.getProfile().then(profile => {
-                        setProfile(profile);
+                        const user: User = {
+                            userId: profile.userId, // Assuming profile has userId
+                            lineName: profile.displayName || '', // Map displayName to lineName
+                            isKanji: false, // Set this based on your logic
+                            displayName: profile.displayName || '',
+                            pictureUrl: profile.pictureUrl || '',
+                        };
+                        setProfile(user);
                         setLang(liff.getLanguage());
                     });
                 }
@@ -186,8 +194,10 @@ export default function Calendar() {
             parseInt(attend.date) === day
         ).map(attend => { // map で Profile 情報を追加
             const user = users.find(u => u[2] === attend.user_id); // users から user_id に一致するユーザーを検索
-            const profile: Profile | null = user ? { // Profile オブジェクトを作成
+            const profile: User | null = user ? { // User オブジェクトを作成
                 userId: user[2],
+                lineName:user[0],
+                isKanji:user[3] === '幹事',
                 displayName: user[1],
                 pictureUrl: user[4],
             } : null;
@@ -651,6 +661,25 @@ export default function Calendar() {
                                                             </IconButton>
                                                         </Box>
                                                         <Collapse in={expandedEventDetails[calendar.ID]} timeout="auto" unmountOnExit>
+                                                            {process.env.NEXT_PUBLIC_APP_TITLE === 'Scout App' ? (
+                                                                <Button
+                                                                    variant="contained"
+                                                                    color="primary"
+                                                                    onClick={() => router.push(`/calendar/expense?calendarId=${calendar.ID}`)}
+                                                                    size='small'
+                                                                >
+                                                                    清算
+                                                                </Button>
+                                                            ) : (
+                                                                <Button
+                                                                    variant="contained"
+                                                                    color="primary"
+                                                                    onClick={() => router.push(`/calendar/input?calendarId=${calendar.ID}`)}
+                                                                    size='small'
+                                                                >
+                                                                    支払い
+                                                                </Button>
+                                                            )}
                                                             <Box sx={{ m: '5px' }}>
                                                                 <Typography variant="body1" style={{ color: '#757575' }}>{calendar.event_name}</Typography>
                                                                 <Typography variant="body1" style={{ color: '#757575' }}>{calendar.place}</Typography>

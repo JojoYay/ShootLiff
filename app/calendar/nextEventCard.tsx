@@ -5,7 +5,7 @@ import { ExpandLess, ExpandMore } from '@mui/icons-material';
 import { CalendarEvent } from '../types/calendar';
 import { BALL, BEER, LOGO } from '../utils/constants';
 import AvatarIcon from '../stats/avatarIcon';
-import { Profile } from '../types/user';
+import { User } from '../types/user';
 import { useRouter } from 'next/navigation';
 
 interface NextEventCardProps {
@@ -16,11 +16,11 @@ interface NextEventCardProps {
     pendingParticipationStatus: { [eventId: string]: '〇' | '△' | '×' };
     isUserManager: boolean;
     isProxyReplyMode: boolean;
-    proxyReplyUser: Profile | null;
+    proxyReplyUser: User | null;
     users: string[][];
     handleParticipationChange: (event: CalendarEvent, status: '〇' | '△' | '×', userId?: string) => void;
-    profile: Profile | null;
-    setProxyReplyUser: React.Dispatch<React.SetStateAction<Profile | null>>;
+    profile: User | null;
+    setProxyReplyUser: React.Dispatch<React.SetStateAction<User | null>>;
     ProxyReplyButton: () => React.JSX.Element;
     SaveButton:() => React.JSX.Element;
 }
@@ -63,7 +63,6 @@ export const NextEventCard: React.FC<NextEventCardProps> = ({
             return part;
         });
     }
-
     return (
         <Paper elevation={3} sx={{
             p: 2,
@@ -107,18 +106,28 @@ export const NextEventCard: React.FC<NextEventCardProps> = ({
                     )}
                 </Box>
                 <Box sx={{ flex: 1 }}>
-                    <Typography variant="h6" sx={{ color: '#757575', minWidth: '160px' }}>
-                        {new Date(nextEvent.start_datetime).toLocaleDateString(lang, {
-                            year: 'numeric',
-                            month: '2-digit',
-                            day: '2-digit',
-                        }).replace(/-/g, '/')}
-                        {new Date(nextEvent.start_datetime).toLocaleTimeString(lang, {
-                            hour: '2-digit',
-                            minute: '2-digit',
-                            hour12: false
-                        })}
-                    </Typography>
+                    <Box sx={{ display: 'flex', flexDirection: 'column', margin:'5px' }}>
+                        <Typography variant="h6" sx={{ color: '#757575', mr:'5px'}}>
+                            {new Date(nextEvent.start_datetime).toLocaleDateString(lang, {
+                                month: '2-digit',
+                                day: '2-digit',
+                                weekday: 'short'
+                            }).replace(/-/g, '/')}
+                        </Typography>
+                        <Typography variant="body2" sx={{ color: '#757575', mr:'5px'}}>
+                            {new Date(nextEvent.start_datetime).toLocaleTimeString(lang, {
+                                hour: '2-digit',
+                                minute: '2-digit',
+                                hour12: false
+                            })}
+                            -
+                            {new Date(nextEvent.end_datetime).toLocaleTimeString(lang, {
+                                hour: '2-digit',
+                                minute: '2-digit',
+                                hour12: false
+                            })}
+                        </Typography>
+                    </Box>
                     <Typography variant="body1" sx={{ color: '#424242' }}>
                         {nextEvent.event_name} @ {nextEvent.place}
                     </Typography>
@@ -130,14 +139,25 @@ export const NextEventCard: React.FC<NextEventCardProps> = ({
                     <Typography variant="body1" style={{ color: '#757575', wordBreak: 'break-word', whiteSpace: 'pre-wrap' }}>
                         {renderRemarkWithLinks(nextEvent.remark)}
                     </Typography>
-                    <Button
-                        variant="contained"
-                        color="primary"
-                        onClick={() => router.push(`/calendar/input?calendarId=${nextEvent.ID}`)}
-                        size='small'
-                    >
-                        支払い
-                    </Button>
+                    { process.env.NEXT_PUBLIC_APP_TITLE === 'Scout App' ? (
+                        <Button
+                            variant="contained"
+                            color="primary"
+                            onClick={() => router.push(`/calendar/expense?calendarId=${nextEvent.ID}`)}
+                            size='small'
+                        >
+                        清算
+                        </Button>
+                    ) : (
+                        <Button
+                            variant="contained"
+                            color="primary"
+                            onClick={() => router.push(`/calendar/input?calendarId=${nextEvent.ID}`)}
+                            size='small'
+                        >
+                            支払い
+                        </Button>
+                    )}
                     {/* 参加者選択コンボボックス（代理返信モード時のみ表示） */}
                     {isProxyReplyMode && (
                         <FormControl fullWidth margin="dense" size="small">
@@ -152,6 +172,8 @@ export const NextEventCard: React.FC<NextEventCardProps> = ({
                                     if (selectedUser) {
                                         setProxyReplyUser({
                                             userId: selectedUser[2],
+                                            lineName:selectedUser[0],
+                                            isKanji:selectedUser[3] === '幹事',
                                             displayName: selectedUser[1],
                                             pictureUrl: selectedUser[4],
                                         });

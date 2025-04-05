@@ -463,6 +463,14 @@ export default function EventManager() {
                                             経費作成
                                         </Button>
                                     </Link>
+                                    <Button
+                                            variant="contained"
+                                            size="small"
+                                            onClick={() => handleStatusChange(event, 99)}
+                                            disabled={isSubmitting}
+                                        >
+                                            集計完了にする
+                                    </Button>
                                 </Box>
                             )}
                         </CardContent>

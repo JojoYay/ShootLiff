@@ -1,4 +1,4 @@
-import { Profile } from "./user";
+import { User } from "./user";
 
 export interface CalendarEvent {
     ID: string;
@@ -22,5 +22,15 @@ export interface Attendance {
     status: string;
     calendar_id: string;
     calendar: CalendarEvent | null;
-    profile?: Profile | null; // Profile を追加
+    profile?: User | null; // Profile を追加
+}
+
+export interface Invoice {
+    invoiceId: string;
+    uploadDate: Date;
+    userName: string;
+    amount: number;
+    memo: string;
+    picUrl: string;
+    status: '未清算'|'清算済';
 }
