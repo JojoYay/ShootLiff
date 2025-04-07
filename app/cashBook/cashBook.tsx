@@ -359,7 +359,7 @@ export default function CashBookPage() {
                     </Button>
                 )}
             </Box>
-            {isLoading || !(calendarEntries && calendarEntries.length > 0) ? (
+            {isLoading ? (
                 <LoadingSpinner />
             ) : (
                 <>
@@ -395,7 +395,7 @@ export default function CashBookPage() {
                                                 <Box sx={{ m: '2px', p: '2px', display: 'flex', flexDirection: 'column' }}>
                                                     <Typography variant="body2">金額: {payment.amount} SGD</Typography>
                                                     <Typography variant="body2">メモ: {payment.memo}</Typography>
-                                                    <Typography variant="body2">申請日: {payment.uploadDate ? new Date(payment.uploadDate).toLocaleDateString() : ''}</Typography> 
+                                                    <Typography variant="body2">申請日: {payment.uploadDate ? new Date(payment.uploadDate).toLocaleString('ja-JP', { year: 'numeric', month: '2-digit', day: '2-digit', hour: '2-digit', minute: '2-digit', second: '2-digit', hour12: false }) : ''}</Typography> 
                                                 </Box>
                                             </Box>
                                             <Collapse in={payment.isExpanded}>

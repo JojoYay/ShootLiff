@@ -82,13 +82,13 @@ export default function InputPatifipationFee() {
         }
     };
 
-    const loadInvoices = async (title: string, userId: string) => {
+    const loadInvoices = async (calendarId: string, userId: string) => {
         setSrc('');
         setFile(null);
         setLoading(true);
         try {
             let url = process.env.SERVER_URL + `?func=getInvoices`;
-            url = url + '&calendarId=' + encodeURIComponent(title);
+            url = url + '&calendarId=' + encodeURIComponent(calendarId);
             url = url + '&userId=' + encodeURIComponent(userId);
             url = url + '&lang=' + encodeURIComponent(lang);
             if (url) {
@@ -189,8 +189,8 @@ export default function InputPatifipationFee() {
     }
 
     const handleUpload = async () => {
+        setLoading(true);
         try{
-            setLoading(true);
             const formData = new FormData();
             let targetUserId = profile?.userId;
             if (selectedUserId) {
@@ -234,7 +234,9 @@ export default function InputPatifipationFee() {
                                     imgElement.src = data.picUrl;
                                     setSrc(data.picUrl);
                                 }
-                                setResult("登録が完了しました！");
+                                alert("登録が完了しました！");
+                                loadInvoices(calendarId, profile? profile.userId : '');
+
                                 console.log('File uploaded successfully:', data);
                             } catch (error) {
                                 console.error('Error uploading file:', error);
@@ -353,31 +355,31 @@ export default function InputPatifipationFee() {
                             multiline
                         />
                     </FormControl>
-                        <Button
-                            component="label"
-                            // role={undefined}
-                            variant="contained"
-                            tabIndex={-1}
-                            startIcon={<CloudUploadIcon />}
-                            disabled={loading}
-                        >
-                            {loading && profile ? 'Loading...' : lang === 'ja-JP' ? 'Invoiceを選択' : "Select Invoice Pic"}
-                            <input type="file" onChange={handleFileSelect} style={{ display: 'none' }} />
+                    <Button
+                        component="label"
+                        // role={undefined}
+                        variant="contained"
+                        tabIndex={-1}
+                        startIcon={<CloudUploadIcon />}
+                        disabled={loading}
+                    >
+                        {loading && profile ? 'Loading...' : lang === 'ja-JP' ? 'Invoiceを選択' : "Select Invoice Pic"}
+                        <input type="file" onChange={handleFileSelect} style={{ display: 'none' }} />
+                    </Button>
+
+                    <Box style={{margin:'5px'}}>
+                        <img id="uploadedImage" alt="Uploaded Preview" style={{ maxWidth: '100%', display: (file || src) ? 'block' : 'none' }} />
+                    </Box>
+
+                    <Box style={{margin:'5px'}}>
+                    {loading ? (
+                        <CircularProgress size={24} />
+                    ) : (
+                        <Button variant="contained" color="primary" onClick={handleUpload} disabled={(!file && !amount) || loading }>
+                            送信
                         </Button>
-
-                        <Box style={{margin:'5px'}}>
-                            <img id="uploadedImage" alt="Uploaded Preview" style={{ maxWidth: '100%', display: (file || src) ? 'block' : 'none' }} />
-                        </Box>
-
-                        <Box style={{margin:'5px'}}>
-                        {loading ? (
-                            <CircularProgress size={24} />
-                        ) : (
-                            <Button variant="contained" color="primary" onClick={handleUpload} disabled={!file && !amount }>
-                                送信
-                            </Button>
-                        )}
-                        </Box>
+                    )}
+                    </Box>
 
                     {result &&
                         <Box style={{margin:'5px', display: 'flex', alignItems: 'center'}}>
@@ -395,10 +397,10 @@ export default function InputPatifipationFee() {
             </Box>
 
             <Box>
-                {invoices.map((invoice) => (
+                {invoices.reverse().map((invoice) => (
                     <Box key={invoice.invoiceId} style={{ border: '1px solid #ccc', margin: '10px', padding: '10px', display: 'flex', flexDirection: 'column', position: 'relative' }}>
                         <Box style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
-                            <Typography variant="h6">{invoice.userName}</Typography>
+                            <Typography variant="h6">金額: SGD {invoice.amount} </Typography>
                             {invoice.status === '未清算' && ( // Show delete icon for unsettled invoices
                                 <Button 
                                     onClick={() => handleDeleteInvoice(invoice.invoiceId)} 
@@ -409,9 +411,9 @@ export default function InputPatifipationFee() {
                                 </Button>
                             )}
                         </Box>
-                        <Typography variant="body2">金額: {invoice.amount} SGD</Typography>
                         <Typography variant="body2">メモ: {invoice.memo}</Typography>
                         <Typography variant="body2">状態: {invoice.status}</Typography>
+                        <Typography variant="body2">申請日: {invoice.uploadDate.toLocaleString('ja-JP', { year: 'numeric', month: '2-digit', day: '2-digit', hour: '2-digit', minute: '2-digit', second: '2-digit', hour12: false })} </Typography>
                         <img src={invoice.picUrl} alt="Invoice" style={{ maxWidth: '100%' }} />
                     </Box>
                 ))}
