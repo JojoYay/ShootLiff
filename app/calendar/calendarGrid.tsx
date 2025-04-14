@@ -16,7 +16,7 @@ interface CalendarEvent {
 
 const CalendarGrid: React.FC<CalendarGridProps> = ({ calendar, daysOfWeek, currentDate, BALL, BEER, LOGO }) => {
     return (
-        <Grid item xs={12}>
+        <>
             <Grid container>
                 {daysOfWeek.map((dayOfWeek, index) => {
                     let headerBackgroundColor = '#e0e0e0'; // 基本灰色
@@ -68,7 +68,7 @@ const CalendarGrid: React.FC<CalendarGridProps> = ({ calendar, daysOfWeek, curre
                     </Grid>
                 ))}
             </Grid>
-        </Grid>
+       </>
     );
 };
 export default CalendarGrid;

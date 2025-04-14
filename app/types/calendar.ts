@@ -23,6 +23,8 @@ export interface Attendance {
     calendar_id: string;
     calendar: CalendarEvent | null;
     profile?: User | null; // Profile を追加
+    adult_count: number;
+    child_count: number;
 }
 
 export interface Invoice {

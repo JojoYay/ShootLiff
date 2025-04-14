@@ -37,6 +37,7 @@ export default function Calendar() {
     const [attendance, setAttendance] = useState<Attendance[]>([]);
     // const [participationStatus, setParticipationStatus] = useState<{ [eventId: string]: '〇' | '△' | '×' }>({}); // 参加状況
     const [pendingParticipationStatus, setPendingParticipationStatus] = useState<{ [eventId: string]: '〇' | '△' | '×' }>({}); // 保留中の参加状況
+    const [pendingParticipationStatusCount, setPendingParticipationStatusCount] = useState<{ [eventId: string]: {adult:number, child:number} }>({}); // 保留中のカウント
  
     const [profile, setProfile] = useState<User | null>(null);
     const [lang, setLang] = useState<string>('ja-JP');
@@ -121,7 +122,7 @@ export default function Calendar() {
                 if (eventStartDate.getDate() === day && eventStartDate.getMonth() === month && eventStartDate.getFullYear() === year) {
                     const pendingStatus = pendingParticipationStatus[event.ID];
                     const existingAttendance = getAttendanceForDayAndEvent(eventStartDate, attendance, event.ID, userId);
-                    
+                    console.log('existing Attendance',existingAttendance);
                     const newEvent: CalendarEvent = {
                         ...event,
                         attendance: pendingStatus ? (existingAttendance ? {
@@ -136,7 +137,9 @@ export default function Calendar() {
                             calendar_id: event.ID,
                             status: pendingStatus,
                             calendar: null,
-                            profile: null
+                            profile: null,
+                            adult_count: 1,
+                            child_count: 0,
                         }) : existingAttendance,
                         attendances: getAllAttendanceForDayAndEvent(eventStartDate, attendance, event.ID, users)
                     };
@@ -160,6 +163,7 @@ export default function Calendar() {
         while (calendarDays.length < 6) {
             calendarDays.push(Array(7).fill(''));
         }
+        console.log(calendarDays);
         return calendarDays;
     }
 
@@ -248,6 +252,8 @@ export default function Calendar() {
                         status: item[5],
                         calendar_id: item[6],
                         calendar: relatedCalendarEvent,
+                        adult_count: item[7],
+                        child_count: item[8],
                     };
                 });
                 // console.log(fetchedAttendance);
@@ -259,11 +265,16 @@ export default function Calendar() {
         }
     };
 
-    const handleParticipationChange = async (calendar: CalendarEvent, status: '〇' | '△' | '×', userId: string | undefined) => {
+    const handleParticipationChange = async (calendar: CalendarEvent, status: '〇' | '△' | '×', userId: string | undefined, adultCount:number, childCount:number) => {
         setPendingParticipationStatus(prevState => ({
             ...prevState,
             [calendar.ID]: status,
         }));
+        setPendingParticipationStatusCount(prevState => ({
+            ...prevState,
+            [calendar.ID]: {adult:adultCount, child:childCount},
+        }));
+
         console.log(calendar.ID + ':' + status);
         // 既存のattendanceを更新
         setAttendance(prevAttendance => {
@@ -284,7 +295,9 @@ export default function Calendar() {
                 date: String(startDate.getDate()),
                 status: status,
                 calendar_id: calendar.ID,
-                calendar: calendar
+                calendar: calendar,
+                adult_count: adultCount,
+                child_count: childCount
             };
     
             if (existingIndex >= 0) {
@@ -327,7 +340,6 @@ export default function Calendar() {
                     if (cal) {
                         const startDate = new Date(cal.start_datetime as string);
                         const existingAttendance = findAttendance(eventId, startDate, userIdToUse);
-    
                         formData.append('calendar_id_'+index, eid);
                         formData.append('year_'+index, String(startDate.getFullYear()));
                         formData.append('month_'+index, String(startDate.getMonth() + 1));
@@ -335,6 +347,8 @@ export default function Calendar() {
                         formData.append('attendance_id_'+index, existingAttendance?.attendance_id || '');
                         formData.append('user_id_'+index, userIdToUse);
                         formData.append('status_'+index, status);
+                        formData.append('adult_count_'+index, String(existingAttendance?.adult_count) || "1");
+                        formData.append('child_count_'+index, String(existingAttendance?.child_count) || "0");
                     } else {
                         console.error(`Calendar event with ID ${eventId} not found in calendarEvents.`);
                     }
@@ -357,6 +371,7 @@ export default function Calendar() {
 
                 if (allOk) {
                     setPendingParticipationStatus({}); // 保留中のステータスをクリア
+                    setPendingParticipationStatusCount({}); // 保留中のステータスをクリア
                     fetchCalendarEvents();
                 } else {
                     console.error('Failed to update some participation statuses');
@@ -523,80 +538,70 @@ export default function Calendar() {
         <>
             {(calendarEvents.length > 0 && profile)? (
                 <>
-                    <Grid container spacing={1} justifyContent="center" alignItems="center">
-                        <Grid item xs={12}>
-                            <NextEventCard
-                                ProxyReplyButton={ProxyReplyButton}
-                                SaveButton={SaveButton}
-                                expandedEventDetails={expandedEventDetails}
-                                handleParticipationChange={handleParticipationChange}
-                                handleToggleDetails={handleToggleDetails}
-                                isProxyReplyMode={isProxyReplyMode}
-                                isUserManager={isUserManager}
-                                lang={lang}
-                                nextEvent={nextEvent}
-                                pendingParticipationStatus={pendingParticipationStatus}
-                                profile={profile}
-                                proxyReplyUser={proxyReplyUser}
-                                setProxyReplyUser={setProxyReplyUser}
-                                users={users}
-                                 />
-                        </Grid>
-
-
-                        {/* カレンダー表示領域 */}
-                        <Grid item xs={12} style={{ textAlign: 'center' }}>
-                            <Typography variant="h4" component="div" sx={{ textAlign: 'center', color: '#3f51b5' }}> 
-                               {lang === 'ja-JP' ? 'スケジュール' : 'Schedule'}
-                            </Typography>
-                        </Grid>
-
-                        {/* カレンダーナビゲーション */}
-                        <Grid item xs={12} style={{ textAlign: 'center' }}>
-                            <Paper elevation={3} sx={{ display: 'flex', justifyContent: 'center', alignItems: 'center', mb: 2, p: 1, bgcolor: '#e3f2fd', borderRadius: '20px' }}>
-                                <IconButton onClick={goToPreviousMonth} aria-label="previous month" style={{ color: '#3f51b5' }}>
-                                    <ChevronLeft />
-                                </IconButton>
-                                <Typography variant="h6" component="div" sx={{ mx: 2, color: '#3f51b5', fontWeight: 'bold' }}> 
-                                    {currentDate.getFullYear()}/{currentDate.getMonth() + 1}
+                    <Box sx={{display:"flex", flexDirection:'column'}}>
+                                <NextEventCard
+                                    ProxyReplyButton={ProxyReplyButton}
+                                    SaveButton={SaveButton}
+                                    expandedEventDetails={expandedEventDetails}
+                                    handleParticipationChange={handleParticipationChange}
+                                    handleToggleDetails={handleToggleDetails}
+                                    isProxyReplyMode={isProxyReplyMode}
+                                    isUserManager={isUserManager}
+                                    lang={lang}
+                                    nextEvent={nextEvent}
+                                    pendingParticipationStatus={pendingParticipationStatus}
+                                    profile={profile}
+                                    proxyReplyUser={proxyReplyUser}
+                                    setProxyReplyUser={setProxyReplyUser}
+                                    users={users}
+                                    />
+    
+                                {/* カレンダー表示領域 */}
+                                <Typography variant="h4" component="div" sx={{ textAlign: 'center', color: '#3f51b5' }}> 
+                                {lang === 'ja-JP' ? 'スケジュール' : 'Schedule'}
                                 </Typography>
-                                <IconButton onClick={goToNextMonth} aria-label="next month" style={{ color: '#3f51b5' }}> 
-                                    <ChevronRight />
-                                </IconButton>
-                            </Paper>
-                        </Grid>
 
-                        {/* カレンダーグリッド */}
-                        <CalendarGrid calendar={calendar} daysOfWeek={daysOfWeek} currentDate={currentDate} BALL={BALL} BEER={BEER} LOGO={LOGO} />
+                                {/* カレンダーナビゲーション */}
+                                <Paper elevation={3} sx={{ display: 'flex', justifyContent: 'center', alignItems: 'center', mb: 2, p: 1, bgcolor: '#e3f2fd', borderRadius: '20px' }}>
+                                    <IconButton onClick={goToPreviousMonth} aria-label="previous month" style={{ color: '#3f51b5' }}>
+                                        <ChevronLeft />
+                                    </IconButton>
+                                    <Typography variant="h6" component="div" sx={{ mx: 2, color: '#3f51b5', fontWeight: 'bold' }}> 
+                                        {currentDate.getFullYear()}/{currentDate.getMonth() + 1}
+                                    </Typography>
+                                    <IconButton onClick={goToNextMonth} aria-label="next month" style={{ color: '#3f51b5' }}> 
+                                        <ChevronRight />
+                                    </IconButton>
+                                </Paper>
+                                {/* カレンダーグリッド */}
+                                <CalendarGrid calendar={calendar} daysOfWeek={daysOfWeek} currentDate={currentDate} BALL={BALL} BEER={BEER} LOGO={LOGO} />
+                                <Box textAlign="center" m={'3px'} p={'3px'} sx={{ display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                                    <Typography variant="h6" component="div" sx={{ textAlign: 'center', color: '#3f51b5', fontWeight: 'bold' }}> 
+                                        {lang === 'ja-JP' ? '出席データ' : 'Attendance Data'}
+                                    </Typography>
+                                    {Object.keys(pendingParticipationStatus).length > 0 && <SaveButton />}
+                                </Box>
 
-                        <Grid item xs={12}>
-                            <Box textAlign="center" m={'3px'} p={'3px'} sx={{ display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-                                <Typography variant="h6" component="div" sx={{ textAlign: 'center', color: '#3f51b5', fontWeight: 'bold' }}> 
-                                    {lang === 'ja-JP' ? '出席データ' : 'Attendance Data'}
-                                </Typography>
-                                {Object.keys(pendingParticipationStatus).length > 0 && <SaveButton />}
-                            </Box>
-
-                            {/* カレンダーナビゲーション */}
-                            <Paper elevation={3} sx={{ display: 'flex', justifyContent: 'center', alignItems: 'center', mb: 2, p: 1, bgcolor: '#e3f2fd', borderRadius: '20px' }}>
-                                <IconButton onClick={goToPreviousMonth} aria-label="previous month" style={{ color: '#3f51b5' }}>
-                                    <ChevronLeft />
-                                </IconButton>
-                                <Typography variant="h6" component="div" sx={{ mx: 2, color: '#3f51b5', fontWeight: 'bold' }}> 
-                                    {currentDate.getFullYear()}/{currentDate.getMonth() + 1}
-                                </Typography>
-                                <IconButton onClick={goToNextMonth} aria-label="next month" style={{ color: '#3f51b5' }}> 
-                                    <ChevronRight />
-                                </IconButton>
-                            </Paper>
+                                {/* カレンダーナビゲーション */}
+                                <Paper elevation={3} sx={{ display: 'flex', justifyContent: 'center', alignItems: 'center', mb: 2, p: 1, bgcolor: '#e3f2fd', borderRadius: '20px' }}>
+                                    <IconButton onClick={goToPreviousMonth} aria-label="previous month" style={{ color: '#3f51b5' }}>
+                                        <ChevronLeft />
+                                    </IconButton>
+                                    <Typography variant="h6" component="div" sx={{ mx: 2, color: '#3f51b5', fontWeight: 'bold' }}> 
+                                        {currentDate.getFullYear()}/{currentDate.getMonth() + 1}
+                                    </Typography>
+                                    <IconButton onClick={goToNextMonth} aria-label="next month" style={{ color: '#3f51b5' }}> 
+                                        <ChevronRight />
+                                    </IconButton>
+                                </Paper>
                                 {calendar.map((week, weekIndex) => (
-                                    <Box key={weekIndex}>
+                                    <Box key={weekIndex} >
                                         {week.map((dayData, dayIndex) => (
                                             <>
                                                 {typeof dayData === 'object' && dayData.events.length > 0 && dayData.events.map((calendar, index) => (
                                                     <>
-                                                    <Box sx={{ margin:'3px', display: 'flex', flexDirection: 'column',alignItems: 'flex-start', justifyContent: 'space-between', border: '1px solid #eee', backgroundColor: calendar.event_status === 99 ? '#e0e0e0' : '#fffde7', borderRadius: '8px', width: '100%' }}>
-                                                        <Box sx={{ margin:'3px', display: 'flex', alignItems: 'center', justifyContent: 'space-between', width: '100%' }}>
+                                                    <Box sx={{padding:'8px', marginRight:"8px",marginLeft:"8px",marginTop:"8px", border: '1px solid #eee', backgroundColor: calendar.event_status === 99 ? '#e0e0e0' : '#fffde7', borderRadius: '8px' }}>
+                                                        <Box sx={{display: 'flex',mb:1, alignItems: 'center', justifyContent: 'space-between', width: '100%' }}>
                                                             <Box sx={{ display: 'flex', alignItems: 'center' }}>
                                                                 {calendar.event_type === 'フットサル' && (
                                                                     <img src={BALL} alt="フットサル" width={28} height={28} style={{margin:'5px'}} />
@@ -624,34 +629,25 @@ export default function Calendar() {
                                                                             })}
                                                                         </Typography>
                                                                     </Box>
-                                                                    <Typography variant="body2" sx={{ color: '#757575' }}>
+                                                                    <Typography variant="body2" style={{ color: '#757575' }}>
+                                                                        {calendar.event_name} @ {calendar.place}
+                                                                    </Typography>
+                                                                    {/* <Typography variant="body2" sx={{ color: '#757575' }}>
                                                                         〇: {calendar.attendances?.filter(att => att.status === '〇').length || 0}, 
                                                                         △: {calendar.attendances?.filter(att => att.status === '△').length || 0}, 
                                                                         ×: {calendar.attendances?.filter(att => att.status === '×').length || 0}
-                                                                    </Typography>
+                                                                    </Typography> */}
+<Typography variant="body2" sx={{ color: '#757575' }}>
+    〇: {calendar.attendances?.filter(att => att.status === '〇').reduce((total, att) => total + (att.adult_count || 1), 0) || 0}, 
+    子: {calendar.attendances?.filter(att => att.status === '〇').reduce((total, att) => total + (att.child_count || 0), 0) || 0}, 
+    △: {calendar.attendances?.filter(att => att.status === '△').reduce((total, att) => total + (att.adult_count || 1), 0) || 0}, 
+    子: {calendar.attendances?.filter(att => att.status === '△').reduce((total, att) => total + (att.child_count || 0), 0) || 0}, 
+    ×: {calendar.attendances?.filter(att => att.status === '×').reduce((total, att) => total + (att.adult_count || 1), 0) || 0}, 
+    子: {calendar.attendances?.filter(att => att.status === '×').reduce((total, att) => total + (att.child_count || 0), 0) || 0}
+</Typography>
                                                                 </Box>
                                                             </Box>
-                                                            <FormControl size="small" >
-                                                                <InputLabel id="status-select-label">参加可否</InputLabel>
-                                                                <Select
-                                                                    labelId="status-select-label"
-                                                                    id="status-select"
-                                                                    value={calendar.attendance?.status || ''}
-                                                                    label={lang === 'ja-JP' ? 'ステータス' : 'Status'}
-                                                                    onChange={(e) => {
-                                                                        if(calendar.ID){
-                                                                            handleParticipationChange(calendar, e.target.value as '〇' | '△' | '×', profile?.userId);
-                                                                            if(calendar.attendance){
-                                                                                calendar.attendance.status = e.target.value as '〇' | '△' | '×';
-                                                                            }
-                                                                        }
-                                                                    }}
-                                                                >
-                                                                    <MenuItem value={'〇'}>〇</MenuItem>
-                                                                    <MenuItem value={'△'}>△</MenuItem>
-                                                                    <MenuItem value={'×'}>×</MenuItem>
-                                                                </Select>
-                                                            </FormControl>
+
                                                             <IconButton // トグルボタン
                                                                 aria-label="expand"
                                                                 size="small"
@@ -660,58 +656,162 @@ export default function Calendar() {
                                                                 {expandedEventDetails[calendar.ID] ? <ExpandLess /> : <ExpandMore />}
                                                             </IconButton>
                                                         </Box>
+
+                                                        <Box sx={{ display: 'flex', flex:1, gap:2, flexDirection: 'row' }}>
+
+                                                            <FormControl size="small" >
+                                                                <InputLabel id="status-select-label">{lang === 'ja-JP' ? '参加可否' : 'Status'}</InputLabel>
+                                                                <Select
+                                                                    // sx={{minWidth:'100px'}}                                                            
+                                                                    labelId="status-select-label"
+                                                                    id="status-select"
+                                                                    value={calendar.attendance?.status || ''}
+                                                                    label={lang === 'ja-JP' ? '参加可否' : 'Status'}
+                                                                    onChange={(e) => {
+                                                                        if(calendar.ID){
+                                                                            handleParticipationChange(calendar, e.target.value as '〇' | '△' | '×', profile?.userId, calendar.attendance?.adult_count || 1, calendar.attendance?.child_count || 0);
+                                                                            if(calendar.attendance){
+                                                                                calendar.attendance.status = e.target.value as '〇' | '△' | '×';
+                                                                            }
+                                                                        }
+                                                                    }}
+                                                                >
+                                                                    <MenuItem sx={{width:'100%'}} value={'〇'}>〇</MenuItem>
+                                                                    <MenuItem sx={{width:'100%'}} value={'△'}>△</MenuItem>
+                                                                    <MenuItem sx={{width:'100%'}} value={'×'}>×</MenuItem>
+                                                                </Select>
+                                                            </FormControl>
+                                                            <FormControl size="small" >
+                                                                <InputLabel id="adult-count-select-label">{lang === 'ja-JP' ? '大人' : 'Adult'}</InputLabel>
+                                                                <Select
+                                                                    // sx={{minWidth:'100px'}}
+                                                                    labelId="adult-count-select-label"
+                                                                    id="adult-count-select"
+                                                                    value={calendar.attendance?.adult_count || 1}
+                                                                    label={lang === 'ja-JP' ? '大人' : 'Adult'}
+                                                                    onChange={(e) => {
+                                                                        if(calendar.ID){
+                                                                            if(calendar.attendance){
+                                                                                handleParticipationChange(calendar, calendar.attendance.status as '〇' | '△' | '×', profile?.userId, e.target.value as number, calendar.attendance?.child_count || 0);
+                                                                                calendar.attendance.adult_count = e.target.value as number; // Update adultCount
+                                                                            }
+                                                                        }
+                                                                    }}
+                                                                >
+                                                                {Array.from({ length: 10 }, (_, i) => (
+                                                                    <MenuItem key={i} value={i} sx={{width:'100%'}} >{i}</MenuItem>
+                                                                ))}
+                                                                </Select>
+                                                            </FormControl>
+                                                            <FormControl size="small" >
+                                                                <InputLabel id="child-count-select-label">{lang === 'ja-JP' ? '子供' : 'Child'}</InputLabel>
+                                                                <Select
+                                                                    // sx={{minWidth:'100px'}}                                                            
+                                                                    labelId="child-count-select-label"
+                                                                    id="child-count-select"
+                                                                    value={calendar.attendance?.child_count || 0}
+                                                                    label={lang === 'ja-JP' ? '子供' : 'Child'}
+                                                                    onChange={(e) => {
+                                                                        if(calendar.ID){
+                                                                            if(calendar.attendance){
+                                                                                handleParticipationChange(calendar, calendar.attendance.status as '〇' | '△' | '×', profile?.userId, calendar.attendance?.adult_count || 1, e.target.value as number);
+                                                                                calendar.attendance.child_count = e.target.value as number; // Update childCount
+                                                                            }
+                                                                        }
+                                                                    }}
+                                                                >
+                                                                {Array.from({ length: 10 }, (_, i) => (
+                                                                    <MenuItem key={i} value={i}>{i}</MenuItem>
+                                                                ))}
+                                                                </Select>
+                                                            </FormControl>
+                                                        </Box>
+
+
                                                         <Collapse in={expandedEventDetails[calendar.ID]} timeout="auto" unmountOnExit>
                                                             {process.env.NEXT_PUBLIC_APP_TITLE === 'Scout App' ? (
-                                                                <Button
-                                                                    variant="contained"
-                                                                    color="primary"
-                                                                    onClick={() => router.push(`/calendar/expense?calendarId=${calendar.ID}`)}
-                                                                    size='small'
-                                                                >
-                                                                    清算
-                                                                </Button>
+                                                                <Box sx={{ m: '5px' }}>
+                                                                    <Button
+                                                                        variant="contained"
+                                                                        color="primary"
+                                                                        onClick={() => router.push(`/calendar/expense?calendarId=${calendar.ID}`)}
+                                                                        size='small'
+                                                                    >
+                                                                        清算
+                                                                    </Button>
+                                                                </Box>
                                                             ) : (
-                                                                <Button
-                                                                    variant="contained"
-                                                                    color="primary"
-                                                                    onClick={() => router.push(`/calendar/input?calendarId=${calendar.ID}`)}
-                                                                    size='small'
-                                                                >
-                                                                    支払い
-                                                                </Button>
+                                                                <Box sx={{ m: '5px' }}>
+                                                                    <Button
+                                                                        variant="contained"
+                                                                        color="primary"
+                                                                        onClick={() => router.push(`/calendar/input?calendarId=${calendar.ID}`)}
+                                                                        size='small'
+                                                                    >
+                                                                        支払い
+                                                                    </Button>
+                                                                </Box>
                                                             )}
                                                             <Box sx={{ m: '5px' }}>
-                                                                <Typography variant="body1" style={{ color: '#757575' }}>{calendar.event_name}</Typography>
-                                                                <Typography variant="body1" style={{ color: '#757575' }}>{calendar.place}</Typography>
+                                                                {/* <Typography variant="body1" style={{ color: '#757575' }}>{calendar.place}</Typography> */}
                                                                 <Typography variant="body1" style={{ color: '#757575', wordBreak: 'break-word', whiteSpace: 'pre-wrap' }}>
                                                                     {renderRemarkWithLinks(calendar.remark)}
                                                                 </Typography>
                                                             </Box>
                                                             <Box sx={{ m: '5px', display: 'flex', flexDirection: 'column' }}>
                                                                 <Typography variant="subtitle2" style={{ color: '#757575', fontWeight: 'bold' }}>{lang === 'ja-JP' ? '参加者' : 'Attendees'}:
-                                                                    <Typography variant="caption" style={{ color: '#757575', fontWeight: 'normal' }}> ({calendar.attendances?.filter(att => att.status === '〇').length || 0})</Typography>
+                                                                    {/* <Typography variant="caption" style={{ color: '#757575', fontWeight: 'normal' }}> ({calendar.attendances?.filter(att => att.status === '〇').length || 0})</Typography> */}
+                                                                    <Typography variant="body2" sx={{ color: '#757575' }}>
+                                                                        大人: {calendar.attendances?.filter(att => att.status === '〇').reduce((total, att) => total + (att.adult_count || 1), 0) || 0}, 
+                                                                        子供: {calendar.attendances?.filter(att => att.status === '〇').reduce((total, att) => total + (att.child_count || 0), 0) || 0}
+                                                                    </Typography>
                                                                 </Typography>
                                                                 <Box sx={{ display: 'flex', flexWrap: 'wrap', mb: 1 }}>
                                                                     {calendar.attendances?.filter(att => att.status === '〇').map((attend, index) => (
-                                                                        <AvatarIcon key={index} name={attend.profile?.displayName || ''} picUrl={attend.profile?.pictureUrl}  width={24} height={24} showTooltip={true} />
+                                                                        <AvatarIcon 
+                                                                            key={index} 
+                                                                            name={attend.profile?.displayName+" 大人:"+(attend.adult_count || '1')+' 子供:'+(attend.child_count || '0')} 
+                                                                            picUrl={attend.profile?.pictureUrl}  
+                                                                            width={24} height={24} showTooltip={true} />
                                                                     ))}
                                                                 </Box>
 
                                                                 <Typography variant="subtitle2" style={{ color: '#757575', fontWeight: 'bold' }}>{lang === 'ja-JP' ? '保留' : 'Pending'}:
-                                                                    <Typography variant="caption" style={{ color: '#757575', fontWeight: 'normal' }}> ({calendar.attendances?.filter(att => att.status === '△').length || 0})</Typography>
+                                                                    <Typography variant="body2" sx={{ color: '#757575' }}>
+                                                                        大人: {calendar.attendances?.filter(att => att.status === '△').reduce((total, att) => total + (att.adult_count || 1), 0) || 0}, 
+                                                                        子供: {calendar.attendances?.filter(att => att.status === '△').reduce((total, att) => total + (att.child_count || 0), 0) || 0}
+                                                                    </Typography>
+    
+                                                                    {/* <Typography variant="caption" style={{ color: '#757575', fontWeight: 'normal' }}> ({calendar.attendances?.filter(att => att.status === '△').length || 0})</Typography> */}
                                                                 </Typography>
                                                                 <Box sx={{ display: 'flex', flexWrap: 'wrap', mb: 1 }}>
                                                                     {calendar.attendances?.filter(att => att.status === '△').map((attend, index) => (
-                                                                        <AvatarIcon key={index} name={attend.profile?.displayName || ''} picUrl={attend.profile?.pictureUrl}  width={24} height={24} showTooltip={true} />
+                                                                        <AvatarIcon 
+                                                                        key={index} 
+                                                                        name={attend.profile?.displayName+" 大人:"+(attend.adult_count || '1')+' 子供:'+(attend.child_count || '0')} 
+                                                                        picUrl={attend.profile?.pictureUrl}  
+                                                                        width={24} height={24} showTooltip={true} />
+
+                                                                        // <AvatarIcon key={index} name={attend.profile?.displayName || ''} picUrl={attend.profile?.pictureUrl}  width={24} height={24} showTooltip={true} />
                                                                     ))}
                                                                 </Box>
 
                                                                 <Typography variant="subtitle2" style={{ color: '#757575', fontWeight: 'bold' }}>{lang === 'ja-JP' ? '不参加' : 'Absent'}:
-                                                                    <Typography variant="caption" style={{ color: '#757575', fontWeight: 'normal' }}> ({calendar.attendances?.filter(att => att.status === '×').length || 0})</Typography>
+                                                                    <Typography variant="body2" sx={{ color: '#757575' }}>
+
+                                                                        大人: {calendar.attendances?.filter(att => att.status === '×').reduce((total, att) => total + (att.adult_count || 1), 0) || 0}, 
+                                                                        子供: {calendar.attendances?.filter(att => att.status === '×').reduce((total, att) => total + (att.child_count || 0), 0) || 0}
+                                                                    </Typography>
+                                                                    {/* <Typography variant="caption" style={{ color: '#757575', fontWeight: 'normal' }}> ({calendar.attendances?.filter(att => att.status === '×').length || 0})</Typography> */}
                                                                 </Typography>
                                                                 <Box sx={{ display: 'flex', flexWrap: 'wrap' }}>
                                                                     {calendar.attendances?.filter(att => att.status === '×').map((attend, index) => (
-                                                                        <AvatarIcon key={index} name={attend.profile?.displayName || ''} picUrl={attend.profile?.pictureUrl}  width={24} height={24} showTooltip={true} />
+                                                                        <AvatarIcon 
+                                                                        key={index} 
+                                                                        name={attend.profile?.displayName+" 大人:"+(attend.adult_count || '1')+' 子供:'+(attend.child_count || '0')} 
+                                                                        picUrl={attend.profile?.pictureUrl}  
+                                                                        width={24} height={24} showTooltip={true} />
+                                                                        // <AvatarIcon key={index} name={attend.profile?.displayName || ''} picUrl={attend.profile?.pictureUrl}  width={24} height={24} showTooltip={true} />
                                                                     ))}
                                                                 </Box>
                                                             </Box>
@@ -723,10 +823,10 @@ export default function Calendar() {
                                         ))}
                                     </Box>
                                 ))}
-                            {/* </Grid> */}
-                            <Comment componentId='calendar' users={users} user={profile} category='calendar_all' lang={lang} />
-                        </Grid>
-                    </Grid>
+                                {/* </Grid> */}
+                                <Comment componentId='calendar' users={users} user={profile} category='calendar_all' lang={lang} />
+                        
+                    </Box>
                     <Dialog // 確認ダイアログを追加
                         open={isResetDialogOpen}
                         onClose={() => setIsResetDialogOpen(false)}
@@ -750,6 +850,7 @@ export default function Calendar() {
                                 setIsProxyReplyMode(!isProxyReplyMode); // 代理返信モードを無効にする
                                 setProxyReplyUser(null);     // 代理ユーザーをクリア
                                 setPendingParticipationStatus({}); // 保留中のステータスもクリア (オプション)
+                                setPendingParticipationStatusCount({}); // 保留中のステータスをクリア
                             }} color="primary">
                                 {lang === 'ja-JP' ? 'リセット' : 'Reset'}
                             </Button>

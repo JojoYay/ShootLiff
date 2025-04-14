@@ -127,11 +127,11 @@ const Comment: React.FC<CommentProps> = ({ componentId, category, users, user, l
             <Typography variant="h6" sx={{ color: '#3f51b5' }}>{lang === 'ja-JP' ? 'コメント' : 'Comments'}</Typography>
             <Box sx={{maxHeight: '400px', overflow:'scroll'}}>
                 {comments.map((comment) => {
-                    console.log(users);
-                    console.log(comment);
+                    // console.log(users);
+                    // console.log(comment);
                     const createUser = users.find(u => u[2] === comment[3]);
                     // const user = users.find(u => u.id === comment.create_user);
-                    console.log(createUser);
+                    // console.log(createUser);
                     return createUser ? (
                         
                         <Box key={comment[0]} sx={{ border: '1px solid #ccc', padding: '5px', marginBottom: '3px'}}>
