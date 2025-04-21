@@ -286,21 +286,62 @@ export default function EventManager() {
         await updateEventStatus(event, newStatus);
     };
 
-    const handlePresetFill = () => {
-        setFormData({
-            id: '',
-            event_type: 'いつもの',
-            event_name: '日曜定期',
-            start_datetime: new Date(new Date().setHours(7, 0, 0, 0)).toISOString(),
-            end_datetime: new Date(new Date().setHours(9, 0, 0, 0)).toISOString(),
-
-            place: 'Premier Pitch Khalsa',
-            remark: 'https://maps.app.goo.gl/3Zmq48uFkPEvB6cKA',
-            event_status: 0,
-            pitch_fee: '',
-            paynow_link: '',
-            paticipation_fee: '',
+    const renderRemarkWithLinks = (remark: string) => {
+        const urlRegex = /(https?:\/\/[^\s]+)/g;
+        const parts = remark.split(urlRegex);
+        
+        return parts.map((part, index) => {
+            // 改行を <br /> に置き換え
+            const formattedPart = part.split('\n').map((line, lineIndex) => (
+                <>
+                    {line.length > 25 ? line.slice(0, 25) + '...' : line}
+                    {lineIndex < part.split('\n').length - 1 && <br />}
+                </>
+            ));
+        
+            if (urlRegex.test(part)) {
+                return (
+                    <a key={index} href={part} target="_blank" rel="noopener noreferrer" style={{ color: '#1e88e5' }}>
+                        {formattedPart}
+                    </a>
+                );
+            }
+            return <span key={index}>{formattedPart}</span>;
         });
+    }
+
+    const handlePresetFill = () => {
+        if(process.env.NEXT_PUBLIC_APP_TITLE === 'Scout App'){
+            setFormData({
+                id: '',
+                event_type: 'いつもの',
+                event_name: '',
+                start_datetime: new Date(new Date().setHours(9, 0, 0, 0)).toISOString(),
+                end_datetime: new Date(new Date().setHours(12, 0, 0, 0)).toISOString(),
+    
+                place: '',
+                remark: '',
+                event_status: 0,
+                pitch_fee: '',
+                paynow_link: '',
+                paticipation_fee: '',
+            });
+        } else {
+            setFormData({
+                id: '',
+                event_type: 'いつもの',
+                event_name: '日曜定期',
+                start_datetime: new Date(new Date().setHours(7, 0, 0, 0)).toISOString(),
+                end_datetime: new Date(new Date().setHours(9, 0, 0, 0)).toISOString(),
+    
+                place: 'Premier Pitch Khalsa',
+                remark: 'https://maps.app.goo.gl/3Zmq48uFkPEvB6cKA',
+                event_status: 0,
+                pitch_fee: '',
+                paynow_link: '',
+                paticipation_fee: '',
+            });
+        }
         setSelectedDate(null); // 日付は空欄
         setStartTime(new Date(new Date().setHours(7, 0, 0, 0)));
         setEndTime(new Date(new Date().setHours(9, 0, 0, 0)));
@@ -375,9 +416,10 @@ export default function EventManager() {
                             </Box>
                             <Box sx={{ display: 'flex', alignItems: 'center', margin:'3px'}}>
                                 <Typography variant="body2" component="div">
-                                    {event.event_name}
+                                    {event.event_name} @ {event.place}
                                 </Typography>
-                                <Box sx={{ width: '8px' }} />
+                            </Box>
+                            <Box sx={{ display: 'flex', alignItems: 'center', margin:'3px', justifyContent: 'space-between'}} >
                                 {(event.event_type === 'フットサル' || event.event_type === 'いつもの') && (
                                     <Typography variant="body2" color="text.secondary" sx={{ marginRight: 2 }}>
                                     {event.event_status === 0 ? 
@@ -400,20 +442,15 @@ export default function EventManager() {
                                 </Typography>
                                 )}
                             </Box>
-                            {event.place && (
-                                <Typography variant="body2" color="text.secondary">
-                                    場所: {event.place}
-                                </Typography>
-                            )}
                             {event.remark && (
                                 <Typography variant="body2" color="text.secondary">
-                                    {process.env.CUSTOMER === 'Scout' ? '特別な持ち物:' : '備考:'} {event.remark}
+                                    {renderRemarkWithLinks(event.remark)}
                                 </Typography>
                             )}
                             {event.pitch_fee && (
-                                    <Typography variant="body2" color="text.secondary">
-                                        {event.event_type === 'フットサル' || event.event_type === 'いつもの' ? 'ピッチ代' : '部費拠出金'}:{event.pitch_fee}
-                                    </Typography>
+                                <Typography variant="body2" color="text.secondary">
+                                    {event.event_type === 'フットサル' || event.event_type === 'いつもの' ? 'ピッチ代' : '部費拠出金'}:{event.pitch_fee}
+                                </Typography>
                             )}
                             {event.paticipation_fee && (
                                 <Typography variant="body2" color="text.secondary">
@@ -618,6 +655,7 @@ export default function EventManager() {
                             <TextField
                                 size='small'
                                 fullWidth
+                                multiline
                                 label={'備考'}
                                 value={formData.remark}
                                 onChange={(e) => setFormData({ ...formData, remark: e.target.value })}

@@ -51,18 +51,27 @@ export const NextEventCard: React.FC<NextEventCardProps> = ({
     function renderRemarkWithLinks(remark: string) {
         const urlRegex = /(https?:\/\/[^\s]+)/g;
         const parts = remark.split(urlRegex);
-    
+        
         return parts.map((part, index) => {
+            // 改行を <br /> に置き換え
+            const formattedPart = part.split('\n').map((line, lineIndex) => (
+                <>
+                    {line.length > 25 ? line.slice(0, 25) + '...' : line}
+                    {lineIndex < part.split('\n').length - 1 && <br />}
+                </>
+            ));
+        
             if (urlRegex.test(part)) {
                 return (
                     <a key={index} href={part} target="_blank" rel="noopener noreferrer" style={{ color: '#1e88e5' }}>
-                        {part}
+                        {formattedPart}
                     </a>
                 );
             }
-            return part;
+            return <span key={index}>{formattedPart}</span>;
         });
     }
+    
     return (
         <Paper elevation={3} sx={{
             p: 2,
@@ -132,26 +141,22 @@ export const NextEventCard: React.FC<NextEventCardProps> = ({
                     <Typography variant="body1" sx={{ color: '#424242' }}>
                         {nextEvent.event_name} @ {nextEvent.place}
                     </Typography>
-                    {/* <Typography variant="body1" sx={{ color: '#757575' }}>
-                        〇: {nextEvent.attendances?.filter(att => att.status === '〇').length || 0},
-                        △: {nextEvent.attendances?.filter(att => att.status === '△').length || 0},
-                        ×: {nextEvent.attendances?.filter(att => att.status === '×').length || 0}
-                    </Typography> */}
-<Typography variant="body2" sx={{ color: '#757575' }}>
-    〇: {nextEvent.attendances?.filter(att => att.status === '〇').reduce((total, att) => total + (att.adult_count || 1), 0) || 0}, 
-    子: {nextEvent.attendances?.filter(att => att.status === '〇').reduce((total, att) => total + (att.child_count || 0), 0) || 0}, 
-    △: {nextEvent.attendances?.filter(att => att.status === '△').reduce((total, att) => total + (att.adult_count || 1), 0) || 0}, 
-    子: {nextEvent.attendances?.filter(att => att.status === '△').reduce((total, att) => total + (att.child_count || 0), 0) || 0}, 
-    ×: {nextEvent.attendances?.filter(att => att.status === '×').reduce((total, att) => total + (att.adult_count || 1), 0) || 0}, 
-    子: {nextEvent.attendances?.filter(att => att.status === '×').reduce((total, att) => total + (att.child_count || 0), 0) || 0}
-</Typography>
+                    <Typography variant="body2" sx={{ color: '#757575' }}>
+                        〇: {nextEvent.attendances?.filter(att => att.status === '〇').reduce((total, att) => total + (att.adult_count || 1), 0) || 0}, 
+                        子: {nextEvent.attendances?.filter(att => att.status === '〇').reduce((total, att) => total + (att.child_count || 0), 0) || 0}, 
+                        △: {nextEvent.attendances?.filter(att => att.status === '△').reduce((total, att) => total + (att.adult_count || 1), 0) || 0}, 
+                        {process.env.NEXT_PUBLIC_APP_TITLE === 'Scout App' && (
+                            <>子: {nextEvent.attendances?.filter(att => att.status === '△').reduce((total, att) => total + (att.child_count || 0), 0) || 0}, </>
+                        )}
+                        ×: {nextEvent.attendances?.filter(att => att.status === '×').reduce((total, att) => total + (att.adult_count || 1), 0) || 0}, 
+                        {process.env.NEXT_PUBLIC_APP_TITLE === 'Scout App' && (
+                            <>子: {nextEvent.attendances?.filter(att => att.status === '×').reduce((total, att) => total + (att.child_count || 0), 0) || 0}</>
+                        )}
+                    </Typography>
                 </Box>
             </Box>
 
             <Box sx={{ flex: 1, mt:'3px' }}>
-                <Typography variant="body1" style={{ color: '#757575', wordBreak: 'break-word', whiteSpace: 'pre-wrap' }}>
-                    {renderRemarkWithLinks(nextEvent.remark)}
-                </Typography>
                 {/* 参加者選択コンボボックス（代理返信モード時のみ表示） */}
                 {isProxyReplyMode && (
                     <FormControl fullWidth margin="dense" size="small">
@@ -279,6 +284,10 @@ export const NextEventCard: React.FC<NextEventCardProps> = ({
 
                 <Collapse in={expandedEventDetails['next_event']} timeout="auto" unmountOnExit>
                     {/* 参加者リスト */}
+                    <Typography variant="body1" style={{ color: '#757575', wordBreak: 'break-word', whiteSpace: 'pre-wrap' }}>
+                        {renderRemarkWithLinks(nextEvent.remark)}
+                    </Typography>
+
                     <Box sx={{ display: 'flex', flexDirection: 'column', gap: 1 }}>
                         <Box>
                             <Typography variant="body2" sx={{ color: '#757575' }}>

@@ -519,16 +519,24 @@ export default function Calendar() {
     function renderRemarkWithLinks(remark: string) {
         const urlRegex = /(https?:\/\/[^\s]+)/g;
         const parts = remark.split(urlRegex);
-    
+        
         return parts.map((part, index) => {
+            // 改行を <br /> に置き換え
+            const formattedPart = part.split('\n').map((line, lineIndex) => (
+                <>
+                    {line.length > 25 ? line.slice(0, 25) + '...' : line}
+                    {lineIndex < part.split('\n').length - 1 && <br />}
+                </>
+            ));
+        
             if (urlRegex.test(part)) {
                 return (
                     <a key={index} href={part} target="_blank" rel="noopener noreferrer" style={{ color: '#1e88e5' }}>
-                        {part}
+                        {formattedPart}
                     </a>
                 );
             }
-            return part;
+            return <span key={index}>{formattedPart}</span>;
         });
     }
 
@@ -621,8 +629,15 @@ export default function Calendar() {
                                                                                 weekday: 'short'
                                                                             }).replace(/-/g, '/')}
                                                                         </Typography>
+
                                                                         <Typography variant="body2" sx={{ color: '#757575', mr:'5px'}}>
                                                                             {new Date(calendar.start_datetime).toLocaleTimeString(lang, {
+                                                                                hour: '2-digit',
+                                                                                minute: '2-digit',
+                                                                                hour12: false
+                                                                            })}
+                                                                            -
+                                                                            {new Date(calendar.end_datetime).toLocaleTimeString(lang, {
                                                                                 hour: '2-digit',
                                                                                 minute: '2-digit',
                                                                                 hour12: false
@@ -632,19 +647,18 @@ export default function Calendar() {
                                                                     <Typography variant="body2" style={{ color: '#757575' }}>
                                                                         {calendar.event_name} @ {calendar.place}
                                                                     </Typography>
-                                                                    {/* <Typography variant="body2" sx={{ color: '#757575' }}>
-                                                                        〇: {calendar.attendances?.filter(att => att.status === '〇').length || 0}, 
-                                                                        △: {calendar.attendances?.filter(att => att.status === '△').length || 0}, 
-                                                                        ×: {calendar.attendances?.filter(att => att.status === '×').length || 0}
-                                                                    </Typography> */}
-<Typography variant="body2" sx={{ color: '#757575' }}>
-    〇: {calendar.attendances?.filter(att => att.status === '〇').reduce((total, att) => total + (att.adult_count || 1), 0) || 0}, 
-    子: {calendar.attendances?.filter(att => att.status === '〇').reduce((total, att) => total + (att.child_count || 0), 0) || 0}, 
-    △: {calendar.attendances?.filter(att => att.status === '△').reduce((total, att) => total + (att.adult_count || 1), 0) || 0}, 
-    子: {calendar.attendances?.filter(att => att.status === '△').reduce((total, att) => total + (att.child_count || 0), 0) || 0}, 
-    ×: {calendar.attendances?.filter(att => att.status === '×').reduce((total, att) => total + (att.adult_count || 1), 0) || 0}, 
-    子: {calendar.attendances?.filter(att => att.status === '×').reduce((total, att) => total + (att.child_count || 0), 0) || 0}
-</Typography>
+                                                                    <Typography variant="body2" sx={{ color: '#757575' }}>
+                                                                        〇: {calendar.attendances?.filter(att => att.status === '〇').reduce((total, att) => total + (att.adult_count || 1), 0) || 0}, 
+                                                                        子: {calendar.attendances?.filter(att => att.status === '〇').reduce((total, att) => total + (att.child_count || 0), 0) || 0}, 
+                                                                        △: {calendar.attendances?.filter(att => att.status === '△').reduce((total, att) => total + (att.adult_count || 1), 0) || 0}, 
+                                                                        {process.env.NEXT_PUBLIC_APP_TITLE === 'Scout App' && (
+                                                                            <>子: {calendar.attendances?.filter(att => att.status === '△').reduce((total, att) => total + (att.child_count || 0), 0) || 0}, </>
+                                                                        )}
+                                                                        ×: {calendar.attendances?.filter(att => att.status === '×').reduce((total, att) => total + (att.adult_count || 1), 0) || 0}, 
+                                                                        {process.env.NEXT_PUBLIC_APP_TITLE === 'Scout App' && (
+                                                                            <>子: {calendar.attendances?.filter(att => att.status === '×').reduce((total, att) => total + (att.child_count || 0), 0) || 0}</>
+                                                                        )}
+                                                                    </Typography>
                                                                 </Box>
                                                             </Box>
 
@@ -753,7 +767,6 @@ export default function Calendar() {
                                                                 </Box>
                                                             )}
                                                             <Box sx={{ m: '5px' }}>
-                                                                {/* <Typography variant="body1" style={{ color: '#757575' }}>{calendar.place}</Typography> */}
                                                                 <Typography variant="body1" style={{ color: '#757575', wordBreak: 'break-word', whiteSpace: 'pre-wrap' }}>
                                                                     {renderRemarkWithLinks(calendar.remark)}
                                                                 </Typography>
@@ -798,7 +811,6 @@ export default function Calendar() {
 
                                                                 <Typography variant="subtitle2" style={{ color: '#757575', fontWeight: 'bold' }}>{lang === 'ja-JP' ? '不参加' : 'Absent'}:
                                                                     <Typography variant="body2" sx={{ color: '#757575' }}>
-
                                                                         大人: {calendar.attendances?.filter(att => att.status === '×').reduce((total, att) => total + (att.adult_count || 1), 0) || 0}, 
                                                                         子供: {calendar.attendances?.filter(att => att.status === '×').reduce((total, att) => total + (att.child_count || 0), 0) || 0}
                                                                     </Typography>
