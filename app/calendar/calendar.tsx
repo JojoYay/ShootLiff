@@ -30,6 +30,7 @@ import { User } from '../types/user';
 import { BALL, BEER, LOGO } from '../utils/constants';
 import { NextEventCard } from './nextEventCard';
 import { useRouter } from 'next/navigation';
+import AddCalendarButton from './addCalendar';
 
 export default function Calendar() {
     const router = useRouter();
@@ -835,10 +836,11 @@ export default function Calendar() {
                                         ))}
                                     </Box>
                                 ))}
-                                {/* </Grid> */}
+                                <AddCalendarButton />
                                 <Comment componentId='calendar' users={users} user={profile} category='calendar_all' lang={lang} />
                         
                     </Box>
+
                     <Dialog // 確認ダイアログを追加
                         open={isResetDialogOpen}
                         onClose={() => setIsResetDialogOpen(false)}
