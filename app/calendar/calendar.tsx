@@ -341,6 +341,8 @@ export default function Calendar() {
                     if (cal) {
                         const startDate = new Date(cal.start_datetime as string);
                         const existingAttendance = findAttendance(eventId, startDate, userIdToUse);
+                        console.log("existing_attendance")
+                        console.log(existingAttendance);
                         formData.append('calendar_id_'+index, eid);
                         formData.append('year_'+index, String(startDate.getFullYear()));
                         formData.append('month_'+index, String(startDate.getMonth() + 1));
@@ -401,7 +403,7 @@ export default function Calendar() {
             onClick={handleSaveParticipation}
             disabled={isSaving}
             sx={{ 
-                ml: 1,
+                mr:1,
                 minWidth: '40px', // 幅を指定
                 px: 1 // 左右のパディングを縮小
             }}
@@ -585,7 +587,7 @@ export default function Calendar() {
                                 {/* カレンダーグリッド */}
                                 <CalendarGrid calendar={calendar} daysOfWeek={daysOfWeek} currentDate={currentDate} BALL={BALL} BEER={BEER} LOGO={LOGO} />
                                 <Box textAlign="center" m={'3px'} p={'3px'} sx={{ display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-                                    <Typography variant="h6" component="div" sx={{ textAlign: 'center', color: '#3f51b5', fontWeight: 'bold' }}> 
+                                    <Typography variant="h6" component="div" sx={{ textAlign: 'center', color: '#3f51b5', fontWeight: 'bold', mr:1 }}> 
                                         {lang === 'ja-JP' ? '出席データ' : 'Attendance Data'}
                                     </Typography>
                                     {Object.keys(pendingParticipationStatus).length > 0 && <SaveButton />}
@@ -682,6 +684,7 @@ export default function Calendar() {
                                                                     id="status-select"
                                                                     value={calendar.attendance?.status || ''}
                                                                     label={lang === 'ja-JP' ? '参加可否' : 'Status'}
+                                                                    disabled={isProxyReplyMode}
                                                                     onChange={(e) => {
                                                                         if(calendar.ID){
                                                                             handleParticipationChange(calendar, e.target.value as '〇' | '△' | '×', profile?.userId, calendar.attendance?.adult_count || 1, calendar.attendance?.child_count || 0);
@@ -704,6 +707,7 @@ export default function Calendar() {
                                                                     id="adult-count-select"
                                                                     value={calendar.attendance?.adult_count || 1}
                                                                     label={lang === 'ja-JP' ? '大人' : 'Adult'}
+                                                                    disabled={isProxyReplyMode}
                                                                     onChange={(e) => {
                                                                         if(calendar.ID){
                                                                             if(calendar.attendance){
@@ -726,6 +730,7 @@ export default function Calendar() {
                                                                     id="child-count-select"
                                                                     value={calendar.attendance?.child_count || 0}
                                                                     label={lang === 'ja-JP' ? '子供' : 'Child'}
+                                                                    disabled={isProxyReplyMode}
                                                                     onChange={(e) => {
                                                                         if(calendar.ID){
                                                                             if(calendar.attendance){

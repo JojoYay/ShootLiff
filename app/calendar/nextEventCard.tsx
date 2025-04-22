@@ -86,7 +86,6 @@ export const NextEventCard: React.FC<NextEventCardProps> = ({
                     <Typography variant="h6" sx={{ color: '#3f51b5' }}>
                         {lang === 'ja-JP' ? '次回の予定' : 'Next Event'}
                     </Typography>
-                    {Object.keys(pendingParticipationStatus).length > 0 && <SaveButton />}
                     {isUserManager && (
                         <ProxyReplyButton />
                     )}
@@ -220,13 +219,31 @@ export const NextEventCard: React.FC<NextEventCardProps> = ({
                         <Select
                             labelId="adult-count-select-label"
                             id="adult-count-select"
-                            value={nextEvent.attendance?.adult_count || 1}
+                            // value={nextEvent.attendance?.adult_count || 1}
+                            value={
+                                isProxyReplyMode && proxyReplyUser
+                                ? (nextEvent.attendances?.find(att => att.user_id === proxyReplyUser.userId)?.adult_count || 1)
+                                : (nextEvent.attendance?.adult_count || 1)
+                            }
                             label={lang === 'ja-JP' ? '大人' : 'Adult'}
                             onChange={(e) => {
                                 if(nextEvent.ID){
-                                    handleParticipationChange(nextEvent, nextEvent.attendance?.status as '〇' | '△' | '×', profile?.userId || '',  e.target.value as number, nextEvent.attendance?.child_count || 0);
-                                    if(nextEvent.attendance){
-                                        nextEvent.attendance.adult_count = e.target.value as number; // Update adultCount
+                                    if(isProxyReplyMode && proxyReplyUser){
+                                        handleParticipationChange(nextEvent, nextEvent.attendance?.status as '〇' | '△' | '×', proxyReplyUser?.userId || '',  e.target.value as number, nextEvent.attendance?.child_count || 0);
+                                    } else {
+                                        handleParticipationChange(nextEvent, nextEvent.attendance?.status as '〇' | '△' | '×', profile?.userId || '',  e.target.value as number, nextEvent.attendance?.child_count || 0);
+                                    }
+                                    if(isProxyReplyMode && proxyReplyUser){
+                                        if(nextEvent.attendances){
+                                            const attendances = nextEvent.attendances?.find(att => att.user_id === proxyReplyUser.userId);
+                                            if(attendances){
+                                                attendances.adult_count = e.target.value as number;
+                                            }
+                                        }
+                                    } else {
+                                        if(nextEvent.attendance){
+                                            nextEvent.attendance.adult_count = e.target.value as number; // Update adultCount
+                                        }
                                     }
                                 }
                             }}
@@ -241,13 +258,32 @@ export const NextEventCard: React.FC<NextEventCardProps> = ({
                         <Select
                             labelId="child-count-select-label"
                             id="child-count-select"
-                            value={nextEvent.attendance?.child_count || 0}
+                            // value={nextEvent.attendance?.child_count || 0}
+                            value={
+                                isProxyReplyMode && proxyReplyUser
+                                ? (nextEvent.attendances?.find(att => att.user_id === proxyReplyUser.userId)?.child_count || 0)
+                                : (nextEvent.attendance?.child_count || 0)
+                            }
+
                             label={lang === 'ja-JP' ? '子供' : 'Child'}
                             onChange={(e) => {
                                 if(nextEvent.ID){
-                                    handleParticipationChange(nextEvent, nextEvent.attendance?.status as '〇' | '△' | '×', profile?.userId || '', nextEvent.attendance?.adult_count || 1, e.target.value as number);
-                                    if(nextEvent.attendance){
-                                        nextEvent.attendance.child_count = e.target.value as number; // Update childCount
+                                    if(isProxyReplyMode && proxyReplyUser){
+                                        handleParticipationChange(nextEvent, nextEvent.attendance?.status as '〇' | '△' | '×', proxyReplyUser?.userId || '', nextEvent.attendance?.adult_count || 1, e.target.value as number);
+                                    } else {
+                                        handleParticipationChange(nextEvent, nextEvent.attendance?.status as '〇' | '△' | '×', profile?.userId || '', nextEvent.attendance?.adult_count || 1,  e.target.value as number);
+                                    }
+                                    if(isProxyReplyMode && proxyReplyUser){
+                                        if(nextEvent.attendances){
+                                            const attendances = nextEvent.attendances?.find(att => att.user_id === proxyReplyUser.userId);
+                                            if(attendances){
+                                                attendances.child_count = e.target.value as number;
+                                            }
+                                        }
+                                    } else {
+                                        if(nextEvent.attendance){
+                                            nextEvent.attendance.child_count = e.target.value as number; // Update adultCount
+                                        }
                                     }
                                 }
                             }}
@@ -259,7 +295,8 @@ export const NextEventCard: React.FC<NextEventCardProps> = ({
                     </FormControl>
                 </Box>
                 <Box sx={{ flex: 1, m:'3px' }}>
-                    { process.env.NEXT_PUBLIC_APP_TITLE === 'Scout App' ? (
+                    {Object.keys(pendingParticipationStatus).length > 0 && <SaveButton />}
+                    {process.env.NEXT_PUBLIC_APP_TITLE === 'Scout App' ? (
                         <Button
                             variant="contained"
                             color="primary"
