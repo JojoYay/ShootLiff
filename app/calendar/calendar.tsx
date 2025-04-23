@@ -76,7 +76,6 @@ export default function Calendar() {
     const daysOfWeek = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'];
     const [calendar, setCalendar] = useState<(string | { day: number, events: CalendarEvent[] })[][]>([]);
     const [expandedEventDetails, setExpandedEventDetails] = useState<{[eventId: string]: boolean}>({});
-    const [isRegistering, setIsRegistering] = useState(false);
 
 
     // 月または年が変わったときにカレンダーを再生成
@@ -482,42 +481,6 @@ export default function Calendar() {
         setNicknameError('');
     };
 
-    const handleRegister = () => {
-        try{
-            setIsRegistering(true);
-            const isNameTaken = users.some(user => user[1] === nickname);
-            if (isNameTaken) {
-                setNicknameError('This nickname is already in use.');
-            } else {
-                setIsRegistering(true); // 登録処理開始時にtrueにする
-                const formData = new FormData();
-                formData.append('func', 'registrationFromApp');
-                formData.append('userId', profile?.userId || '');
-                formData.append('nickname', nickname);
-                formData.append('line_name',profile?.displayName || '');
-                formData.append('pic_url', profile?.pictureUrl || '');
-                if(process.env.SERVER_URL){
-                    fetch(process.env.SERVER_URL, {
-                        method: 'POST',
-                        body: formData,
-                    })
-                    .then(response => response.json())
-                    .then(data => {
-                        console.log('Registration successful:', data);
-                        setShowRegistrationDialog(false); // 成功時にダイアログを閉じる
-                        setIsRegistering(false); // 成功時にfalseに戻す
-                    })
-                    .catch(error => {
-                        console.error('Registration failed:', error);
-                        setIsRegistering(false); // エラー時にもfalseに戻す
-                    });
-                }
-            }
-        } finally {
-            setIsRegistering(false);
-        }
-        
-    };
 
     function renderRemarkWithLinks(remark: string) {
         const urlRegex = /(https?:\/\/[^\s]+)/g;
@@ -883,10 +846,15 @@ export default function Calendar() {
                 <RegistrationDialog
                     nickname={nickname}
                     onNicknameChange={handleNicknameChange}
-                    onRegister={handleRegister}
+                    // onRegister={handleRegister}
                     nicknameError={nicknameError}
-                    disabledM={isRegistering}
-                    onClose={() => setShowRegistrationDialog(false)} // ダイアログを閉じるための関数を渡す
+                    // disabled={isRegistering}
+                    // onClose={() => setShowRegistrationDialog(false)} // ダイアログを閉じるための関数を渡す
+                    profile={profile}
+                    setNicknameError={setNicknameError}
+                    setShowRegistrationDialog={setShowRegistrationDialog}
+                    users={users}
+                    
                 />
             )}
         </>

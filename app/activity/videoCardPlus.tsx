@@ -119,13 +119,13 @@ const uploadVideo = async(file: File) => {
   
       const { uploadUrl, token, err } = await res.json();
       // console.log(uploadUrl);
-      // console.log(videoUrl);
       // console.log(token);
       setUploadProgress(10);
 
       if (err) return alert(err);
       if (!uploadUrl) return alert("アップロードURLの取得に失敗しました");
       // Resumable Upload を開始
+
       const chunkSize = 30 * 1024 * 1024; // 30MB チャンク
       let offset = 0;
       let isLastChunk = false;
@@ -138,6 +138,7 @@ const uploadVideo = async(file: File) => {
           setUploadProgress(progress);
           response = await fetch(uploadUrl, {
             method: "PUT",
+            mode: 'no-cors', // no-corsモードを追加
             headers: {
               "Authorization": `Bearer ${token}`,
               "Content-Length": `${chunk.size}`,
@@ -146,14 +147,16 @@ const uploadVideo = async(file: File) => {
             body: chunk,
           });
           // console.log(`チャンクアップロード成功 bytes ${offset}-${offset + chunk.size - 1}/${file.size}, status: ${response.status}`); // 成功時のログを追加
-        }catch(e){
-          //fixme なぜかエラーになるが無視することでアップはできているっぽい
+        }catch(e:any){
+          //fixme なぜかエラーになるが無視することでアップはできているっぽい=> no-corsで回避
         } finally {
           setUploadProgress(90);
         }
         offset += chunkSize;
       }
-        try {
+
+      
+      try {
         const url = process.env.SERVER_URL + '?func=updateYTVideo&actDate=' + encodeURIComponent(props.actDate) +'&fileName='+props.title;
         if (url) {
           const response = await fetch(url, {

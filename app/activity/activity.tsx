@@ -279,6 +279,7 @@ export default function Video() {
 										actDate={actDate}
 										fetchVideo={fetchVideo}
 										kanji={isUserManager}
+										// accessToken={token.access_token as string}
 									/>
 								) : (
 									<VideoCard 
