@@ -142,16 +142,16 @@ export const NextEventCard: React.FC<NextEventCardProps> = ({
                         {nextEvent.event_name} @ {nextEvent.place}
                     </Typography>
                     <Typography variant="body2" sx={{ color: '#757575' }}>
-                        〇: {nextEvent.attendances?.filter(att => att.status === '〇').reduce((total, att) => total + (att.adult_count || 1), 0) || 0}, 
+                        〇 親: {nextEvent.attendances?.filter(att => att.status === '〇').reduce((total, att) => total + (att.adult_count || 1), 0) || 0}, 
                         子: {nextEvent.attendances?.filter(att => att.status === '〇').reduce((total, att) => total + (att.child_count || 0), 0) || 0}, 
                         △: {nextEvent.attendances?.filter(att => att.status === '△').reduce((total, att) => total + (att.adult_count || 1), 0) || 0}, 
-                        {process.env.NEXT_PUBLIC_APP_TITLE === 'Scout App' && (
+                        {/* {process.env.NEXT_PUBLIC_APP_TITLE === 'Scout App' && (
                             <>子: {nextEvent.attendances?.filter(att => att.status === '△').reduce((total, att) => total + (att.child_count || 0), 0) || 0}, </>
-                        )}
+                        )} */}
                         ×: {nextEvent.attendances?.filter(att => att.status === '×').reduce((total, att) => total + (att.adult_count || 1), 0) || 0}, 
-                        {process.env.NEXT_PUBLIC_APP_TITLE === 'Scout App' && (
+                        {/* {process.env.NEXT_PUBLIC_APP_TITLE === 'Scout App' && (
                             <>子: {nextEvent.attendances?.filter(att => att.status === '×').reduce((total, att) => total + (att.child_count || 0), 0) || 0}</>
-                        )}
+                        )} */}
                     </Typography>
                 </Box>
             </Box>

@@ -11,7 +11,7 @@ interface AttendanceListProps {
 }
 
 const AttendanceList: React.FC<AttendanceListProps> = ({ lang, attendances = [], status }) => { // Default to empty array
-    const filteredAttendances = attendances.filter(att => att.status === status);
+    const filteredAttendances = attendances.filter(att => att.status === status).sort();
     const totalAdults = filteredAttendances.reduce((total, att) => total + (att.adult_count || 1), 0);
     const totalChildren = filteredAttendances.reduce((total, att) => total + (att.child_count || 0), 0);
     return (
@@ -33,8 +33,8 @@ const AttendanceList: React.FC<AttendanceListProps> = ({ lang, attendances = [],
                                         picUrl={attend.profile?.pictureUrl}  
                                         width={24} height={24} showTooltip={true} 
                                     />
-                                    <Typography variant="subtitle2" sx={{marginLeft:'3px', marginRight:'3px'}}>{`大人:${attend.adult_count || '1'}`}</Typography>
-                                    <Typography variant="subtitle2" sx={{marginLeft:'3px', marginRight:'3px'}}>{`子供:${attend.child_count || '0'}`}</Typography>
+                                    <Typography variant="subtitle2" sx={{color: '#757575', marginLeft:'3px', marginRight:'3px'}}>{`大人:${attend.adult_count || '1'}`}</Typography>
+                                    <Typography variant="subtitle2" sx={{color: '#757575', marginLeft:'3px', marginRight:'3px'}}>{`子供:${attend.child_count || '0'}`}</Typography>
                                 </Box>
                             </>
                         ))}
