@@ -31,6 +31,7 @@ import { BALL, BEER, LOGO } from '../utils/constants';
 import { NextEventCard } from './nextEventCard';
 import { useRouter } from 'next/navigation';
 import AddCalendarButton from './addCalendar';
+import AttendanceList from './attendanceList';
 
 export default function Calendar() {
     const router = useRouter();
@@ -746,60 +747,9 @@ export default function Calendar() {
                                                                 </Typography>
                                                             </Box>
                                                             <Box sx={{ m: '5px', display: 'flex', flexDirection: 'column' }}>
-                                                                <Typography variant="subtitle2" style={{ color: '#757575', fontWeight: 'bold' }}>{lang === 'ja-JP' ? '参加者' : 'Attendees'}:
-                                                                    {/* <Typography variant="caption" style={{ color: '#757575', fontWeight: 'normal' }}> ({calendar.attendances?.filter(att => att.status === '〇').length || 0})</Typography> */}
-                                                                    <Typography variant="body2" sx={{ color: '#757575' }}>
-                                                                        大人: {calendar.attendances?.filter(att => att.status === '〇').reduce((total, att) => total + (att.adult_count || 1), 0) || 0}, 
-                                                                        子供: {calendar.attendances?.filter(att => att.status === '〇').reduce((total, att) => total + (att.child_count || 0), 0) || 0}
-                                                                    </Typography>
-                                                                </Typography>
-                                                                <Box sx={{ display: 'flex', flexWrap: 'wrap', mb: 1 }}>
-                                                                    {calendar.attendances?.filter(att => att.status === '〇').map((attend, index) => (
-                                                                        <AvatarIcon 
-                                                                            key={index} 
-                                                                            name={attend.profile?.displayName+" 大人:"+(attend.adult_count || '1')+' 子供:'+(attend.child_count || '0')} 
-                                                                            picUrl={attend.profile?.pictureUrl}  
-                                                                            width={24} height={24} showTooltip={true} />
-                                                                    ))}
-                                                                </Box>
-
-                                                                <Typography variant="subtitle2" style={{ color: '#757575', fontWeight: 'bold' }}>{lang === 'ja-JP' ? '保留' : 'Pending'}:
-                                                                    <Typography variant="body2" sx={{ color: '#757575' }}>
-                                                                        大人: {calendar.attendances?.filter(att => att.status === '△').reduce((total, att) => total + (att.adult_count || 1), 0) || 0}, 
-                                                                        子供: {calendar.attendances?.filter(att => att.status === '△').reduce((total, att) => total + (att.child_count || 0), 0) || 0}
-                                                                    </Typography>
-    
-                                                                    {/* <Typography variant="caption" style={{ color: '#757575', fontWeight: 'normal' }}> ({calendar.attendances?.filter(att => att.status === '△').length || 0})</Typography> */}
-                                                                </Typography>
-                                                                <Box sx={{ display: 'flex', flexWrap: 'wrap', mb: 1 }}>
-                                                                    {calendar.attendances?.filter(att => att.status === '△').map((attend, index) => (
-                                                                        <AvatarIcon 
-                                                                        key={index} 
-                                                                        name={attend.profile?.displayName+" 大人:"+(attend.adult_count || '1')+' 子供:'+(attend.child_count || '0')} 
-                                                                        picUrl={attend.profile?.pictureUrl}  
-                                                                        width={24} height={24} showTooltip={true} />
-
-                                                                        // <AvatarIcon key={index} name={attend.profile?.displayName || ''} picUrl={attend.profile?.pictureUrl}  width={24} height={24} showTooltip={true} />
-                                                                    ))}
-                                                                </Box>
-
-                                                                <Typography variant="subtitle2" style={{ color: '#757575', fontWeight: 'bold' }}>{lang === 'ja-JP' ? '不参加' : 'Absent'}:
-                                                                    <Typography variant="body2" sx={{ color: '#757575' }}>
-                                                                        大人: {calendar.attendances?.filter(att => att.status === '×').reduce((total, att) => total + (att.adult_count || 1), 0) || 0}, 
-                                                                        子供: {calendar.attendances?.filter(att => att.status === '×').reduce((total, att) => total + (att.child_count || 0), 0) || 0}
-                                                                    </Typography>
-                                                                    {/* <Typography variant="caption" style={{ color: '#757575', fontWeight: 'normal' }}> ({calendar.attendances?.filter(att => att.status === '×').length || 0})</Typography> */}
-                                                                </Typography>
-                                                                <Box sx={{ display: 'flex', flexWrap: 'wrap' }}>
-                                                                    {calendar.attendances?.filter(att => att.status === '×').map((attend, index) => (
-                                                                        <AvatarIcon 
-                                                                        key={index} 
-                                                                        name={attend.profile?.displayName+" 大人:"+(attend.adult_count || '1')+' 子供:'+(attend.child_count || '0')} 
-                                                                        picUrl={attend.profile?.pictureUrl}  
-                                                                        width={24} height={24} showTooltip={true} />
-                                                                        // <AvatarIcon key={index} name={attend.profile?.displayName || ''} picUrl={attend.profile?.pictureUrl}  width={24} height={24} showTooltip={true} />
-                                                                    ))}
-                                                                </Box>
+                                                                <AttendanceList lang={lang} attendances={calendar.attendances || []} status="〇" />
+                                                                <AttendanceList lang={lang} attendances={calendar.attendances || []} status="△" />
+                                                                <AttendanceList lang={lang} attendances={calendar.attendances || []} status="×" />
                                                             </Box>
                                                         </Collapse>
                                                     </Box>

@@ -7,6 +7,7 @@ import { BALL, BEER, LOGO } from '../utils/constants';
 import AvatarIcon from '../stats/avatarIcon';
 import { User } from '../types/user';
 import { useRouter } from 'next/navigation';
+import AttendanceList from './attendanceList';
 
 interface NextEventCardProps {
     nextEvent: CalendarEvent | null;
@@ -339,8 +340,6 @@ export const NextEventCard: React.FC<NextEventCardProps> = ({
                     )}
                 </Box>
 
-
-
                 <Collapse in={expandedEventDetails['next_event']} timeout="auto" unmountOnExit>
                     {/* 参加者リスト */}
                     <Typography variant="body1" style={{ color: '#757575', wordBreak: 'break-word', whiteSpace: 'pre-wrap' }}>
@@ -349,72 +348,13 @@ export const NextEventCard: React.FC<NextEventCardProps> = ({
 
                     <Box sx={{ display: 'flex', flexDirection: 'column', gap: 1 }}>
                         <Box>
-                            <Typography variant="body2" sx={{ color: '#757575' }}>
-                                {lang === 'ja-JP' ? '参加' : 'Attend'}
-                                大人: {nextEvent.attendances?.filter(att => att.status === '〇').reduce((total, att) => total + (att.adult_count || 1), 0) || 0}, 
-                                子供: {nextEvent.attendances?.filter(att => att.status === '〇').reduce((total, att) => total + (att.child_count || 0), 0) || 0}
-                            </Typography>                            
-                            {/* <Typography variant="body2" sx={{ color: '#424242', display: 'flex', alignItems: 'center' }}>
-                                {lang === 'ja-JP' ? '参加' : 'Attend'} ({nextEvent.attendances?.filter(att => att.status === '〇').length || 0}):
-                            </Typography> */}
-                            <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 1 }}>
-                                {nextEvent.attendances?.filter(att => att.status === '〇').map((attend, index) => (
-                                    <AvatarIcon 
-                                        key={index} 
-                                        name={attend.profile?.displayName+" 大人:"+(attend.adult_count || '1')+' 子供:'+(attend.child_count || '0')} 
-                                        picUrl={attend.profile?.pictureUrl}  
-                                        width={24} height={24} showTooltip={true} />                                    
-                                    // <AvatarIcon
-                                    //     key={index}
-                                    //     name={attend.profile?.displayName || ''}
-                                    //     picUrl={attend.profile?.pictureUrl}
-                                    //     width={24}
-                                    //     height={24}
-                                    //     showTooltip={true}
-                                    // />
-                                ))}
-                            </Box>
+                            <AttendanceList lang={lang} attendances={nextEvent.attendances || []} status="〇" />
                         </Box>
                         <Box>
-                            {/* <Typography variant="body2" sx={{ color: '#424242' }}>
-                                {lang === 'ja-JP' ? '保留' : 'Pending'} ({nextEvent.attendances?.filter(att => att.status === '△').length || 0}):
-                            </Typography> */}
-                            <Typography variant="body2" sx={{ color: '#757575' }}>
-                                {lang === 'ja-JP' ? '保留' : 'Pending'} 
-                                大人: {nextEvent.attendances?.filter(att => att.status === '△').reduce((total, att) => total + (att.adult_count || 1), 0) || 0}, 
-                                子供: {nextEvent.attendances?.filter(att => att.status === '△').reduce((total, att) => total + (att.child_count || 0), 0) || 0}
-                            </Typography>
-
-                            <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 1 }}>
-                                {nextEvent.attendances?.filter(att => att.status === '△').map((attend, index) => (
-                                    <AvatarIcon 
-                                    key={index} 
-                                    name={attend.profile?.displayName+" 大人:"+(attend.adult_count || '1')+' 子供:'+(attend.child_count || '0')} 
-                                    picUrl={attend.profile?.pictureUrl}  
-                                    width={24} height={24} showTooltip={true} />                                    
-                            ))}
-                            </Box>
+                            <AttendanceList lang={lang} attendances={nextEvent.attendances || []} status="△" />
                         </Box>
                         <Box>
-                            {/* <Typography variant="body2" sx={{ color: '#424242' }}>
-                                {lang === 'ja-JP' ? '不参加' : 'Absent'} ({nextEvent.attendances?.filter(att => att.status === '×').length || 0}):
-                            </Typography> */}
-                            <Typography variant="body2" sx={{ color: '#757575' }}>
-                                {lang === 'ja-JP' ? '不参加' : 'Absent'}
-                                大人: {nextEvent.attendances?.filter(att => att.status === '×').reduce((total, att) => total + (att.adult_count || 1), 0) || 0}, 
-                                子供: {nextEvent.attendances?.filter(att => att.status === '×').reduce((total, att) => total + (att.child_count || 0), 0) || 0}
-                            </Typography>
-
-
-                            <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 1 }}>
-                                {nextEvent.attendances?.filter(att => att.status === '×').map((attend, index) => (
-                                    <AvatarIcon 
-                                    key={index} 
-                                    name={attend.profile?.displayName+" 大人:"+(attend.adult_count || '1')+' 子供:'+(attend.child_count || '0')} 
-                                    picUrl={attend.profile?.pictureUrl}  
-                                    width={24} height={24} showTooltip={true} />                                    
-                            ))}
-                            </Box>
+                            <AttendanceList lang={lang} attendances={nextEvent.attendances || []} status="×" />
                         </Box>
                     </Box>
                 </Collapse>
