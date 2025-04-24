@@ -77,7 +77,6 @@ export default function Calendar() {
     const [calendar, setCalendar] = useState<(string | { day: number, events: CalendarEvent[] })[][]>([]);
     const [expandedEventDetails, setExpandedEventDetails] = useState<{[eventId: string]: boolean}>({});
 
-
     // 月または年が変わったときにカレンダーを再生成
     useEffect(() => {
         if(profile?.userId){
@@ -416,10 +415,15 @@ export default function Calendar() {
         let nextEvent: CalendarEvent | null = null;
     
         // Filter out completed events and sort by start date
+        // const upcomingEvents = calendarEvents
+        //     .filter(event => event.event_status !== 99)
+        //     .sort((a, b) => new Date(a.start_datetime).getTime() - new Date(b.start_datetime).getTime());
+        //本来１個だけど念のため
+
         const upcomingEvents = calendarEvents
-            .filter(event => event.event_status !== 99)
+            .filter(event => event.event_status === 20)
             .sort((a, b) => new Date(a.start_datetime).getTime() - new Date(b.start_datetime).getTime());
-    
+
         if (upcomingEvents.length > 0) {
             const earliestEvent = upcomingEvents[0];
             nextEvent = {
@@ -427,8 +431,9 @@ export default function Calendar() {
                 attendance: getAttendanceForDayAndEvent(new Date(earliestEvent.start_datetime), attendance, earliestEvent.ID, profile?.userId),
                 attendances: getAllAttendanceForDayAndEvent(new Date(earliestEvent.start_datetime), attendance, earliestEvent.ID, users)
             };
+            console.log(nextEvent);
         }
-    
+
         return nextEvent;
     }
 

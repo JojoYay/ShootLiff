@@ -1,6 +1,6 @@
 'use client';
 import { useEffect, useState } from 'react';
-import { Box, Button, FormControl, InputLabel, MenuItem, Select, SelectChangeEvent, Typography } from '@mui/material';
+import { Autocomplete, Box, Button, FormControl, InputLabel, MenuItem, Select, SelectChangeEvent, TextField, Typography } from '@mui/material';
 import { Profile } from '@liff/get-profile';
 import CloudUploadIcon from '@mui/icons-material/CloudUpload';
 import { useLiff } from '@/app/liffProvider';
@@ -237,24 +237,37 @@ export default function InputPatifipationFee() {
                 </Box>
                 )}
                 {isKanji && (
+                    // <FormControl fullWidth margin="normal">
+                    //     <InputLabel id="user-select-label">代理ユーザーを選択</InputLabel>
+                    //     <Select
+                    //         labelId="user-select-label"
+                    //         id="user-select"
+                    //         value={selectedUserId || ''}
+                    //         label="代理ユーザーを選択"
+                    //         onChange={(event: SelectChangeEvent) => handleUserChange(event.target.value)}
+                    //     >
+                    //         <MenuItem value="">
+                    //             <em>なし</em>
+                    //         </MenuItem>
+                    //         {users.map((user) => (
+                    //             <MenuItem key={user[2]} value={user[2]}>
+                    //                 {user[1]}
+                    //             </MenuItem>
+                    //         ))}
+                    //     </Select>
+                    // </FormControl>
                     <FormControl fullWidth margin="normal">
-                        <InputLabel id="user-select-label">代理ユーザーを選択</InputLabel>
-                        <Select
-                            labelId="user-select-label"
-                            id="user-select"
-                            value={selectedUserId || ''}
-                            label="代理ユーザーを選択"
-                            onChange={(event: SelectChangeEvent) => handleUserChange(event.target.value)}
-                        >
-                            <MenuItem value="">
-                                <em>なし</em>
-                            </MenuItem>
-                            {users.map((user) => (
-                                <MenuItem key={user[2]} value={user[2]}>
-                                    {user[1]}
-                                </MenuItem>
-                            ))}
-                        </Select>
+                        <Autocomplete
+                            options={users}
+                            getOptionLabel={(option) => option[1]} // 表示するラベル
+                            value={selectedUserId ? users.find(user => user[2] === selectedUserId) : null}
+                            onChange={(event, newValue) => {
+                                handleUserChange(newValue ? newValue[2] : '');
+                            }}
+                            renderInput={(params) => (
+                                <TextField {...params} label="代理ユーザーを選択" variant="outlined" />
+                            )}
+                        />
                     </FormControl>
                 )}
                 <Box style={{margin:'5px'}}>

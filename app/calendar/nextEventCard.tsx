@@ -1,6 +1,6 @@
 'use client';
 import React from 'react';
-import { Paper, Box, Typography, IconButton, Collapse, FormControl, InputLabel, Select, MenuItem, Button } from '@mui/material';
+import { Paper, Box, Typography, IconButton, Collapse, FormControl, InputLabel, Select, MenuItem, Button, Autocomplete, TextField } from '@mui/material';
 import { ExpandLess, ExpandMore } from '@mui/icons-material';
 import { CalendarEvent } from '../types/calendar';
 import { BALL, BEER, LOGO } from '../utils/constants';
@@ -158,35 +158,57 @@ export const NextEventCard: React.FC<NextEventCardProps> = ({
             <Box sx={{ flex: 1, mt:'3px' }}>
                 {/* 参加者選択コンボボックス（代理返信モード時のみ表示） */}
                 {isProxyReplyMode && (
-                    <FormControl fullWidth margin="dense" size="small">
-                        <InputLabel id="proxy-user-select-label">{lang === 'ja-JP' ? '代理ユーザーを選択' : 'Select Proxy User'}</InputLabel>
-                        <Select
-                            labelId="proxy-user-select-label"
-                            id="proxy-user-select"
-                            value={proxyReplyUser ? proxyReplyUser.userId : ''}
-                            label={lang === 'ja-JP' ? '代理ユーザーを選択' : 'Select Proxy User'}
-                            onChange={(e) => {
-                                const selectedUser = users.find(user => user[2] === e.target.value);
-                                if (selectedUser) {
-                                    setProxyReplyUser({
-                                        userId: selectedUser[2],
-                                        lineName:selectedUser[0],
-                                        isKanji:selectedUser[3] === '幹事',
-                                        displayName: selectedUser[1],
-                                        pictureUrl: selectedUser[4],
-                                    });
-                                } else {
-                                    setProxyReplyUser(null);
-                                }
-                            }}
-                        >
-                            {users.map((user, index) => (
-                                <MenuItem key={index} value={user[2]}>
-                                    {user[1]}
-                                </MenuItem>
-                            ))}
-                        </Select>
-                    </FormControl>
+                    <Autocomplete
+                        options={users}
+                        getOptionLabel={(option) => option[1]} // 表示するラベル
+                        value={proxyReplyUser ? users.find(user => user[2] === proxyReplyUser.userId) : null}
+                        onChange={(event, newValue) => {
+                            if (newValue) {
+                                setProxyReplyUser({
+                                    userId: newValue[2],
+                                    lineName: newValue[0],
+                                    isKanji: newValue[3] === '幹事',
+                                    displayName: newValue[1],
+                                    pictureUrl: newValue[4],
+                                });
+                            } else {
+                                setProxyReplyUser(null);
+                            }
+                        }}
+                        renderInput={(params) => (
+                            <TextField {...params} label={lang === 'ja-JP' ? '代理ユーザーを選択' : 'Select Proxy User'} variant="outlined" />
+                        )}
+                    />
+
+                    // <FormControl fullWidth margin="dense" size="small">
+                    //     <InputLabel id="proxy-user-select-label">{lang === 'ja-JP' ? '代理ユーザーを選択' : 'Select Proxy User'}</InputLabel>
+                    //     <Select
+                    //         labelId="proxy-user-select-label"
+                    //         id="proxy-user-select"
+                    //         value={proxyReplyUser ? proxyReplyUser.userId : ''}
+                    //         label={lang === 'ja-JP' ? '代理ユーザーを選択' : 'Select Proxy User'}
+                    //         onChange={(e) => {
+                    //             const selectedUser = users.find(user => user[2] === e.target.value);
+                    //             if (selectedUser) {
+                    //                 setProxyReplyUser({
+                    //                     userId: selectedUser[2],
+                    //                     lineName:selectedUser[0],
+                    //                     isKanji:selectedUser[3] === '幹事',
+                    //                     displayName: selectedUser[1],
+                    //                     pictureUrl: selectedUser[4],
+                    //                 });
+                    //             } else {
+                    //                 setProxyReplyUser(null);
+                    //             }
+                    //         }}
+                    //     >
+                    //         {users.map((user, index) => (
+                    //             <MenuItem key={index} value={user[2]}>
+                    //                 {user[1]}
+                    //             </MenuItem>
+                    //         ))}
+                    //     </Select>
+                    // </FormControl>
                 )}
                 {/* 参加ステータス選択 */}
                 <Box sx={{ display: 'flex', alignItems: 'center', gap: 2, mt:2, mb:2, flexDirection:'row' }}>
