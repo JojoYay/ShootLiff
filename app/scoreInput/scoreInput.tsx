@@ -128,11 +128,16 @@ export default function ScoreInput() {
         if (videos && teams && event.target.value) {
             const selectedVideoData = videos.find(video => video[10] === event.target.value); // 選択されたビデオのデータ
             if (selectedVideoData) {
-                // const team1Name = selectedVideoData[7]; // 7行目のチーム名
-                // const team2Name = selectedVideoData[8]; // 8行目のチーム名
-
-                const team1PlayersList: string[] = selectedVideoData[5].split(', ');
-                const team2PlayersList: string[] = selectedVideoData[6].split(', ');
+                const team1Name = convertTeamName(selectedVideoData[3]); // 7行目のチーム名
+                const team2Name = convertTeamName(selectedVideoData[4]); // 8行目のチーム名
+                console.log(team1Name + ' ' + team2Name);
+                const team1PlayersList: string[] = teams
+                    .filter(playerInfo=> playerInfo[1] === team1Name)
+                    .map(playerInfo => playerInfo[0]);
+                console.log(team1PlayersList);
+                const team2PlayersList: string[] = teams
+                    .filter(player => player[1] === team2Name)
+                    .map(player => player[0]);
 
                 setTeam1Players(team1PlayersList);
                 setTeam2Players(team2PlayersList);
@@ -140,6 +145,10 @@ export default function ScoreInput() {
                 setTeam2Helper(null); // 助っ人をリセット                
             }
         }
+    };
+
+    const convertTeamName = (teamName: string): string => {
+        return teamName.replace(/team(\d+)/i, 'チーム$1');
     };
 
     const UserCard = ({userName, imageUrl}: {
@@ -502,6 +511,13 @@ export default function ScoreInput() {
             form.append('matchId', videoId);
             form.append('winningTeam', winningTeamName);
 
+            form.append('team1Players', team1Players.join(', '));
+            form.append('team2Players', team2Players.join(', '));
+            // form.append('team1Helper', team1Helper || '');
+            // form.append('team2Helper', team2Helper || '');
+            for (const pair of Array.from(form.entries())) {
+                console.log(pair[0] + ', ' + pair[1]);
+            }
             const url = process.env.SERVER_URL + `?func=closeGame`;
             if (url) {
                 const response = await fetch(url, {
