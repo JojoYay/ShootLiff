@@ -16,7 +16,7 @@ const AttendanceList: React.FC<AttendanceListProps> = ({ lang, attendances = [],
     const totalChildren = filteredAttendances.reduce((total, att) => total + (att.child_count || 0), 0);
     return (
         <Box>
-            <Typography variant="subtitle2" style={{ color: '#757575', fontWeight: 'bold' }}>{lang === 'ja-JP' ? '参加者' : 'Attendees'}:
+            <Typography variant="subtitle2" style={{ color: '#757575', fontWeight: 'bold' }}>{status} :
                 <Typography variant="body2" sx={{ color: '#757575' }}>
                 大人: {totalAdults}, 子供: {totalChildren} 
                 </Typography>

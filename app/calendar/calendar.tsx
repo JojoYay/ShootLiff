@@ -620,16 +620,10 @@ export default function Calendar() {
                                                                         {calendar.event_name} @ {calendar.place}
                                                                     </Typography>
                                                                     <Typography variant="body2" sx={{ color: '#757575' }}>
-                                                                        〇: {calendar.attendances?.filter(att => att.status === '〇').reduce((total, att) => total + (att.adult_count || 1), 0) || 0}, 
+                                                                        〇 親: {calendar.attendances?.filter(att => att.status === '〇').reduce((total, att) => total + (att.adult_count || 1), 0) || 0}, 
                                                                         子: {calendar.attendances?.filter(att => att.status === '〇').reduce((total, att) => total + (att.child_count || 0), 0) || 0}, 
                                                                         △: {calendar.attendances?.filter(att => att.status === '△').reduce((total, att) => total + (att.adult_count || 1), 0) || 0}, 
-                                                                        {/* {process.env.NEXT_PUBLIC_APP_TITLE === 'Scout App' && (
-                                                                            <>子: {calendar.attendances?.filter(att => att.status === '△').reduce((total, att) => total + (att.child_count || 0), 0) || 0}, </>
-                                                                        )} */}
                                                                         ×: {calendar.attendances?.filter(att => att.status === '×').reduce((total, att) => total + (att.adult_count || 1), 0) || 0}, 
-                                                                        {/* {process.env.NEXT_PUBLIC_APP_TITLE === 'Scout App' && (
-                                                                            <>子: {calendar.attendances?.filter(att => att.status === '×').reduce((total, att) => total + (att.child_count || 0), 0) || 0}</>
-                                                                        )} */}
                                                                     </Typography>
                                                                 </Box>
                                                             </Box>
