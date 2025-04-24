@@ -51,6 +51,7 @@ const EventResult = () => {
             console.log(currentEvent);
             setEvent(currentEvent);
             const relatedVideos = videos.filter(video => (video[0] === currentEvent[1] && (!video[10].endsWith('_g') && !video[10].endsWith('d')))).reverse(); // 試合タイトルに基づいて関連する動画をフィルタリング
+
             setRelatedVideos(relatedVideos);
             // Extracting data from the event
             const eventWeather = currentEvent[4]; // Weather is at index 4

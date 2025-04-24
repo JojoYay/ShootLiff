@@ -59,7 +59,7 @@ export default function ScoreInput() {
     const [isSaving, setIsSaving] = useState<boolean>(false); // Saving flagを追加
     const [isEndMatchDialogOpen, setIsEndMatchDialogOpen] = useState<boolean>(false); // ダイアログの表示状態
     const [dialogWinningTeam, setDialogWinningTeam] = useState<string | null>(null); // ダイアログで選択された勝利チーム
-    const [selectedMatchType, setSelectedMatchType] = useState<string | null>('3'); // 選択された試合タイプ
+    const [selectedMatchType, setSelectedMatchType] = useState<string>('3'); // 選択された試合タイプ
     const [isCreatingMatch, setIsCreatingMatch] = useState<boolean>(false); // 試合作成中フラグ
 
 
@@ -103,18 +103,18 @@ export default function ScoreInput() {
                 console.log(data.teams);
                 setTeams(data.teams as string[][]);
                 setUsers(data.users as string[][]);
-                console.log(data.match);
-                console.log(data.scores);
-                // console.log(data);
+                console.log(data);
+
+                if(data.match.length === 2 || data.match.length === 4){
+                    setSelectedMatchType('4');
+                } else if(data.match.length === 10){
+                    setSelectedMatchType('5');
+                } else if(data.match.length === 3){
+                    setSelectedMatchType('3');
+                }
 
                 setVideos(data.match as string[][]);
                 setScores(data.scores as string[][]);
-
-                // data.teamsの2列目のチーム数に応じて試合タイプを選択
-                if (data.matchCount && data.matchCount.length > 0) {
-                    setSelectedMatchType(data.matchCount);
-                }
-
             }
 
         } catch (error) {
