@@ -185,15 +185,18 @@ const EventResult = () => {
                                 <TableBody>
                                     {['Team1', 'Team2', 'Team3', 'Team4', 'Team5', 'Team6', 'Team7', 'Team8', 'Team9', 'Team10'].map((team, index) => {
                                         const wins = relatedVideos.filter(video => video[9] === team).length; // Count wins
-                                        const loses = relatedVideos.filter(video => (video[9] !== team && (team === video[3] || team === video[4]))).length; // Count wins
+                                        const loses = relatedVideos.filter(video => ((video[9] !== team && video[9] !== 'draw') && !!video[9] && (team === video[3] || team === video[4]))).length; // Count wins
                                         const draws = relatedVideos.filter(video => (video[9] === 'draw' && (team === video[3] || team === video[4]))).length; // Count draw
+                                        console.log(relatedVideos);
+                                        console.log(relatedVideos.filter(video => ((video[9] !== team && video[9] !== 'draw') && !video[9] && (team === video[3] || team === video[4]))));
                                         if(wins || loses || draws){
                                             return (
                                                 <TableRow key={index}>
                                                     <TableCell>{team}</TableCell>
                                                     <TableCell>{wins}</TableCell>
                                                     <TableCell>{loses}</TableCell>
-                                                    <TableCell>{draws}</TableCell>                                                </TableRow>
+                                                    <TableCell>{draws}</TableCell>
+                                                </TableRow>
                                             );
                                         } else {
                                             return null;
