@@ -172,7 +172,7 @@ const uploadVideo = async(file: File) => {
         console.error('Error fetching data:', error);
       }
       setUploadProgress(100);
-      alert("動画がアップロードされました！");
+      // alert("動画がアップロードされました！");
     } finally {
       setIsModalOpen(false); // モーダルを開く
     }
