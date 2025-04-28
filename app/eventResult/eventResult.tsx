@@ -389,7 +389,7 @@ const EventResult = () => {
                 </Box>
                 <Box sx={{ display: 'flex', justifyContent: 'space-between', marginBottom: 2}} >
                     <Button variant="contained" color="primary" onClick={handleSaveEvent} disabled={isSubmitting}>
-                        イベントを保存して集計
+                        保存
                     </Button>
                 </Box>
             </Box>

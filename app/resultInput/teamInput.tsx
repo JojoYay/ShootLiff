@@ -1,6 +1,6 @@
 'use client';
 import { useEffect, useState, SetStateAction } from 'react';
-import { Avatar, Button, Card, CardActionArea, CardContent, CircularProgress, Grid, Typography, FormControl, InputLabel, MenuItem, Select } from '@mui/material';
+import { Avatar, Button, Card, CardActionArea, CardContent, CircularProgress, Grid, Typography, FormControl, InputLabel, MenuItem, Select, Box } from '@mui/material';
 
 export default function TeamInput() {
     const [teams, setTeams] = useState<string[]>([]);
@@ -391,14 +391,46 @@ export default function TeamInput() {
         );
     };
 
+    const totalMembers = team1.length + team2.length + team3.length + team4.length + team5.length + team6.length + team7.length + team8.length + team9.length + team10.length;
+
+    const [selectedTeamCount, setSelectedTeamCount] = useState<number>(2); // デフォルトのチーム数を設定
+
+    const handleRandomAllocate = () => {
+        console.log("random");
+        const allMembers = [...team1, ...team2, ...team3, ...team4, ...team5, ...team6, ...team7, ...team8, ...team9, ...team10, ...unassignedUsers];
+        const shuffledMembers = allMembers.sort(() => Math.random() - 0.5); // メンバーをシャッフル
+
+        // チームを初期化
+        const newTeams: string[][] = Array.from({ length: selectedTeamCount }, () => []);
+
+        // シャッフルされたメンバーをチームに割り振る
+        shuffledMembers.forEach((member, index) => {
+            newTeams[index % selectedTeamCount].push(member);
+        });
+
+        // 新しいチームを設定
+        setTeam1(newTeams[0] || []);
+        setTeam2(newTeams[1] || []);
+        setTeam3(newTeams[2] || []);
+        setTeam4(newTeams[3] || []);
+        setTeam5(newTeams[4] || []);
+        setTeam6(newTeams[5] || []);
+        setTeam7(newTeams[6] || []);
+        setTeam8(newTeams[7] || []);
+        setTeam9(newTeams[8] || []);
+        setTeam10(newTeams[9] || []);
+        setUnassignedUsers([]); // 未所属ユーザーをリセット
+        setHasChanges(true); // 変更フラグを設定
+    };
+
 
     return (
         <>
             {teams.length > 0 ? (
                 <>
-                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: 1 }}>
-                        <div>Team Setting</div>
-                        <div>
+                    <Box style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: 1 }}>
+                        <Typography>{`Total Members: ${totalMembers}`}</Typography>
+                        <Box>
                             <Button
                                 variant="contained"
                                 onClick={handleSaveAll}
@@ -406,8 +438,30 @@ export default function TeamInput() {
                             >
                                 {isSaving ? <CircularProgress size={24} /> : 'Save Changes'}
                             </Button>
-                        </div>
-                    </div>
+                        </Box>
+                    </Box>
+                    <Box style={{ display: 'flex', justifyContent: 'flex-end', alignItems: 'center', padding: 1 }}>
+                        <Box>
+                            <Select
+                                value={selectedTeamCount}
+                                onChange={(e) => setSelectedTeamCount(Number(e.target.value))}
+                                variant="outlined"
+                                size='small'
+                                style={{ marginRight: '10px' }}
+                            >
+                                {[2, 3, 4, 5, 6, 7, 8, 9, 10].map((count) => (
+                                    <MenuItem key={count} value={count}>{count}</MenuItem>
+                                ))}
+                            </Select>
+                            <Button
+                                variant="contained"
+                                onClick={handleRandomAllocate}
+                                disabled={isSaving}
+                            >
+                                {isSaving ? <CircularProgress size={24} /> : 'AIで配置'}
+                            </Button>
+                        </Box>
+                    </Box>
 
                     <Grid container spacing={2} sx={{ p: 2, mt: 0 }}>
                         {[

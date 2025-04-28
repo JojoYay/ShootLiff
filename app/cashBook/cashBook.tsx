@@ -44,12 +44,6 @@ export default function CashBookPage() {
     const [carryOverAmount, setCarryOverAmount] = useState<number | null>(null); // State for carry-over amount
     const [openDialog, setOpenDialog] = useState(false); // State to control dialog visibility
 
-    // useEffect(() => {
-    //     const initialShowImages = calendarEntries?.map(entry => entry.cashBooks?.map(() => false)) || [];
-    //     setShowImages(initialShowImages);
-	// }, [calendarEntries]);
-
-    // const [showImages, setShowImages] = useState<boolean[][]>([]);
     const [isKanji, setIsKanji] = useState<boolean>(false);
 
     const [calendarMap, setCalendarMap] = useState<Map<string, string[]>|null>(null);
@@ -394,6 +388,8 @@ export default function CashBookPage() {
                                             <Box sx={{ m: '2px', p: '2px', display: 'flex' }}>
                                                 <AvatarIcon name={payment.userName || ''} picUrl={userMap?.values().find(user => user.displayName === payment.userName)?.pictureUrl} width={48} height={48} showTooltip={true} />
                                                 <Box sx={{ m: '2px', p: '2px', display: 'flex', flexDirection: 'column' }}>
+                                                    <Typography variant="body2">{payment?.userName}</Typography>
+                                                    {/* <Typography variant="body2">{userMap?.values().find(user => user.displayName === payment.userName)?.payNow}</Typography> */}
                                                     <Typography variant="body2">金額: {payment.amount} SGD</Typography>
                                                     <Typography variant="body2">メモ: {payment.memo}</Typography>
                                                     <Typography variant="body2">申請日: {payment.uploadDate ? new Date(payment.uploadDate).toLocaleString('ja-JP', { year: 'numeric', month: '2-digit', day: '2-digit', hour: '2-digit', minute: '2-digit', second: '2-digit', hour12: false }) : ''}</Typography> 
@@ -466,6 +462,7 @@ export default function CashBookPage() {
                                                         <Box sx={{ m: '2px', p: '2px', display: 'flex' }}>
                                                             <AvatarIcon name={cashBook.payee?.displayName || ''} picUrl={cashBook.payee?.pictureUrl}  width={48} height={48} showTooltip={true} />
                                                             <Box sx={{ m: '2px', p: '2px', display: 'flex', flexDirection: 'column' }}>
+                                                                <Typography variant="body2">{cashBook.payee?.displayName}</Typography>
                                                                 <Typography variant="body2">金額: {cashBook.amount} SGD</Typography>
                                                                 <Typography variant="body2">メモ: {cashBook.memo}</Typography>
                                                                 <Typography variant="body2">申請日: {cashBook.invoice?.uploadDate ? new Date(cashBook.invoice?.uploadDate).toLocaleDateString() : new Date(cashBook.create).toLocaleDateString()}</Typography> 
