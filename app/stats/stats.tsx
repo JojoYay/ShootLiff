@@ -5,6 +5,7 @@ import { useEffect, useState } from 'react';
 import { Card, CardContent, CardHeader, Box, Grid, Table, TableBody, TableCell, TableContainer, TableRow, } from '@mui/material';
 import AvatarIcon from './avatarIcon';
 import LoadingSpinner from '../calendar/loadingSpinner';
+import { Truculenta } from 'next/font/google';
 
 interface ProfileDen {
 	lineProfile: Profile;
@@ -58,10 +59,70 @@ export default function Stats() {
 		}
 	}, [users, profile]);
 
+	const calculateAge = (birthDateString:string) => {
+		if(birthDateString){
+			const birthDate = new Date(birthDateString);
+			const today = new Date();
+		
+			let age = today.getFullYear() - birthDate.getFullYear();
+			const monthDifference = today.getMonth() - birthDate.getMonth();
+		
+			// 誕生日がまだ来ていない場合は1歳減らす
+			if (monthDifference < 0 || (monthDifference === 0 && today.getDate() < birthDate.getDate())) {
+				age--;
+			}
+		
+			return age.toString();
+		}
+		return "";
+	};
+
+	type FootOptions = 'Right' | 'Left' | 'Both';
+	type PositionOptions = 'Forward' | 'Midfielder' | 'Defender' | 'Anything!';
+	type RatingOptions = '1st Tier' | '2nd Tier' | '3rd Tier' | '4th Tier';
+	type BirthplaceOptions = 'East Side' | 'West Side' | 'Others' | 'Secret';
+	
+	const optionMap = {
+		foot: {
+			Right: '右',
+			Left: '左',
+			Both: '両方',
+		},
+		position: {
+			Forward: 'フォワード',
+			Midfielder: 'ミッドフィルダー',
+			Defender: 'ディフェンダー',
+			'Anything!': 'なんでも',
+		},
+		rating: {
+			'1st Tier': '1st Tier',
+			'2nd Tier': '2nd Tier',
+			'3rd Tier': '3rd Tier',
+			'4th Tier': '4th Tier',
+		},
+		birthplace: {
+			'East Side': '関東',
+			'West Side': '関西',
+			Others: 'その他',
+			Secret: '秘密',
+		},
+	};
+	
+	const formatDateToSingaporeTime = (dateString: string) => {
+		if(dateString){
+			const date = new Date(dateString);
+			// UTCから8時間進める
+			date.setHours(date.getHours() + 8);
+			return date.toISOString().split('T')[0]; // YYYY-MM-DD形式に変換
+		}
+		return '';
+	};
+
 	useEffect(() => {
 		// console.log("line profile name"+profile?.lineProfile.displayName+" statsTable "+statsTable+" eventrResult "+eventResult);
-		if (eventResult?.length > 0 && profile?.lineProfile && statsTable.length === 0) {
+		if (eventResult?.length > 0 && profile?.lineProfile && statsTable.length === 0 && users) {
 			const yourResult = eventResult.find(item => item[0] === profile.lineProfile.userId);
+			const userInfo:string[] = users.find(user => user[2] === profile.lineProfile.userId) || [];
 			console.log("loadProfile:"+yourResult);
 			if (yourResult) {
 				const nextGoalRow = eventResult.find(item => item[12] === (yourResult[12]-1));
@@ -71,6 +132,7 @@ export default function Stats() {
 				let nextAssist = !nextAssistRow ? '--' : nextAssistRow[6] - yourResult[6];
 				let nextOkamoto = !nextOkamotoRow ? '--' : nextOkamotoRow[8] - yourResult[8] +1;
 
+				const statsTitle = lang === 'ja-JP' ? '戦績':"Stats";
 				const siaisanka = lang === 'ja-JP' ? '試合参加数':"No. of Matches";
 				const totalGoals = lang === 'ja-JP' ? '通算ゴール数':"Toal Goals";
 				const totalAssists = lang === 'ja-JP' ? '通算アシスト数':"Total Assists";
@@ -88,8 +150,22 @@ export default function Stats() {
 				const kai =  lang === 'ja-JP' ? '回':"";
 				const ten =  lang === 'ja-JP' ? '点':"";
 				const ee =   lang === 'ja-JP' ? '位':"";
-				
+
+				const baseInfo = lang === 'ja-JP' ? '基本情報':"Profile";
+				const tier = lang === 'ja-JP' ? 'Tier':"Tier";
+				const position = lang === 'ja-JP' ? 'ポジション':"Position";
+				const kiki = lang === 'ja-JP' ? '利き足':"Foot Preference";
+				const birthDay = lang === 'ja-JP' ? '誕生日':"Birthday";
+				const age = lang === 'ja-JP' ? '年齢':"Age";
+				const birthplace = lang === 'ja-JP' ? '出身':"BirthPlace";
+
+				const footKey: FootOptions | undefined = userInfo[6] as FootOptions | undefined;
+				const positionKey: PositionOptions | undefined = userInfo[7] as PositionOptions | undefined;
+				const tierKey: RatingOptions | undefined = userInfo[8] as RatingOptions | undefined;
+				const birthPlaceKey: BirthplaceOptions | undefined = userInfo[10] as BirthplaceOptions | undefined;
+
 				let statsTable: StatsData[] = [
+					createData(statsTitle, ''),
 					createData(siaisanka, yourResult[2] + '/'+yourResult[11]+kai),
 					createData(totalGoals, yourResult[5] + ten),
 					createData(totalAssists, yourResult[6] + kai),
@@ -100,12 +176,30 @@ export default function Stats() {
 					createData(ichii, yourResult[9] + kai),
 					createData(biri, yourResult[10] + kai),
 					createData(okamotoCupResult, yourResult[8] + 'pt'),
-					createData(nextRankup,''),
-					createData(tokuten,nextGoal+ten),
-					createData(assist,nextAssist+kai),
-					createData(okamotoPoint,nextOkamoto+'pt')
+					// createData(nextRankup,''),
+					// createData(tokuten,nextGoal+ten),
+					// createData(assist,nextAssist+kai),
+					// createData(okamotoPoint,nextOkamoto+'pt'),
+					createData(baseInfo, ""),
+					createData(age, (userInfo && userInfo[9]) ? calculateAge(userInfo[9]) : ''),
+					createData(birthDay, formatDateToSingaporeTime(userInfo[9])),
+					createData(position, lang === 'ja-JP' ? positionKey ? optionMap.position[positionKey] : '' : userInfo[7]),
+					createData(tier, lang === 'ja-JP' ? tierKey ? optionMap.rating[tierKey] : '' : userInfo[8]),
+					createData(kiki, lang === 'ja-JP' ? footKey ? optionMap.foot[footKey] : '' : userInfo[6]),
+					createData(birthplace, lang === 'ja-JP' ? birthPlaceKey ? optionMap.birthplace[birthPlaceKey] : '' : userInfo[10]),
 					];
+				statsTable = statsTable.filter((row, index) => {
+					if(index === 0 || index === 11){
+						return true;
+					}
+					const data = row.data; // 各行のデータを取得
+					return data !== '' && data !== undefined; // 空でない行だけを残す
+				});
+				if(statsTable.length===11){
+					statsTable = statsTable.slice(0, -1);
+				}
 				setStatsTable(statsTable);
+
 				const showTrophy: boolean = yourResult[15] === 1;
 				setProfile(prevProfile => prevProfile ? { ...prevProfile, trophy: showTrophy } : null);
 			}
