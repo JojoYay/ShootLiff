@@ -5,7 +5,6 @@ import { useEffect, useState } from 'react';
 import { Card, CardContent, CardHeader, Box, Grid, Table, TableBody, TableCell, TableContainer, TableRow, } from '@mui/material';
 import AvatarIcon from './avatarIcon';
 import LoadingSpinner from '../calendar/loadingSpinner';
-import { Truculenta } from 'next/font/google';
 
 interface ProfileDen {
 	lineProfile: Profile;
