@@ -147,7 +147,9 @@ export default function CashBookPage() {
             console.log('cashBookEntry', cashBookEntry);
             if (index === cashBook.slice(1).length-1) {
                 setCarryOverAmount(cashBookEntry.balance);
-                lastBalance = cashBookEntry.balance;
+                if(!lastBalance){
+                    lastBalance = cashBookEntry.balance;
+                }
                 return;
             }
 
