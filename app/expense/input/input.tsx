@@ -84,7 +84,8 @@ export default function InputExpense() {
                     }
                 }
                 console.log(data);
-                setInfo(data.statusMsg);
+                setInfo(data.statusMsg?.replace(/\n/g, '<br />'));
+                // setInfo(data.statusMsg);
             }
         } catch (error) {
             alert(error);
@@ -163,7 +164,14 @@ export default function InputExpense() {
                 <Typography variant="body1">{title} の支払い登録</Typography>
             </div>
             <div style={{margin:'5px'}}>
-                <Typography variant="body2">{info}</Typography>
+            <Typography 
+                variant="caption" 
+                style={{ marginTop: '5px' }}
+                dangerouslySetInnerHTML={{ 
+                    __html: info || '' 
+                }}
+            />
+                {/* <Typography variant="body2">{info}</Typography> */}
             </div>
             {/* <div style={{margin:'5px'}}>
                 <TextField type="text" id="amount" value={amount} onChange={(e) => setAmount(e.target.value)} placeholder="Enter amount" />
