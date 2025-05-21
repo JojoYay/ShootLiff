@@ -21,6 +21,7 @@ export default function Stats() {
 	const [gRanking, setGRanking] = useState<RankingData[]>([]);
 	const [aRanking, setARanking] = useState<RankingData[]>([]);
 	const [oRanking, setORanking] = useState<RankingData[]>([]);
+	const [attRanking, setAttRanking] = useState<RankingData[]>([]);
 
 	const [eventResult, setEventResult] = useState<any[][]>([]);
 	const [profile, setProfile] = useState<ProfileDen | null>(null);
@@ -142,10 +143,10 @@ export default function Stats() {
 				const ichii = lang === 'ja-JP' ? '1位獲得数':"1st Place";
 				const biri = lang === 'ja-JP' ? '最下位獲得数':"Last Place";
 				const okamotoCupResult = lang === 'ja-JP' ? '岡本カップポイント':"Okamoto Point";
-				const nextRankup = lang === 'ja-JP' ? '次のランクアップまで':"Next Rank Up";
-				const tokuten = lang === 'ja-JP' ? '得点':"Goals";
-				const assist = lang === 'ja-JP' ? 'アシスト':"Assists";
-				const okamotoPoint = lang === 'ja-JP' ? '岡本ポイント':"Okamoto Point";
+				// const nextRankup = lang === 'ja-JP' ? '次のランクアップまで':"Next Rank Up";
+				// const tokuten = lang === 'ja-JP' ? '得点':"Goals";
+				// const assist = lang === 'ja-JP' ? 'アシスト':"Assists";
+				// const okamotoPoint = lang === 'ja-JP' ? '岡本ポイント':"Okamoto Point";
 				const kai =  lang === 'ja-JP' ? '回':"";
 				const ten =  lang === 'ja-JP' ? '点':"";
 				const ee =   lang === 'ja-JP' ? '位':"";
@@ -164,7 +165,7 @@ export default function Stats() {
 				const birthPlaceKey: BirthplaceOptions | undefined = userInfo[10] as BirthplaceOptions | undefined;
 
 				let statsTable: StatsData[] = [
-					createData(statsTitle, ''),
+					// createData(statsTitle, ''),
 					createData(siaisanka, yourResult[2] + '/'+yourResult[11]+kai),
 					createData(totalGoals, yourResult[5] + ten),
 					createData(totalAssists, yourResult[6] + kai),
@@ -227,6 +228,45 @@ export default function Stats() {
 		return rankTable;
 	}
 
+	const generateAttendanceRanking = (stats: any[][], users: any[][]): RankingData[] => {
+		let rankTable: RankingData[] = [];
+		if (!stats || !users) {
+			return rankTable;
+		}
+
+		const attendanceData = stats.map(statRow => {
+			const userId = statRow[0];
+			const attendanceCount = parseInt(statRow[2], 10); // 3列目が出席数
+			const user = users.find(u => u[2] === userId);
+			if (user) {
+				return {
+					userId: userId,
+					name: user[1], // 伝助名称
+					facePic: user[4], // 顔写真URL
+					attendanceCount: attendanceCount,
+				};
+			}
+			return null;
+		}).filter(item => item !== null && item.name !== '伝助名称' && item.attendanceCount > 0) as { userId: string; name: string; facePic: string; attendanceCount: number }[]; // nullを除去し、型を明確にする
+
+		// 出席数で降順ソート
+		attendanceData.sort((a, b) => b.attendanceCount - a.attendanceCount);
+
+		rankTable = attendanceData.map((data, index) => {
+			const place = index + 1;
+			return createRanking(
+				chooseMedal(place), // 順位に応じたメダル
+				translatePlace(place.toString(), lang), // 順位を文字列に変換
+				data.facePic,
+				data.name,
+				data.attendanceCount.toString() + (lang === 'ja-JP' ? '回' : ''), // スコア（出席回数）
+				'' // 矢印はなし
+			);
+		});
+
+		return rankTable;
+	};
+
 	const chooseMedal = (place: number): string => {
 		if (place === 1) {
 			return 'https://lh3.googleusercontent.com/d/1ishdfKxuj1fuz7kU6HOZ0NXh7jrZAr0H';
@@ -281,6 +321,8 @@ export default function Stats() {
 				setGRanking(genarateRanking(data.gRank, data.users, ten));
 				setARanking(genarateRanking(data.aRank, data.users, kai));
 				setORanking(genarateRanking(data.oRank, data.users, 'pt'));
+				setAttRanking(generateAttendanceRanking(data.stats, data.users));
+
 			}
 		} catch (error) {
 			console.error('Error fetching data:', error);
@@ -337,265 +379,429 @@ export default function Stats() {
 		<>
 			{eventResult && eventResult.length > 0 && profile ? (
 				<>
-					<Grid container spacing={2} >
-						{statsTable.length > 0 && (
-							<Grid item sx={{ width: '100%' }} >
-								<Card sx={{ width: '100%', display: 'inline-block', '@media (min-width: 600px)': { display: 'inline-block' } }}>
-									<CardHeader
-										sx={{
-											backgroundImage: 'url(https://lh3.googleusercontent.com/d/1hS24zXApgUabcss_3ciewfg64qMti_hT)',
-											backgroundSize: 'cover',
-											backgroundPosition: 'center',
-											height: '150px',
-										}}
-									/>
-									<CardHeader
-										avatar={
-											<AvatarIcon picUrl={profile.lineProfile.pictureUrl} name={profile.lineProfile.displayName} width={56} height={56}></AvatarIcon>
-										}
-										title={
-											<>
-												<div style={{ display: 'flex', alignItems: 'center' , width:'100%'}}>
-													{profile.densukeName}
-													<img
-														src="https://lh3.googleusercontent.com/d/1fAy83HzkttX06Vm-wt5oRPWlB-JOWcC0"
-														alt="small photo"
-														style={{
-															visibility: profile.trophy ? 'visible' : 'hidden',
-															marginLeft: '30px',
-															width: '10%',
-															height: '10%',
-															borderRadius: '50%'
-														}}
-													/>
-												</div>
-											</>
-										}
-										sx={{
-											padding: '0px 15px', // パディングを追加
-										}}
-									/>
-									<CardContent>
-										<TableContainer sx={{ 
-											maxHeight: '65vh',  // ビューポートの高さの60%
-											overflowY: 'auto'   // 縦方向のスクロールを有効化
-										}}>
-											<Table sx={{ width: '100%' }} size="small" aria-label="simple table">
-												<TableBody>
-													{statsTable.map((row) => {
-														if (row.data !== '') {
-															return (
-																<TableRow
-																	key={row.title}
-																	sx={{ '&:last-child td, &:last-child th': { border: 0 } }}
-																>
-																	<TableCell component="th" scope="row">
-																		{row.title}
-																	</TableCell>
-																	<TableCell align="right">{row.data}</TableCell>
-																</TableRow>
-															);
-														} else {
-															return (
-																<TableRow key={row.title}>
-																	<TableCell align="center" colSpan={2}>
-																		{row.title}
-																	</TableCell>
-																</TableRow>
-															);
-														}
-													})}
-												</TableBody>
-											</Table>
-										</TableContainer>
-									</CardContent>
-								</Card>
-							</Grid>
-						)}
-						<Grid item sx={{ width: '100%' }} >
-							<Card sx={{ width: '100%', display: 'inline-block', '@media (min-width: 600px)': { display: 'inline-block' } }}>
-								<CardHeader
-									sx={{
-										backgroundImage: 'url(https://lh3.googleusercontent.com/d/17zIme0aExyAlixjWapLwoIW1PyWN4lbs)',
-										backgroundSize: 'cover',
-										backgroundPosition: 'center',
-										height: '150px',
-									}}
-								/>
-								<CardContent>
-									<TableContainer sx={{ 
-											maxHeight: '65vh',  // ビューポートの高さの60%
-											overflowY: 'auto'   // 縦方向のスクロールを有効化
-										}}>
-										<Table sx={{ width: '100%' }} size="small" aria-label="simple table">
-											<TableBody>
-												{gRanking.map((row) => {
+					{statsTable.length > 0 && (
+						<Card sx={{ width: '100%', display: 'inline-block', '@media (min-width: 600px)': { display: 'inline-block' } }}>
+							{/* <CardHeader
+								sx={{
+									backgroundImage: 'url(https://lh3.googleusercontent.com/d/1hS24zXApgUabcss_3ciewfg64qMti_hT)',
+									backgroundSize: 'cover',
+									backgroundPosition: 'center',
+									height: '150px',
+								}}
+							/> */}
+							<CardHeader
+								title={'STATS'}
+								titleTypographyProps={{
+									sx: {
+										color: 'rgba(255, 255, 200, 0.7)',
+										fontSize: '3rem',
+										fontWeight: 'bold',
+										position: 'absolute',
+										top: '50%',
+										left: '50%',
+										transform: 'translate(-50%, -50%)',
+										zIndex: 1
+									}
+								}}
+								sx={{
+									backgroundColor: '#2e7d32',
+									height: '60px',
+									display: 'flex',
+									alignItems: 'center',
+									justifyContent: 'center',
+									borderBottom: '2px solid #1b5e20',
+									backgroundImage: 'url(https://lh3.googleusercontent.com/d/1WDW538XmRe68fwtYOKQcd7QF2ta-Av4E)',
+									backgroundSize: 'cover',
+									backgroundPosition: 'center',
+									position: 'relative'
+								}}
+							/>
+							<CardHeader
+								avatar={
+									<AvatarIcon picUrl={profile.lineProfile.pictureUrl} name={profile.lineProfile.displayName} width={56} height={56}></AvatarIcon>
+								}
+								title={
+									<>
+										<div style={{ display: 'flex', alignItems: 'center' , width:'100%'}}>
+											{profile.densukeName}
+											<img
+												src="https://lh3.googleusercontent.com/d/1fAy83HzkttX06Vm-wt5oRPWlB-JOWcC0"
+												alt="small photo"
+												style={{
+													visibility: profile.trophy ? 'visible' : 'hidden',
+													marginLeft: '30px',
+													width: '10%',
+													height: '10%',
+													borderRadius: '50%'
+												}}
+											/>
+										</div>
+									</>
+								}
+								sx={{
+									padding: '0px 15px', // パディングを追加
+								}}
+							/>
+							<CardContent>
+								<TableContainer sx={{ 
+									maxHeight: '65vh',  // ビューポートの高さの60%
+									overflowY: 'auto'   // 縦方向のスクロールを有効化
+								}}>
+									<Table sx={{ width: '100%' }} size="small" aria-label="simple table">
+										<TableBody>
+											{statsTable.map((row) => {
+												if (row.data !== '') {
 													return (
 														<TableRow
-															key={row.name}
+															key={row.title}
 															sx={{ '&:last-child td, &:last-child th': { border: 0 } }}
-															onClick={() => handleRankingIconClick(row.name)}
 														>
-															<TableCell sx={{ padding: '3px 6px' }} component="th" scope="row">
-																<img
-																	src={row.medalUrl}
-																	alt="trophy"
-																	style={{
-																		// marginLeft: '30px',
-																		width: '18px',
-																		height: '24px',
-																	}}
-																/>
+															<TableCell component="th" scope="row">
+																{row.title}
 															</TableCell>
-															<TableCell align="left" sx={{ padding: '3px 6px' }} >{row.place}</TableCell>
-															<TableCell align="left" sx={{ padding: '3px 6px' }} >
-																<AvatarIcon picUrl={row.facePic} name={row.name} width={28} height={28}></AvatarIcon>
-															</TableCell>
-															<TableCell align="left" sx={{ padding: '3px 6px' }} >{row.name}</TableCell>
-															<TableCell align="right" sx={{ padding: '3px 6px' }} >{row.score}</TableCell>
-															<TableCell component="th" scope="row" sx={{ padding: '3px 6px' }} >
-																<img
-																	src={row.arrow}
-																	alt="arrow"
-																	style={{
-																		// marginLeft: '30px',
-																		width: '24px',
-																		height: '24px',
-																	}}
-																/>
+															<TableCell align="right">{row.data}</TableCell>
+														</TableRow>
+													);
+												} else {
+													return (
+														<TableRow key={row.title}>
+															<TableCell align="center" colSpan={2}>
+																{row.title}
 															</TableCell>
 														</TableRow>
 													);
-												})}
-											</TableBody>
-										</Table>
-									</TableContainer>
-								</CardContent>
-							</Card>
-						</Grid>
-						<Grid item sx={{ width: '100%' }} >
-							<Card sx={{ width: '100%', display: 'inline-block', '@media (min-width: 600px)': { display: 'inline-block' } }}>
-								<CardHeader
-									sx={{
-										backgroundImage: 'url(https://lh3.googleusercontent.com/d/1yQjFWp8t1RwrfyeqDc1pOHHpMo7u1lH8)',
-										backgroundSize: 'cover',
-										backgroundPosition: 'center',
-										height: '150px',
-									}}
-								/>
-								<CardContent>
-									<TableContainer sx={{ 
-											maxHeight: '65vh',  // ビューポートの高さの60%
-											overflowY: 'auto'   // 縦方向のスクロールを有効化
-										}}>
-										<Table sx={{ width: '100%' }} size="small" aria-label="simple table">
-											<TableBody>
-												{aRanking.map((row) => {
-													return (
-														<TableRow
-															key={row.name}
-															sx={{ '&:last-child td, &:last-child th': { border: 0 } }}
-															onClick={() => handleRankingIconClick(row.name)}
-														>
-															<TableCell sx={{ padding: '3px 6px' }} component="th" scope="row">
-																<img
-																	src={row.medalUrl}
-																	alt="medal"
-																	style={{
-																		// marginLeft: '30px',
-																		width: '18`px',
-																		height: '24px',
-																	}}
-																/>
-															</TableCell>
-															<TableCell align="left" sx={{ padding: '3px 6px' }} >{row.place}</TableCell>
-															<TableCell align="left" sx={{ padding: '3px 6px' }} >
-																<AvatarIcon picUrl={row.facePic} name={row.name} width={28} height={28}></AvatarIcon>
-															</TableCell>
-															<TableCell align="left" sx={{ padding: '3px 6px' }} >{row.name}</TableCell>
-															<TableCell align="right" sx={{ padding: '3px 6px' }} >{row.score}</TableCell>
-															<TableCell component="th" scope="row" sx={{ padding: '3px 6px' }} >
-																<img
-																	src={row.arrow}
-																	alt="arrow"
-																	style={{
-																		// marginLeft: '30px',
-																		width: '24px',
-																		height: '24px',
-																	}}
-																/>
-															</TableCell>
-														</TableRow>
-													);
-												})}
-											</TableBody>
-										</Table>
-									</TableContainer>
-								</CardContent>
-							</Card>
-						</Grid>
-						<Grid item sx={{ width: '100%' }} >
-							<Card sx={{ width: '100%', display: 'inline-block', '@media (min-width: 600px)': { display: 'inline-block' } }}>
-								<CardHeader
-									sx={{
-										backgroundImage: 'url(https://lh3.googleusercontent.com/d/1BK5jLSUtJWTYXaElQyr47M2sp7chD-JW)',
-										backgroundSize: 'cover',
-										backgroundPosition: 'center',
-										height: '150px',
-									}}
-								/>
-								<CardContent>
-									<TableContainer sx={{ 
-											maxHeight: '65vh',  // ビューポートの高さの60%
-											overflowY: 'auto'   // 縦方向のスクロールを有効化
-										}}>
-										<Table sx={{ width: '100%' }} size="small" aria-label="simple table">
-											<TableBody>
-												{oRanking.map((row) => {
-													return (
-														<TableRow
-															key={row.name}
-															sx={{ '&:last-child td, &:last-child th': { border: 0 } }}
-															onClick={() => handleRankingIconClick(row.name)}
-														>
-															<TableCell sx={{ padding: '3px 6px' }} component="th" scope="row">
-																<img
-																	src={row.medalUrl}
-																	alt="medal"
-																	style={{
-																		// marginLeft: '30px',
-																		width: '18px',
-																		height: '24px',
-																	}}
-																/>
-															</TableCell>
-															<TableCell align="left" sx={{ padding: '3px 6px' }} >{row.place}</TableCell>
-															<TableCell align="left" sx={{ padding: '3px 6px' }} >
-																<AvatarIcon picUrl={row.facePic} name={row.name} width={28} height={28}></AvatarIcon>
-															</TableCell>
-															<TableCell align="left" sx={{ padding: '3px 6px' }} >{row.name}</TableCell>
-															<TableCell align="right" sx={{ padding: '3px 6px' }} >{row.score}</TableCell>
-															<TableCell component="th" scope="row" sx={{ padding: '3px 6px' }} >
-																<img
-																	src={row.arrow}
-																	alt="arrow"
-																	style={{
-																		// marginLeft: '30px',
-																		width: '24px',
-																		height: '24px',
-																	}}
-																/>
-															</TableCell>
-														</TableRow>
-													);
-												})}
-											</TableBody>
-										</Table>
-									</TableContainer>
-								</CardContent>
-							</Card>
-						</Grid>
-					</Grid>
+												}
+											})}
+										</TableBody>
+									</Table>
+								</TableContainer>
+							</CardContent>
+						</Card>
+					)}
+					<Card sx={{ width: '100%', display: 'inline-block', '@media (min-width: 600px)': { display: 'inline-block' } }}>
+						{/* <CardHeader
+							sx={{
+								backgroundImage: 'url(https://lh3.googleusercontent.com/d/17zIme0aExyAlixjWapLwoIW1PyWN4lbs)',
+								backgroundSize: 'cover',
+								backgroundPosition: 'center',
+								height: '150px',
+							}}
+						/> */}
+						<CardHeader
+							title={'SCORE'}
+							titleTypographyProps={{
+								sx: {
+									color: 'rgba(255, 255, 200, 0.7)',
+									fontSize: '3rem',
+									fontWeight: 'bold',
+									position: 'absolute',
+									top: '50%',
+									left: '50%',
+									transform: 'translate(-50%, -50%)',
+									zIndex: 1
+								}
+							}}
+							sx={{
+								backgroundColor: '#2e7d32',
+								height: '60px',
+								display: 'flex',
+								alignItems: 'center',
+								justifyContent: 'center',
+								borderBottom: '2px solid #1b5e20',
+								backgroundImage: 'url(https://lh3.googleusercontent.com/d/1WDW538XmRe68fwtYOKQcd7QF2ta-Av4E)',
+								backgroundSize: 'cover',
+								backgroundPosition: 'center',
+								position: 'relative'
+							}}
+						/>
+						<CardContent>
+							<TableContainer sx={{ 
+									maxHeight: '65vh',  // ビューポートの高さの60%
+									overflowY: 'auto'   // 縦方向のスクロールを有効化
+								}}>
+								<Table sx={{ width: '100%' }} size="small" aria-label="simple table">
+									<TableBody>
+										{gRanking.map((row) => {
+											return (
+												<TableRow
+													key={row.name}
+													sx={{ '&:last-child td, &:last-child th': { border: 0 } }}
+													onClick={() => handleRankingIconClick(row.name)}
+												>
+													<TableCell sx={{ padding: '3px 6px' }} component="th" scope="row">
+														<img
+															src={row.medalUrl}
+															alt="trophy"
+															style={{
+																// marginLeft: '30px',
+																width: '18px',
+																height: '24px',
+															}}
+														/>
+													</TableCell>
+													<TableCell align="left" sx={{ padding: '3px 6px' }} >{row.place}</TableCell>
+													<TableCell align="left" sx={{ padding: '3px 6px' }} >
+														<AvatarIcon picUrl={row.facePic} name={row.name} width={28} height={28}></AvatarIcon>
+													</TableCell>
+													<TableCell align="left" sx={{ padding: '3px 6px' }} >{row.name}</TableCell>
+													<TableCell align="right" sx={{ padding: '3px 6px' }} >{row.score}</TableCell>
+													<TableCell component="th" scope="row" sx={{ padding: '3px 6px' }} >
+														<img
+															src={row.arrow}
+															alt="arrow"
+															style={{
+																// marginLeft: '30px',
+																width: '24px',
+																height: '24px',
+															}}
+														/>
+													</TableCell>
+												</TableRow>
+											);
+										})}
+									</TableBody>
+								</Table>
+							</TableContainer>
+						</CardContent>
+					</Card>
+					<Card sx={{ width: '100%', display: 'inline-block', '@media (min-width: 600px)': { display: 'inline-block' } }}>
+						{/* <CardHeader
+							sx={{
+								backgroundImage: 'url(https://lh3.googleusercontent.com/d/1yQjFWp8t1RwrfyeqDc1pOHHpMo7u1lH8)',
+								backgroundSize: 'cover',
+								backgroundPosition: 'center',
+								height: '150px',
+							}}
+						/> */}
+						<CardHeader
+							title={'ASSIST'}
+							titleTypographyProps={{
+								sx: {
+									color: 'rgba(255, 255, 200, 0.7)',
+									fontSize: '3rem',
+									fontWeight: 'bold',
+									position: 'absolute',
+									top: '50%',
+									left: '50%',
+									transform: 'translate(-50%, -50%)',
+									zIndex: 1
+								}
+							}}
+							sx={{
+								backgroundColor: '#2e7d32',
+								height: '60px',
+								display: 'flex',
+								alignItems: 'center',
+								justifyContent: 'center',
+								borderBottom: '2px solid #1b5e20',
+								backgroundImage: 'url(https://lh3.googleusercontent.com/d/1WDW538XmRe68fwtYOKQcd7QF2ta-Av4E)',
+								backgroundSize: 'cover',
+								backgroundPosition: 'center',
+								position: 'relative'
+							}}
+						/>
+						<CardContent>
+							<TableContainer sx={{ 
+									maxHeight: '65vh',  // ビューポートの高さの60%
+									overflowY: 'auto'   // 縦方向のスクロールを有効化
+								}}>
+								<Table sx={{ width: '100%' }} size="small" aria-label="simple table">
+									<TableBody>
+										{aRanking.map((row) => {
+											return (
+												<TableRow
+													key={row.name}
+													sx={{ '&:last-child td, &:last-child th': { border: 0 } }}
+													onClick={() => handleRankingIconClick(row.name)}
+												>
+													<TableCell sx={{ padding: '3px 6px' }} component="th" scope="row">
+														<img
+															src={row.medalUrl}
+															alt="medal"
+															style={{
+																// marginLeft: '30px',
+																width: '18`px',
+																height: '24px',
+															}}
+														/>
+													</TableCell>
+													<TableCell align="left" sx={{ padding: '3px 6px' }} >{row.place}</TableCell>
+													<TableCell align="left" sx={{ padding: '3px 6px' }} >
+														<AvatarIcon picUrl={row.facePic} name={row.name} width={28} height={28}></AvatarIcon>
+													</TableCell>
+													<TableCell align="left" sx={{ padding: '3px 6px' }} >{row.name}</TableCell>
+													<TableCell align="right" sx={{ padding: '3px 6px' }} >{row.score}</TableCell>
+													<TableCell component="th" scope="row" sx={{ padding: '3px 6px' }} >
+														<img
+															src={row.arrow}
+															alt="arrow"
+															style={{
+																// marginLeft: '30px',
+																width: '24px',
+																height: '24px',
+															}}
+														/>
+													</TableCell>
+												</TableRow>
+											);
+										})}
+									</TableBody>
+								</Table>
+							</TableContainer>
+						</CardContent>
+					</Card>
+					<Card sx={{ width: '100%', display: 'inline-block', '@media (min-width: 600px)': { display: 'inline-block' } }}>
+						{/* <CardHeader
+							sx={{
+								backgroundImage: 'url(https://lh3.googleusercontent.com/d/1BK5jLSUtJWTYXaElQyr47M2sp7chD-JW)',
+								backgroundSize: 'cover',
+								backgroundPosition: 'center',
+								height: '150px',
+							}}
+						/> */}
+						<CardHeader
+							title={'OKAMOTO'}
+							titleTypographyProps={{
+								sx: {
+									color: 'rgba(255, 255, 200, 0.7)',
+									fontSize: '3rem',
+									fontWeight: 'bold',
+									position: 'absolute',
+									top: '50%',
+									left: '50%',
+									transform: 'translate(-50%, -50%)',
+									zIndex: 1
+								}
+							}}
+							sx={{
+								backgroundColor: '#2e7d32',
+								height: '60px',
+								display: 'flex',
+								alignItems: 'center',
+								justifyContent: 'center',
+								borderBottom: '2px solid #1b5e20',
+								backgroundImage: 'url(https://lh3.googleusercontent.com/d/1WDW538XmRe68fwtYOKQcd7QF2ta-Av4E)',
+								backgroundSize: 'cover',
+								backgroundPosition: 'center',
+								position: 'relative'
+							}}
+						/>
+						<CardContent>
+							<TableContainer sx={{ 
+									maxHeight: '65vh',  // ビューポートの高さの60%
+									overflowY: 'auto'   // 縦方向のスクロールを有効化
+								}}>
+								<Table sx={{ width: '100%' }} size="small" aria-label="simple table">
+									<TableBody>
+										{oRanking.map((row) => {
+											return (
+												<TableRow
+													key={row.name}
+													sx={{ '&:last-child td, &:last-child th': { border: 0 } }}
+													onClick={() => handleRankingIconClick(row.name)}
+												>
+													<TableCell sx={{ padding: '3px 6px' }} component="th" scope="row">
+														<img
+															src={row.medalUrl}
+															alt="medal"
+															style={{
+																// marginLeft: '30px',
+																width: '18px',
+																height: '24px',
+															}}
+														/>
+													</TableCell>
+													<TableCell align="left" sx={{ padding: '3px 6px' }} >{row.place}</TableCell>
+													<TableCell align="left" sx={{ padding: '3px 6px' }} >
+														<AvatarIcon picUrl={row.facePic} name={row.name} width={28} height={28}></AvatarIcon>
+													</TableCell>
+													<TableCell align="left" sx={{ padding: '3px 6px' }} >{row.name}</TableCell>
+													<TableCell align="right" sx={{ padding: '3px 6px' }} >{row.score}</TableCell>
+													<TableCell component="th" scope="row" sx={{ padding: '3px 6px' }} >
+														<img
+															src={row.arrow}
+															alt="arrow"
+															style={{
+																// marginLeft: '30px',
+																width: '24px',
+																height: '24px',
+															}}
+														/>
+													</TableCell>
+												</TableRow>
+											);
+										})}
+									</TableBody>
+								</Table>
+							</TableContainer>
+						</CardContent>
+					</Card>
+					<Card sx={{ width: '100%', display: 'inline-block', '@media (min-width: 600px)': { display: 'inline-block' } }}>
+						<CardHeader
+							title={'ATTENDANCE'}
+							titleTypographyProps={{
+								sx: {
+									color: 'rgba(255, 255, 200, 0.7)',
+									fontSize: '3rem',
+									fontWeight: 'bold',
+									position: 'absolute',
+									top: '50%',
+									left: '50%',
+									transform: 'translate(-50%, -50%)',
+									zIndex: 1
+								}
+							}}
+							sx={{
+								backgroundColor: '#2e7d32',
+								height: '60px',
+								display: 'flex',
+								alignItems: 'center',
+								justifyContent: 'center',
+								borderBottom: '2px solid #1b5e20',
+								backgroundImage: 'url(https://lh3.googleusercontent.com/d/1WDW538XmRe68fwtYOKQcd7QF2ta-Av4E)',
+								backgroundSize: 'cover',
+								backgroundPosition: 'center',
+								position: 'relative'
+							}}
+						/>
+						<CardContent>
+							<TableContainer sx={{
+								maxHeight: '65vh',  // ビューポートの高さの60%
+								overflowY: 'auto'   // 縦方向のスクロールを有効化
+							}}>
+								<Table sx={{ width: '100%' }} size="small" aria-label="simple table">
+									<TableBody>
+										{attRanking.map((row) => {
+											return (
+												<TableRow
+													key={row.name}
+													sx={{ '&:last-child td, &:last-child th': { border: 0 } }}
+													onClick={() => handleRankingIconClick(row.name)}
+												>
+													<TableCell sx={{ padding: '3px 6px' }} component="th" scope="row">
+														<img
+															src={row.medalUrl}
+															alt="medal"
+															style={{
+																width: '18px',
+																height: '24px',
+															}}
+														/>
+													</TableCell>
+													<TableCell align="left" sx={{ padding: '3px 6px' }} >{row.place}</TableCell>
+													<TableCell align="left" sx={{ padding: '3px 6px' }} >
+														<AvatarIcon picUrl={row.facePic} name={row.name} width={28} height={28}></AvatarIcon>
+													</TableCell>
+													<TableCell align="left" sx={{ padding: '3px 6px' }} >{row.name}</TableCell>
+													<TableCell align="right" sx={{ padding: '3px 6px' }} >{row.score}</TableCell>
+												</TableRow>
+											);
+										})}
+									</TableBody>
+								</Table>
+							</TableContainer>
+						</CardContent>
+					</Card>
 				</>
 			) : (
                 <LoadingSpinner />

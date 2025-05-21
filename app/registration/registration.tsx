@@ -21,7 +21,7 @@ export default function Registration() {
 	const positionOptionsEng = 
 		['Forward', 'Midfielder', 'Defender', 'Anything!']; // ポジションの選択肢
 	
-	const ratingOptions = ['1st Tier', '2nd Tier', '3rd Tier', '4th Tier'];
+	const ratingOptions = ['1st Tier', '2nd Tier', '3rd Tier'];
 	
 	const birthplaceOptions =  
 		['関東', '関西', 'その他', '秘密'];
