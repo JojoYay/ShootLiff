@@ -20,7 +20,6 @@ import {
 } from '@mui/material';
 import { useLiff } from '../liffProvider';
 import { ChevronLeft, ChevronRight, ExpandMore, ExpandLess} from '@mui/icons-material';
-import AvatarIcon from '../stats/avatarIcon';
 import CalendarGrid from './calendarGrid';
 import RegistrationDialog from './registrationDialog';
 import LoadingSpinner from './loadingSpinner';
@@ -310,6 +309,32 @@ export default function Calendar() {
                 return [...prevAttendance, newAtt];
             }
         });
+
+        // calendarEventsの該当イベントも更新
+        setCalendarEvents(prevEvents => {
+            return prevEvents.map(event => {
+                if (event.ID === calendar.ID) {
+                    const startDate = new Date(event.start_datetime);
+                    const newAttendance: Attendance = {
+                        attendance_id: '',
+                        user_id: userId || '',
+                        year: String(startDate.getFullYear()),
+                        month: String(startDate.getMonth() + 1),
+                        date: String(startDate.getDate()),
+                        status: status,
+                        calendar_id: event.ID,
+                        calendar: event,
+                        adult_count: adultCount,
+                        child_count: childCount
+                    };
+                    return {
+                        ...event,
+                        attendance: newAttendance
+                    };
+                }
+                return event;
+            });
+        });
     };
 
     const handleSaveParticipation = async () => {
@@ -349,8 +374,8 @@ export default function Calendar() {
                         formData.append('attendance_id_'+index, existingAttendance?.attendance_id || '');
                         formData.append('user_id_'+index, userIdToUse);
                         formData.append('status_'+index, status);
-                        formData.append('adult_count_'+index, String(existingAttendance?.adult_count) || "1");
-                        formData.append('child_count_'+index, String(existingAttendance?.child_count) || "0");
+                        formData.append('adult_count_'+index, String(existingAttendance?.adult_count ?? 1));
+                        formData.append('child_count_'+index, String(existingAttendance?.child_count ?? 0));
                     } else {
                         console.error(`Calendar event with ID ${eventId} not found in calendarEvents.`);
                     }
@@ -415,24 +440,21 @@ export default function Calendar() {
         const now = new Date();
         let nextEvent: CalendarEvent | null = null;
     
-        // Filter out completed events and sort by start date
-        // const upcomingEvents = calendarEvents
-        //     .filter(event => event.event_status !== 99)
-        //     .sort((a, b) => new Date(a.start_datetime).getTime() - new Date(b.start_datetime).getTime());
-        //本来１個だけど念のため
-
         const upcomingEvents = calendarEvents
             .filter(event => event.event_status === 20)
             .sort((a, b) => new Date(a.start_datetime).getTime() - new Date(b.start_datetime).getTime());
 
         if (upcomingEvents.length > 0) {
             const earliestEvent = upcomingEvents[0];
-            nextEvent = {
-                ...earliestEvent,
-                attendance: getAttendanceForDayAndEvent(new Date(earliestEvent.start_datetime), attendance, earliestEvent.ID, profile?.userId),
-                attendances: getAllAttendanceForDayAndEvent(new Date(earliestEvent.start_datetime), attendance, earliestEvent.ID, users)
-            };
-            console.log(nextEvent);
+            // calendarEventsから直接参照するように変更
+            nextEvent = calendarEvents.find(event => event.ID === earliestEvent.ID) || null;
+            if (nextEvent) {
+                nextEvent = {
+                    ...nextEvent,
+                    attendance: getAttendanceForDayAndEvent(new Date(nextEvent.start_datetime), attendance, nextEvent.ID, profile?.userId),
+                    attendances: getAllAttendanceForDayAndEvent(new Date(nextEvent.start_datetime), attendance, nextEvent.ID, users)
+                };
+            }
         }
 
         return nextEvent;
@@ -493,25 +515,25 @@ export default function Calendar() {
         const parts = remark.split(urlRegex);
         
         return parts.map((part, index) => {
-            // 改行を <br /> に置き換え
-            const formattedPart = part.split('\n').map((line, lineIndex) => (
-                <>
-                    {line.length > 25 ? line.slice(0, 25) + '...' : line}
-                    {lineIndex < part.split('\n').length - 1 && <br />}
-                </>
-            ));
-        
             if (urlRegex.test(part)) {
+                // URLの場合のみ25文字で切り詰め
+                const displayUrl = part.length > 25 ? part.slice(0, 25) + '...' : part;
                 return (
                     <a key={index} href={part} target="_blank" rel="noopener noreferrer" style={{ color: '#1e88e5' }}>
-                        {formattedPart}
+                        {displayUrl}
                     </a>
                 );
             }
-            return <span key={index}>{formattedPart}</span>;
+            // URL以外のテキストは改行を<br />に置換
+            return <span key={index}>{part.split('\n').map((line, lineIndex) => (
+                <React.Fragment key={lineIndex}>
+                    {line}
+                    {lineIndex < part.split('\n').length - 1 && <br />}
+                </React.Fragment>
+            ))}</span>;
         });
     }
-
+    
     const isUserManager = users.some(user => user[2] === profile?.userId && user[3] === '幹事');
     const nextEvent = getNextEvent();
     return (
@@ -530,6 +552,7 @@ export default function Calendar() {
                                     lang={lang}
                                     nextEvent={nextEvent}
                                     pendingParticipationStatus={pendingParticipationStatus}
+                                    pendingParticipationStatusCount={pendingParticipationStatusCount}
                                     profile={profile}
                                     proxyReplyUser={proxyReplyUser}
                                     setProxyReplyUser={setProxyReplyUser}
@@ -579,8 +602,7 @@ export default function Calendar() {
                                         {week.map((dayData, dayIndex) => (
                                             <>
                                                 {typeof dayData === 'object' && dayData.events.length > 0 && dayData.events.map((calendar, index) => (
-                                                    <>
-                                                    <Box sx={{padding:'8px', marginRight:"8px",marginLeft:"8px",marginTop:"8px", border: '1px solid #eee', backgroundColor: calendar.event_status === 99 ? '#e0e0e0' : '#fffde7', borderRadius: '8px' }}>
+                                                    <Box key={`${calendar.ID}-${dayIndex}`} sx={{padding:'8px', marginRight:"8px",marginLeft:"8px",marginTop:"8px", border: '1px solid #eee', backgroundColor: calendar.event_status === 99 ? '#e0e0e0' : '#fffde7', borderRadius: '8px' }}>
                                                         <Box sx={{display: 'flex',mb:1, alignItems: 'center', justifyContent: 'space-between', width: '100%' }}>
                                                             <Box sx={{ display: 'flex', alignItems: 'center' }}>
                                                                 {calendar.event_type === 'フットサル' && (
@@ -620,10 +642,10 @@ export default function Calendar() {
                                                                         {calendar.event_name} @ {calendar.place}
                                                                     </Typography>
                                                                     <Typography variant="body2" sx={{ color: '#757575' }}>
-                                                                        〇 親: {calendar.attendances?.filter(att => att.status === '〇').reduce((total, att) => total + (att.adult_count || 1), 0) || 0}, 
-                                                                        子: {calendar.attendances?.filter(att => att.status === '〇').reduce((total, att) => total + (att.child_count || 0), 0) || 0}, 
-                                                                        △: {calendar.attendances?.filter(att => att.status === '△').reduce((total, att) => total + (att.adult_count || 1), 0) || 0}, 
-                                                                        ×: {calendar.attendances?.filter(att => att.status === '×').reduce((total, att) => total + (att.adult_count || 1), 0) || 0}, 
+                                                                        〇 親: {calendar.attendances?.filter(att => att.status === '〇').reduce((total, att) => total + (att.adult_count ?? 1), 0) || 0}, 
+                                                                        子: {calendar.attendances?.filter(att => att.status === '〇').reduce((total, att) => total + (att.child_count ?? 0), 0) || 0}, 
+                                                                        △: {calendar.attendances?.filter(att => att.status === '△').reduce((total, att) => total + (att.adult_count ?? 1), 0) || 0}, 
+                                                                        ×: {calendar.attendances?.filter(att => att.status === '×').reduce((total, att) => total + (att.adult_count ?? 1), 0) || 0}, 
                                                                     </Typography>
                                                                 </Box>
                                                             </Box>
@@ -650,9 +672,13 @@ export default function Calendar() {
                                                                     disabled={isProxyReplyMode}
                                                                     onChange={(e) => {
                                                                         if(calendar.ID){
-                                                                            handleParticipationChange(calendar, e.target.value as '〇' | '△' | '×', profile?.userId, calendar.attendance?.adult_count || 1, calendar.attendance?.child_count || 0);
-                                                                            if(calendar.attendance){
-                                                                                calendar.attendance.status = e.target.value as '〇' | '△' | '×';
+                                                                            if(isProxyReplyMode && proxyReplyUser){
+                                                                                handleParticipationChange(calendar, e.target.value as '〇' | '△' | '×', proxyReplyUser.userId, pendingParticipationStatusCount[calendar.ID]?.adult ?? 1, pendingParticipationStatusCount[calendar.ID]?.child ?? 0);
+                                                                            } else {
+                                                                                handleParticipationChange(calendar, e.target.value as '〇' | '△' | '×', profile?.userId, calendar.attendance?.adult_count ?? 1, calendar.attendance?.child_count ?? 0);
+                                                                                if(calendar.attendance){
+                                                                                    calendar.attendance.status = e.target.value as '〇' | '△' | '×';
+                                                                                }
                                                                             }
                                                                         }
                                                                     }}
@@ -668,14 +694,18 @@ export default function Calendar() {
                                                                     // sx={{minWidth:'100px'}}
                                                                     labelId="adult-count-select-label"
                                                                     id="adult-count-select"
-                                                                    value={calendar.attendance?.adult_count || 1}
+                                                                    value={calendar.attendance?.adult_count ?? 1}
                                                                     label={lang === 'ja-JP' ? '大人' : 'Adult'}
                                                                     disabled={isProxyReplyMode}
                                                                     onChange={(e) => {
                                                                         if(calendar.ID){
-                                                                            if(calendar.attendance){
-                                                                                handleParticipationChange(calendar, calendar.attendance.status as '〇' | '△' | '×', profile?.userId, e.target.value as number, calendar.attendance?.child_count || 0);
-                                                                                calendar.attendance.adult_count = e.target.value as number; // Update adultCount
+                                                                            if(isProxyReplyMode && proxyReplyUser){
+                                                                                handleParticipationChange(calendar, e.target.value as '〇' | '△' | '×', proxyReplyUser.userId, e.target.value as number, pendingParticipationStatusCount[calendar.ID]?.child ?? 0);
+                                                                            } else {
+                                                                                handleParticipationChange(calendar, e.target.value as '〇' | '△' | '×', profile?.userId, e.target.value as number, pendingParticipationStatusCount[calendar.ID]?.child ?? calendar.attendance?.child_count ?? 0);
+                                                                                if(calendar.attendance){
+                                                                                    calendar.attendance.adult_count = e.target.value as number; // Update adultCount
+                                                                                }
                                                                             }
                                                                         }
                                                                     }}
@@ -691,14 +721,18 @@ export default function Calendar() {
                                                                     // sx={{minWidth:'100px'}}                                                            
                                                                     labelId="child-count-select-label"
                                                                     id="child-count-select"
-                                                                    value={calendar.attendance?.child_count || 0}
+                                                                    value={calendar.attendance?.child_count ?? 0}
                                                                     label={lang === 'ja-JP' ? '子供' : 'Child'}
                                                                     disabled={isProxyReplyMode}
                                                                     onChange={(e) => {
                                                                         if(calendar.ID){
-                                                                            if(calendar.attendance){
-                                                                                handleParticipationChange(calendar, calendar.attendance.status as '〇' | '△' | '×', profile?.userId, calendar.attendance?.adult_count || 1, e.target.value as number);
-                                                                                calendar.attendance.child_count = e.target.value as number; // Update childCount
+                                                                            if(isProxyReplyMode && proxyReplyUser){
+                                                                                handleParticipationChange(calendar, e.target.value as '〇' | '△' | '×', proxyReplyUser.userId, pendingParticipationStatusCount[calendar.ID]?.adult ?? 1, e.target.value as number);
+                                                                            } else {
+                                                                                handleParticipationChange(calendar, e.target.value as '〇' | '△' | '×', profile?.userId, pendingParticipationStatusCount[calendar.ID]?.adult ?? calendar.attendance?.adult_count ?? 1, e.target.value as number);
+                                                                                if(calendar.attendance){
+                                                                                    calendar.attendance.child_count = e.target.value as number; // Update childCount
+                                                                                }
                                                                             }
                                                                         }
                                                                     }}
@@ -747,7 +781,6 @@ export default function Calendar() {
                                                             </Box>
                                                         </Collapse>
                                                     </Box>
-                                                    </>
                                                 ))}
                                             </>
                                         ))}

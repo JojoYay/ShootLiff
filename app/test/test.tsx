@@ -1,6 +1,7 @@
 'use client';
 import { useEffect } from 'react';
 import { useLiff } from '../liffProvider';
+import LoadingSpinner from '../calendar/loadingSpinner';
 
 export default function Video() {
     const { liff } = useLiff();
@@ -23,7 +24,7 @@ export default function Video() {
 
 	return (
 		<>
-		hello hello
+		<LoadingSpinner/>
 		</>
 	);
 }

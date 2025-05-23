@@ -23,7 +23,7 @@ const EventResult = () => {
     const itemsPerPage = 5; // Number of events per page
 
     useEffect(() => {
-		fetchInfo();
+		fetchInfo()
     }, []);
 
 	const fetchInfo = async () => {

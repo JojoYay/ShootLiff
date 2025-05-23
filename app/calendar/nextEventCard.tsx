@@ -4,7 +4,6 @@ import { Paper, Box, Typography, IconButton, Collapse, FormControl, InputLabel, 
 import { ExpandLess, ExpandMore } from '@mui/icons-material';
 import { CalendarEvent } from '../types/calendar';
 import { BALL, BEER, LOGO } from '../utils/constants';
-import AvatarIcon from '../stats/avatarIcon';
 import { User } from '../types/user';
 import { useRouter } from 'next/navigation';
 import AttendanceList from './attendanceList';
@@ -24,6 +23,7 @@ interface NextEventCardProps {
     setProxyReplyUser: React.Dispatch<React.SetStateAction<User | null>>;
     ProxyReplyButton: () => React.JSX.Element;
     SaveButton:() => React.JSX.Element;
+    pendingParticipationStatusCount: { [eventId: string]: { adult: number; child: number } };
 }
 
 
@@ -41,7 +41,8 @@ export const NextEventCard: React.FC<NextEventCardProps> = ({
     profile,
     setProxyReplyUser,
     ProxyReplyButton,
-    SaveButton
+    SaveButton,
+    pendingParticipationStatusCount
 }) => {
 
     const router = useRouter();
@@ -54,25 +55,25 @@ export const NextEventCard: React.FC<NextEventCardProps> = ({
         const parts = remark.split(urlRegex);
         
         return parts.map((part, index) => {
-            // 改行を <br /> に置き換え
-            const formattedPart = part.split('\n').map((line, lineIndex) => (
-                <>
-                    {line.length > 25 ? line.slice(0, 25) + '...' : line}
-                    {lineIndex < part.split('\n').length - 1 && <br />}
-                </>
-            ));
-        
             if (urlRegex.test(part)) {
+                // URLの場合のみ25文字で切り詰め
+                const displayUrl = part.length > 25 ? part.slice(0, 25) + '...' : part;
                 return (
                     <a key={index} href={part} target="_blank" rel="noopener noreferrer" style={{ color: '#1e88e5' }}>
-                        {formattedPart}
+                        {displayUrl}
                     </a>
                 );
             }
-            return <span key={index}>{formattedPart}</span>;
+            // URL以外のテキストは改行を<br />に置換
+            return <span key={index}>{part.split('\n').map((line, lineIndex) => (
+                <React.Fragment key={lineIndex}>
+                    {line}
+                    {lineIndex < part.split('\n').length - 1 && <br />}
+                </React.Fragment>
+            ))}</span>;
         });
     }
-    
+        
     return (
         <Paper elevation={3} sx={{
             p: 2,
@@ -221,7 +222,12 @@ export const NextEventCard: React.FC<NextEventCardProps> = ({
                                     nextEvent,
                                     e.target.value as '〇' | '△' | '×',
                                     isProxyReplyMode ? proxyReplyUser?.userId || '' : profile?.userId || '', // ユーザーIDを渡す
-                                    nextEvent.attendance?.adult_count || 1, nextEvent.attendance?.child_count || 0
+                                    isProxyReplyMode && proxyReplyUser
+                                        ? pendingParticipationStatusCount[nextEvent.ID]?.adult ?? 1
+                                        : pendingParticipationStatusCount[nextEvent.ID]?.adult ?? nextEvent.attendance?.adult_count ?? 1,
+                                    isProxyReplyMode && proxyReplyUser
+                                        ? pendingParticipationStatusCount[nextEvent.ID]?.child ?? 0
+                                        : pendingParticipationStatusCount[nextEvent.ID]?.child ?? nextEvent.attendance?.child_count ?? 0
                                 );
                             }}
                             disabled={isProxyReplyMode && !proxyReplyUser} // 代理返信モードでユーザーが選択されていない場合はdisabled
@@ -236,30 +242,34 @@ export const NextEventCard: React.FC<NextEventCardProps> = ({
                         <Select
                             labelId="adult-count-select-label"
                             id="adult-count-select"
+                            disabled={isProxyReplyMode && !proxyReplyUser} // 代理返信モードでユーザーが選択されていない場合はdisabled
                             // value={nextEvent.attendance?.adult_count || 1}
                             value={
                                 isProxyReplyMode && proxyReplyUser
-                                ? (nextEvent.attendances?.find(att => att.user_id === proxyReplyUser.userId)?.adult_count || 1)
-                                : (nextEvent.attendance?.adult_count || 1)
+                                ? (nextEvent.attendances?.find(att => att.user_id === proxyReplyUser.userId)?.adult_count ?? 1)
+                                : (nextEvent.attendance?.adult_count ?? 1)
                             }
                             label={lang === 'ja-JP' ? '大人' : 'Adult'}
                             onChange={(e) => {
                                 if(nextEvent.ID){
                                     if(isProxyReplyMode && proxyReplyUser){
-                                        handleParticipationChange(nextEvent, nextEvent.attendance?.status as '〇' | '△' | '×', proxyReplyUser?.userId || '',  e.target.value as number, nextEvent.attendance?.child_count || 0);
+                                        handleParticipationChange(
+                                            nextEvent,
+                                            nextEvent.attendance?.status as '〇' | '△' | '×',
+                                            proxyReplyUser.userId,
+                                            e.target.value as number,
+                                            pendingParticipationStatusCount[nextEvent.ID]?.child ?? 0
+                                        );
                                     } else {
-                                        handleParticipationChange(nextEvent, nextEvent.attendance?.status as '〇' | '△' | '×', profile?.userId || '',  e.target.value as number, nextEvent.attendance?.child_count || 0);
-                                    }
-                                    if(isProxyReplyMode && proxyReplyUser){
-                                        if(nextEvent.attendances){
-                                            const attendances = nextEvent.attendances?.find(att => att.user_id === proxyReplyUser.userId);
-                                            if(attendances){
-                                                attendances.adult_count = e.target.value as number;
-                                            }
-                                        }
-                                    } else {
+                                        handleParticipationChange(
+                                            nextEvent,
+                                            nextEvent.attendance?.status as '〇' | '△' | '×',
+                                            profile?.userId || '',
+                                            e.target.value as number,
+                                            pendingParticipationStatusCount[nextEvent.ID]?.child ?? nextEvent.attendance?.child_count ?? 0
+                                        );
                                         if(nextEvent.attendance){
-                                            nextEvent.attendance.adult_count = e.target.value as number; // Update adultCount
+                                            nextEvent.attendance.adult_count = e.target.value as number;
                                         }
                                     }
                                 }
@@ -278,28 +288,31 @@ export const NextEventCard: React.FC<NextEventCardProps> = ({
                             // value={nextEvent.attendance?.child_count || 0}
                             value={
                                 isProxyReplyMode && proxyReplyUser
-                                ? (nextEvent.attendances?.find(att => att.user_id === proxyReplyUser.userId)?.child_count || 0)
-                                : (nextEvent.attendance?.child_count || 0)
+                                ? (nextEvent.attendances?.find(att => att.user_id === proxyReplyUser.userId)?.child_count ?? 0)
+                                : (nextEvent.attendance?.child_count ?? 0)
                             }
-
+                            disabled={isProxyReplyMode && !proxyReplyUser} // 代理返信モードでユーザーが選択されていない場合はdisabled
                             label={lang === 'ja-JP' ? '子供' : 'Child'}
                             onChange={(e) => {
                                 if(nextEvent.ID){
                                     if(isProxyReplyMode && proxyReplyUser){
-                                        handleParticipationChange(nextEvent, nextEvent.attendance?.status as '〇' | '△' | '×', proxyReplyUser?.userId || '', nextEvent.attendance?.adult_count || 1, e.target.value as number);
+                                        handleParticipationChange(
+                                            nextEvent,
+                                            nextEvent.attendance?.status as '〇' | '△' | '×',
+                                            proxyReplyUser.userId,
+                                            pendingParticipationStatusCount[nextEvent.ID]?.adult ?? 1,
+                                            e.target.value as number
+                                        );
                                     } else {
-                                        handleParticipationChange(nextEvent, nextEvent.attendance?.status as '〇' | '△' | '×', profile?.userId || '', nextEvent.attendance?.adult_count || 1,  e.target.value as number);
-                                    }
-                                    if(isProxyReplyMode && proxyReplyUser){
-                                        if(nextEvent.attendances){
-                                            const attendances = nextEvent.attendances?.find(att => att.user_id === proxyReplyUser.userId);
-                                            if(attendances){
-                                                attendances.child_count = e.target.value as number;
-                                            }
-                                        }
-                                    } else {
+                                        handleParticipationChange(
+                                            nextEvent,
+                                            nextEvent.attendance?.status as '〇' | '△' | '×',
+                                            profile?.userId || '',
+                                            pendingParticipationStatusCount[nextEvent.ID]?.adult ?? nextEvent.attendance?.adult_count ?? 1,
+                                            e.target.value as number
+                                        );
                                         if(nextEvent.attendance){
-                                            nextEvent.attendance.child_count = e.target.value as number; // Update adultCount
+                                            nextEvent.attendance.child_count = e.target.value as number;
                                         }
                                     }
                                 }
