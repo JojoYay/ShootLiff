@@ -241,49 +241,51 @@ export default function EventManager() {
 
     // Add a function to update the event status
     const updateEventStatus = async (event: Event, newStatus: number) => {
-        try {
-            setIsSubmitting(true);
-            const formDataToSend = new FormData();
-            formDataToSend.append('func', 'updateEventStatus');
-            formDataToSend.append('id', event.id);
-            formDataToSend.append('new_status', newStatus.toString());
+        const formDataToSend = new FormData();
+        formDataToSend.append('func', 'updateEventStatus');
+        formDataToSend.append('id', event.id);
+        formDataToSend.append('new_status', newStatus.toString());
 
-            let url = process.env.SERVER_URL;
-            if (url) {
-                const response = await fetch(url, {
-                    method: 'POST',
-                    body: formDataToSend
-                });
+        let url = process.env.SERVER_URL;
+        if (url) {
+            const response = await fetch(url, {
+                method: 'POST',
+                body: formDataToSend
+            });
 
-                if (response.ok) {
-                    fetchEvents();
-                }
+            if (response.ok) {
+                fetchEvents();
             }
-        } catch (error) {
-            console.error('Error updating event status:', error);
-        } finally {
-            setIsSubmitting(false);
         }
     };
 
     // Add a function to handle status change logic
     const handleStatusChange = async (event: Event, newStatus: number) => {
-        if (newStatus === 20) {
-            // Ensure only one event can have status 20
-            const currentTargetEvent = events.find(e => e.event_status === 20);
-            if (currentTargetEvent) {
-                await updateEventStatus(currentTargetEvent, 0);
+        try{
+            setIsSubmitting(true);
+
+            if (newStatus === 20) {
+                // Ensure only one event can have status 20
+                const currentTargetEvent = events.find(e => e.event_status === 20);
+                if (currentTargetEvent) {
+                    await updateEventStatus(currentTargetEvent, 0);
+                }
+            } else if (newStatus === 99) {
+                // Find the earliest event that is not 99 and set its status to 20
+                const earliestEvent = events
+                    .filter(e => e.event_status !== 99)
+                    .sort((a, b) => new Date(a.start_datetime).getTime() - new Date(b.start_datetime).getTime())[0];
+                if (earliestEvent) {
+                    await updateEventStatus(earliestEvent, 20);
+                }
             }
-        } else if (newStatus === 99) {
-            // Find the earliest event that is not 99 and set its status to 20
-            const earliestEvent = events
-                .filter(e => e.event_status !== 99)
-                .sort((a, b) => new Date(a.start_datetime).getTime() - new Date(b.start_datetime).getTime())[0];
-            if (earliestEvent) {
-                await updateEventStatus(earliestEvent, 20);
-            }
+            await updateEventStatus(event, newStatus);
+
+        } catch (error) {
+            console.error('Error updating event status:', error);
+        } finally {
+            setIsSubmitting(false);
         }
-        await updateEventStatus(event, newStatus);
     };
 
     const renderRemarkWithLinks = (remark: string) => {

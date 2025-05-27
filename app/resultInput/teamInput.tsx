@@ -1,6 +1,8 @@
 'use client';
 import { useEffect, useState, SetStateAction } from 'react';
-import { Avatar, Button, Card, CardActionArea, CardContent, CircularProgress, Grid, Typography, FormControl, InputLabel, MenuItem, Select, Box } from '@mui/material';
+import { Avatar, Button, Card, CardActionArea, CardContent, CircularProgress, Grid, Typography, FormControl, InputLabel, MenuItem, Select, Box, Checkbox, List, ListItem, ListItemIcon, ListItemText, IconButton, Paper, Accordion, AccordionSummary, AccordionDetails } from '@mui/material';
+import { ArrowUpward, ArrowDownward } from '@mui/icons-material';
+import ExpandMoreIcon from '@mui/icons-material/ExpandMore';
 
 export default function TeamInput() {
     const [teams, setTeams] = useState<string[]>([]);
@@ -23,6 +25,17 @@ export default function TeamInput() {
     const [selectedUser, setSelectedUser] = useState<string | null>(null); // 選択中のユーザーの状態を追加
 
     const [users, setUsers] = useState<string[][] | null>(null);
+
+    // 条件リスト
+    const initialConditions = [
+        { key: 'kanji', label: '幹事をばらけさせる', enabled: true },
+        { key: 'tier', label: 'Tierを考慮', enabled: true },
+        // { key: 'position', label: 'ポジションを考慮', enabled: false },
+        // { key: 'age', label: '年齢を考慮', enabled: false },
+        // { key: 'birthplace', label: '出身を考慮', enabled: false },
+    ];
+
+    const [conditions, setConditions] = useState(initialConditions);
 
     useEffect(() => {
         fetchTeams();
@@ -391,21 +404,87 @@ export default function TeamInput() {
         );
     };
 
-    const totalMembers = team1.length + team2.length + team3.length + team4.length + team5.length + team6.length + team7.length + team8.length + team9.length + team10.length;
+    const totalMembers = team1.length + team2.length + team3.length + team4.length + team5.length + team6.length + team7.length + team8.length + team9.length + team10.length + unassignedUsers.length;
 
     const [selectedTeamCount, setSelectedTeamCount] = useState<number>(2); // デフォルトのチーム数を設定
 
     const handleRandomAllocate = () => {
-        console.log("random");
-        const allMembers = [...team1, ...team2, ...team3, ...team4, ...team5, ...team6, ...team7, ...team8, ...team9, ...team10, ...unassignedUsers];
-        const shuffledMembers = allMembers.sort(() => Math.random() - 0.5); // メンバーをシャッフル
+        // すべてのメンバー名
+        const allMembers = [
+            ...team1, ...team2, ...team3, ...team4, ...team5,
+            ...team6, ...team7, ...team8, ...team9, ...team10, ...unassignedUsers
+        ];
 
-        // チームを初期化
+        // 条件の有効・優先順リスト
+        const activeConditions = conditions.filter(c => c.enabled);
+
+        // 年齢グループを返す関数
+        const getAgeGroup = (birthday: string | undefined): string => {
+            if (!birthday) return 'unknown';
+            // 例: '1990-05-12' のような形式を想定
+            const birthYear = Number(birthday.split('-')[0]);
+            if (isNaN(birthYear)) return 'unknown';
+            const now = new Date();
+            const age = now.getFullYear() - birthYear;
+            const group = Math.floor(age / 3) * 3; // 3歳ごと
+            return `${group}～${group + 2}歳`;
+        };
+
+        // グループ分け用の関数
+        const getGroupKey = (name: string, condKey: string) => {
+            const user = users?.find(u => u[1] === name);
+            if (!user) return 'unknown';
+            switch (condKey) {
+                case 'kanji':
+                    return user[3] === '幹事' ? 'kanji' : 'other';
+                case 'tier':
+                    return user[8] || 'unknown';
+                case 'position':
+                    return user[5] || 'unknown';
+                case 'age':
+                    return getAgeGroup(user[6]);
+                case 'birthplace':
+                    return user[7] || 'unknown';
+                default:
+                    return 'unknown';
+            }
+        };
+
+        // 再帰的にグループ分け
+        const groupRecursive = (members: string[], condIdx: number): string[][] => {
+            if (condIdx >= activeConditions.length) {
+                // 最後はシャッフルして返す
+                return [members.sort(() => Math.random() - 0.5)];
+            }
+            const condKey = activeConditions[condIdx].key;
+            // グループ分け
+            const groupMap: { [key: string]: string[] } = {};
+            members.forEach(name => {
+                const key = getGroupKey(name, condKey);
+                if (!groupMap[key]) groupMap[key] = [];
+                groupMap[key].push(name);
+            });
+            // 各グループごとに次の条件で再帰
+            let result: string[][] = [];
+            Object.values(groupMap).forEach(group => {
+                result = result.concat(groupRecursive(group, condIdx + 1));
+            });
+            return result;
+        };
+
+        // グループ分け実行
+        let groupedLists = groupRecursive(allMembers, 0);
+        console.log("groupedLists",groupedLists);
+        // すべてのグループを1つのリストにまとめる
+        let mergedList: string[] = [];
+        groupedLists.forEach(group => {
+            mergedList = mergedList.concat(group);
+        });
+
+        // 順番にチームに割り振る
         const newTeams: string[][] = Array.from({ length: selectedTeamCount }, () => []);
-
-        // シャッフルされたメンバーをチームに割り振る
-        shuffledMembers.forEach((member, index) => {
-            newTeams[index % selectedTeamCount].push(member);
+        mergedList.forEach((name, idx) => {
+            newTeams[idx % selectedTeamCount].push(name);
         });
 
         // 新しいチームを設定
@@ -423,6 +502,24 @@ export default function TeamInput() {
         setHasChanges(true); // 変更フラグを設定
     };
 
+    // 順番入れ替え
+    const moveCondition = (index: number, direction: 'up' | 'down') => {
+        const newConditions = [...conditions];
+        if (direction === 'up' && index > 0) {
+            [newConditions[index - 1], newConditions[index]] = [newConditions[index], newConditions[index - 1]];
+        }
+        if (direction === 'down' && index < newConditions.length - 1) {
+            [newConditions[index + 1], newConditions[index]] = [newConditions[index], newConditions[index + 1]];
+        }
+        setConditions(newConditions);
+    };
+
+    // オン・オフ切り替え
+    const toggleCondition = (index: number) => {
+        const newConditions = [...conditions];
+        newConditions[index].enabled = !newConditions[index].enabled;
+        setConditions(newConditions);
+    };
 
     return (
         <>
@@ -462,6 +559,59 @@ export default function TeamInput() {
                             </Button>
                         </Box>
                     </Box>
+
+                    {/* 条件指定UI */}
+                    <Accordion sx={{ mt: 2, mb: 2 }} defaultExpanded={false}>
+                        <AccordionSummary
+                            expandIcon={<ExpandMoreIcon />}
+                            aria-controls="condition-content"
+                            id="condition-header"
+                        >
+                            <Typography variant="subtitle1" sx={{ fontWeight: 'bold' }}>
+                                AI配置の条件と優先順位
+                            </Typography>
+                        </AccordionSummary>
+                        <AccordionDetails>
+                            <List>
+                                {conditions.map((cond, idx) => (
+                                    <ListItem
+                                        key={cond.key}
+                                        secondaryAction={
+                                            <Box>
+                                                <IconButton
+                                                    size="small"
+                                                    onClick={() => moveCondition(idx, 'up')}
+                                                    disabled={idx === 0}
+                                                    aria-label="上へ"
+                                                >
+                                                    <ArrowUpward fontSize="small" />
+                                                </IconButton>
+                                                <IconButton
+                                                    size="small"
+                                                    onClick={() => moveCondition(idx, 'down')}
+                                                    disabled={idx === conditions.length - 1}
+                                                    aria-label="下へ"
+                                                >
+                                                    <ArrowDownward fontSize="small" />
+                                                </IconButton>
+                                            </Box>
+                                        }
+                                    >
+                                        <ListItemIcon>
+                                            <Checkbox
+                                                edge="start"
+                                                checked={cond.enabled}
+                                                tabIndex={-1}
+                                                disableRipple
+                                                onChange={() => toggleCondition(idx)}
+                                            />
+                                        </ListItemIcon>
+                                        <ListItemText primary={cond.label} />
+                                    </ListItem>
+                                ))}
+                            </List>
+                        </AccordionDetails>
+                    </Accordion>
 
                     <Grid container spacing={2} sx={{ p: 2, mt: 0 }}>
                         {[
