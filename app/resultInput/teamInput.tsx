@@ -1,8 +1,195 @@
 'use client';
 import { useEffect, useState, SetStateAction } from 'react';
-import { Avatar, Button, Card, CardActionArea, CardContent, CircularProgress, Grid, Typography, FormControl, InputLabel, MenuItem, Select, Box, Checkbox, List, ListItem, ListItemIcon, ListItemText, IconButton, Paper, Accordion, AccordionSummary, AccordionDetails } from '@mui/material';
+import { Avatar, Button, Card, CardActionArea, CardContent, CircularProgress, Grid, Typography, FormControl, InputLabel, MenuItem, Select, Box, Checkbox, List, ListItem, ListItemIcon, ListItemText, IconButton, Paper, Accordion, AccordionSummary, AccordionDetails, Radio, RadioGroup, FormControlLabel } from '@mui/material';
 import { ArrowUpward, ArrowDownward } from '@mui/icons-material';
 import ExpandMoreIcon from '@mui/icons-material/ExpandMore';
+
+interface BalanceOption {
+    key: string;
+    label: string;
+    selected: boolean;
+}
+
+interface Condition {
+    key: string;
+    label: string;
+    enabled: boolean;
+    type?: string;
+    options?: BalanceOption[];
+    balanceEnabled?: boolean;  // バランス調整の有効/無効を管理
+}
+
+// 年齢グループを返す関数
+const getAgeGroup = (birthday: string | undefined): string => {
+    if (!birthday) return 'unknown';
+    const birthYear = Number(birthday.split('-')[0]);
+    if (isNaN(birthYear)) return 'unknown';
+    const now = new Date();
+    const age = now.getFullYear() - birthYear;
+    const group = Math.floor(age / 3) * 3;
+    return `${group}～${group + 2}歳`;
+};
+
+// チームポイントを取得する関数
+const getTeamPoints = (name: string, eventResult: any[][] | null): number => {
+    const userStats = eventResult?.find(stat => stat[1] === name);
+    return userStats ? Number(userStats[8]) || 0 : 0;
+};
+
+// 年齢を取得する関数
+const getAge = (name: string, users: string[][] | null): number => {
+    const user = users?.find(u => u[1] === name);
+    if (!user || !user[6]) return 0;
+    const birthYear = Number(user[6].split('-')[0]);
+    if (isNaN(birthYear)) return 0;
+    const now = new Date();
+    return now.getFullYear() - birthYear;
+};
+
+// グループの平均ポイントを計算する関数
+const calculateAveragePoints = (group: string[], eventResult: any[][] | null): number => {
+    let validCount = 0;
+    const totalPoints = group.reduce((sum, name) => {
+        const points = getTeamPoints(name, eventResult);
+        if (points > 0) {
+            validCount++;
+            return sum + points;
+        }
+        return sum;
+    }, 0);
+    return validCount > 0 ? totalPoints / validCount : 0;
+};
+
+// 年齢の平均を計算する関数
+const calculateAverageAge = (group: string[], users: string[][] | null): number => {
+    let validCount = 0;
+    const totalAge = group.reduce((sum, name) => {
+        const user = users?.find(u => u[1] === name);
+        if (!user || !user[6]) return sum;
+        const birthYear = Number(user[6].split('-')[0]);
+        if (isNaN(birthYear)) return sum;
+        const now = new Date();
+        const age = now.getFullYear() - birthYear;
+        validCount++;
+        return sum + age;
+    }, 0);
+    return validCount > 0 ? totalAge / validCount : 0;
+};
+
+// 選択されているバランス調整の種類を取得
+const getSelectedBalanceType = (conditions: Condition[]): string => {
+    const balanceCondition = conditions.find(c => c.key === 'balance');
+    if (!balanceCondition) return 'points';
+    const selectedOption = balanceCondition.options?.find(opt => opt.selected);
+    return selectedOption?.key || 'points';
+};
+
+// グループの平均値を計算する関数
+const calculateGroupAverage = (
+    group: string[],
+    conditions: Condition[],
+    eventResult: any[][] | null,
+    users: string[][] | null
+): number => {
+    const balanceType = getSelectedBalanceType(conditions);
+    if (balanceType === 'points') {
+        return calculateAveragePoints(group, eventResult);
+    } else {
+        return calculateAverageAge(group, users);
+    }
+};
+
+// グループを平均値でソートする関数
+const sortGroupsByAverage = (
+    groups: string[][],
+    conditions: Condition[],
+    eventResult: any[][] | null,
+    users: string[][] | null
+): string[][] => {
+    // 各グループ内のメンバーをポイント順にソート
+    const sortedGroups = groups.map(group => {
+        return group.sort((a, b) => {
+            const pointsA = getTeamPoints(a, eventResult);
+            const pointsB = getTeamPoints(b, eventResult);
+            return pointsB - pointsA; // 降順（ポイントの高い順）
+        });
+    });
+
+    // グループ全体を平均値でソート
+    return sortedGroups.sort((a, b) => {
+        const avgA = calculateGroupAverage(a, conditions, eventResult, users);
+        const avgB = calculateGroupAverage(b, conditions, eventResult, users);
+        return avgB - avgA;
+    });
+};
+
+// グループ分け用の関数
+const getGroupKey = (
+    name: string,
+    condKey: string,
+    conditions: Condition[],
+    eventResult: any[][] | null,
+    users: string[][] | null
+): string => {
+    const user = users?.find(u => u[1] === name);
+    if (!user) return 'unknown';
+    switch (condKey) {
+        case 'kanji':
+            return user[3] === '幹事' ? 'kanji' : 'other';
+        case 'position':
+            return user[5] || 'unknown';
+        case 'balance':
+            const balanceType = getSelectedBalanceType(conditions);
+            if (balanceType === 'points') {
+                const points = getTeamPoints(name, eventResult);
+                return `${Math.floor(points / 100) * 100}～${Math.floor(points / 100) * 100 + 99}点`;
+            } else {
+                return getAgeGroup(user[6]);
+            }
+        case 'tier':
+            return user[8] || 'unknown';
+        default:
+            return 'unknown';
+    }
+};
+
+// 再帰的にグループ分け
+const groupRecursive = (
+    members: string[],
+    condIdx: number,
+    activeConditions: Condition[],
+    eventResult: any[][] | null,
+    users: string[][] | null,
+    parentGroups: string[] = []
+): string[][] => {
+    if (condIdx >= activeConditions.length) {
+        // 最後はシャッフルして返す
+        console.log(`最終グループ [${parentGroups.join(' → ')}]:`, members);
+        return [members.sort(() => Math.random() - 0.5)];
+    }
+    const condKey = activeConditions[condIdx].key;
+    // グループ分け
+    const groupMap: { [key: string]: string[] } = {};
+    members.forEach(name => {
+        const key = getGroupKey(name, condKey, activeConditions, eventResult, users);
+        if (!groupMap[key]) groupMap[key] = [];
+        groupMap[key].push(name);
+    });
+
+    // グループ分けの結果をログ表示
+    console.log(`\n${activeConditions[condIdx].label}でグループ分け [${parentGroups.join(' → ')}]:`);
+    Object.entries(groupMap).forEach(([key, group]) => {
+        console.log(`${key}: ${group.join(', ')}`);
+    });
+
+    // 各グループごとに次の条件で再帰
+    let result: string[][] = [];
+    Object.entries(groupMap).forEach(([key, group]) => {
+        const newParentGroups = [...parentGroups, `${activeConditions[condIdx].label}(${key})`];
+        result = result.concat(groupRecursive(group, condIdx + 1, activeConditions, eventResult, users, newParentGroups));
+    });
+    return result;
+};
 
 export default function TeamInput() {
     const [teams, setTeams] = useState<string[]>([]);
@@ -23,19 +210,22 @@ export default function TeamInput() {
 
     const [unassignedUsers, setUnassignedUsers] = useState<string[]>([]); // 未所属ユーザーの状態を追加
     const [selectedUser, setSelectedUser] = useState<string | null>(null); // 選択中のユーザーの状態を追加
-
+	const [eventResult, setEventResult] = useState<any[][] | null>(null);
     const [users, setUsers] = useState<string[][] | null>(null);
+    const [members, setMembers] = useState<string[]>([]);
+    const [groupedMembers, setGroupedMembers] = useState<string[][]>([]);
 
-    // 条件リスト
-    const initialConditions = [
+    const initialConditions: Condition[] = [
         { key: 'kanji', label: '幹事をばらけさせる', enabled: true },
-        { key: 'tier', label: 'Tierを考慮', enabled: true },
-        // { key: 'position', label: 'ポジションを考慮', enabled: false },
-        // { key: 'age', label: '年齢を考慮', enabled: false },
-        // { key: 'birthplace', label: '出身を考慮', enabled: false },
+        { key: 'position', label: 'ポジションを考慮', enabled: false },
+        { key: 'tier', label: 'Tierを考慮', enabled: false },
+        { key: 'balance', label: 'チーム平均点調整', enabled: true, type: 'radio', options: [
+            { key: 'points', label: '岡本ポイント', selected: true },
+            { key: 'age', label: '年齢', selected: false }
+        ], balanceEnabled: false},
     ];
 
-    const [conditions, setConditions] = useState(initialConditions);
+    const [conditions, setConditions] = useState<Condition[]>(initialConditions);
 
     useEffect(() => {
         fetchTeams();
@@ -43,7 +233,7 @@ export default function TeamInput() {
 
     const fetchTeams = async () => {
         try {
-            const url = process.env.SERVER_URL + `?func=getTeams&func=getUsers`;
+            const url = process.env.SERVER_URL + `?func=getTeams&func=getUsers&func=getStats`;
             if (url) {
                 const response = await fetch(url, {
                     method: 'GET',
@@ -52,6 +242,8 @@ export default function TeamInput() {
                 console.log(data);
                 const teamData:string[][] = data.teams as string[][];
                 setUsers(data.users);
+                setEventResult(data.stats);
+
                 // console.log(data.users);
                 // プレイヤー名のリストを作成
                 const playerNames = teamData.slice(1).map(player => player[0]);
@@ -103,6 +295,7 @@ export default function TeamInput() {
                 setTeam9(team9Players);
                 setTeam10(team10Players);
                 setUnassignedUsers(unassignedPlayers);
+                setMembers(playerNames);
             }
 
         } catch (error) {
@@ -418,73 +611,71 @@ export default function TeamInput() {
         // 条件の有効・優先順リスト
         const activeConditions = conditions.filter(c => c.enabled);
 
-        // 年齢グループを返す関数
-        const getAgeGroup = (birthday: string | undefined): string => {
-            if (!birthday) return 'unknown';
-            // 例: '1990-05-12' のような形式を想定
-            const birthYear = Number(birthday.split('-')[0]);
-            if (isNaN(birthYear)) return 'unknown';
-            const now = new Date();
-            const age = now.getFullYear() - birthYear;
-            const group = Math.floor(age / 3) * 3; // 3歳ごと
-            return `${group}～${group + 2}歳`;
-        };
-
-        // グループ分け用の関数
-        const getGroupKey = (name: string, condKey: string) => {
-            const user = users?.find(u => u[1] === name);
-            if (!user) return 'unknown';
-            switch (condKey) {
-                case 'kanji':
-                    return user[3] === '幹事' ? 'kanji' : 'other';
-                case 'tier':
-                    return user[8] || 'unknown';
-                case 'position':
-                    return user[5] || 'unknown';
-                case 'age':
-                    return getAgeGroup(user[6]);
-                case 'birthplace':
-                    return user[7] || 'unknown';
-                default:
-                    return 'unknown';
-            }
-        };
-
-        // 再帰的にグループ分け
-        const groupRecursive = (members: string[], condIdx: number): string[][] => {
-            if (condIdx >= activeConditions.length) {
-                // 最後はシャッフルして返す
-                return [members.sort(() => Math.random() - 0.5)];
-            }
-            const condKey = activeConditions[condIdx].key;
-            // グループ分け
-            const groupMap: { [key: string]: string[] } = {};
-            members.forEach(name => {
-                const key = getGroupKey(name, condKey);
-                if (!groupMap[key]) groupMap[key] = [];
-                groupMap[key].push(name);
-            });
-            // 各グループごとに次の条件で再帰
-            let result: string[][] = [];
-            Object.values(groupMap).forEach(group => {
-                result = result.concat(groupRecursive(group, condIdx + 1));
-            });
-            return result;
-        };
-
         // グループ分け実行
-        let groupedLists = groupRecursive(allMembers, 0);
-        console.log("groupedLists",groupedLists);
-        // すべてのグループを1つのリストにまとめる
-        let mergedList: string[] = [];
-        groupedLists.forEach(group => {
-            mergedList = mergedList.concat(group);
+        console.log('\n=== チーム分け開始 ===');
+        let groupedLists = groupRecursive(allMembers, 0, activeConditions, eventResult, users);
+        console.log('\n=== 最終的なグループ分け結果 ===');
+        groupedLists.forEach((group, index) => {
+            console.log(`グループ${index + 1}: ${group.join(', ')}`);
         });
 
-        // 順番にチームに割り振る
+        // グループの順序をシャッフル
+        groupedLists = groupedLists.sort(() => Math.random() - 0.5);
+        console.log('\n=== シャッフル後のグループ分け結果 ===');
+        groupedLists.forEach((group, index) => {
+            console.log(`グループ${index + 1}: ${group.join(', ')}`);
+        });
+
+        const balanceCondition = conditions.find(c => c.key === 'balance');
+        const balanceEnabled = balanceCondition?.balanceEnabled ?? false;
+        const balanceType = getSelectedBalanceType(conditions);
+
+        if (balanceEnabled) {
+            // バランス調整を考慮してグループをソート
+            groupedLists = sortGroupsByAverage(groupedLists, conditions, eventResult, users);
+            console.log(`\n=== ${balanceType === 'points' ? '岡本ポイント' : '年齢'}考慮後のグループ分け結果 ===`);
+            groupedLists.forEach((group, index) => {
+                console.log(`グループ${index + 1}: ${group.join(', ')}`);
+            });
+        }
+
+        // グループの順序を再度シャッフル
+        groupedLists = groupedLists.sort(() => Math.random() - 0.5);
+
+        // 新しいチーム分けロジック
         const newTeams: string[][] = Array.from({ length: selectedTeamCount }, () => []);
-        mergedList.forEach((name, idx) => {
-            newTeams[idx % selectedTeamCount].push(name);
+        
+        // 各グループ内のメンバーをソート
+        const sortedGroups = groupedLists.map(group => {
+            return group.sort((a, b) => {
+                if (balanceEnabled) {
+                    if (balanceType === 'points') {
+                        const pointsA = getTeamPoints(a, eventResult);
+                        const pointsB = getTeamPoints(b, eventResult);
+                        return pointsB - pointsA; // 降順（ポイントの高い順）
+                    } else {
+                        const ageA = getAge(a, users);
+                        const ageB = getAge(b, users);
+                        return ageB - ageA; // 降順（年齢の高い順）
+                    }
+                } else {
+                    // バランス調整が無効の場合はランダムにソート
+                    return Math.random() - 0.5;
+                }
+            });
+        });
+
+        // 蛇行パターンでチームに割り当て
+        sortedGroups.forEach((group, groupIndex) => {
+            group.forEach((member, memberIndex) => {
+                // 蛇行パターンの計算
+                const isEvenGroup = groupIndex % 2 === 0;
+                const teamIndex = isEvenGroup ? 
+                    memberIndex % selectedTeamCount : 
+                    selectedTeamCount - 1 - (memberIndex % selectedTeamCount);
+                
+                newTeams[teamIndex].push(member);
+            });
         });
 
         // 新しいチームを設定
@@ -499,6 +690,19 @@ export default function TeamInput() {
         setTeam9(newTeams[8] || []);
         setTeam10(newTeams[9] || []);
         setUnassignedUsers([]); // 未所属ユーザーをリセット
+
+        // チーム分け完了後の各チームの平均点を表示
+        console.log('\n=== チーム分け完了後の各チームの平均 ===');
+        newTeams.forEach((team, index) => {
+            if (team.length > 0) {
+                const avg = calculateGroupAverage(team, conditions, eventResult, users);
+                const unit = balanceEnabled ? 
+                    (balanceType === 'points' ? '点' : '歳') : 
+                    '';
+                console.log(`チーム${index + 1} (平均${avg.toFixed(1)}${unit}): ${team.join(', ')}`);
+            }
+        });
+
         setHasChanges(true); // 変更フラグを設定
     };
 
@@ -517,8 +721,41 @@ export default function TeamInput() {
     // オン・オフ切り替え
     const toggleCondition = (index: number) => {
         const newConditions = [...conditions];
-        newConditions[index].enabled = !newConditions[index].enabled;
+        if (newConditions[index].key === 'balance') {
+            // バランス調整の場合は、選択肢の切り替え
+            const options = newConditions[index].options || [];
+            const currentSelected = options.findIndex(opt => opt.selected);
+            options.forEach((opt, i) => {
+                opt.selected = i === (currentSelected + 1) % options.length;
+            });
+        } else {
+            // その他の条件は通常のオン・オフ切り替え
+            newConditions[index].enabled = !newConditions[index].enabled;
+        }
         setConditions(newConditions);
+    };
+
+    // グループ分け実行
+    const executeGrouping = () => {
+        // 条件の有効・優先順リスト
+        const activeConditions = conditions.filter(c => c.enabled);
+
+        // グループ分け実行
+        const groups = groupRecursive(members, 0, activeConditions, eventResult, users);
+
+        // グループを平均値でソート
+        const sortedGroups = sortGroupsByAverage(groups, conditions, eventResult, users);
+
+        // 結果を表示
+        setGroupedMembers(sortedGroups);
+
+        // バランス調整を考慮してグループをソート
+        const balanceType = getSelectedBalanceType(conditions);
+        console.log(`\n=== ${balanceType === 'points' ? '岡本ポイント' : '年齢'}考慮後のグループ分け結果 ===`);
+        sortedGroups.forEach((group, index) => {
+            const avg = calculateGroupAverage(group, conditions, eventResult, users);
+            console.log(`グループ${index + 1} (平均${avg.toFixed(1)}${balanceType === 'points' ? '点' : '歳'}): ${group.join(', ')}`);
+        });
     };
 
     return (
@@ -577,36 +814,86 @@ export default function TeamInput() {
                                     <ListItem
                                         key={cond.key}
                                         secondaryAction={
-                                            <Box>
-                                                <IconButton
-                                                    size="small"
-                                                    onClick={() => moveCondition(idx, 'up')}
-                                                    disabled={idx === 0}
-                                                    aria-label="上へ"
-                                                >
-                                                    <ArrowUpward fontSize="small" />
-                                                </IconButton>
-                                                <IconButton
-                                                    size="small"
-                                                    onClick={() => moveCondition(idx, 'down')}
-                                                    disabled={idx === conditions.length - 1}
-                                                    aria-label="下へ"
-                                                >
-                                                    <ArrowDownward fontSize="small" />
-                                                </IconButton>
-                                            </Box>
+                                            cond.key !== 'balance' && (
+                                                <Box>
+                                                    <IconButton
+                                                        size="small"
+                                                        onClick={() => moveCondition(idx, 'up')}
+                                                        disabled={idx === 0}
+                                                        aria-label="上へ"
+                                                    >
+                                                        <ArrowUpward fontSize="small" />
+                                                    </IconButton>
+                                                    <IconButton
+                                                        size="small"
+                                                        onClick={() => moveCondition(idx, 'down')}
+                                                        disabled={idx === conditions.length - 1}
+                                                        aria-label="下へ"
+                                                    >
+                                                        <ArrowDownward fontSize="small" />
+                                                    </IconButton>
+                                                </Box>
+                                            )
                                         }
                                     >
-                                        <ListItemIcon>
-                                            <Checkbox
-                                                edge="start"
-                                                checked={cond.enabled}
-                                                tabIndex={-1}
-                                                disableRipple
-                                                onChange={() => toggleCondition(idx)}
-                                            />
-                                        </ListItemIcon>
-                                        <ListItemText primary={cond.label} />
+                                        {cond.key !== 'balance' && (
+                                            <ListItemIcon>
+                                                <Checkbox
+                                                    edge="start"
+                                                    checked={cond.enabled}
+                                                    tabIndex={-1}
+                                                    disableRipple
+                                                    onChange={() => toggleCondition(idx)}
+                                                />
+                                            </ListItemIcon>
+                                        )}
+                                        <ListItemText 
+                                            primary={
+                                                <Box sx={{ display: 'flex', alignItems: 'center' }}>
+                                                    {cond.label}
+                                                    {cond.type === 'radio' && cond.enabled && (
+                                                        <Checkbox
+                                                            size="small"
+                                                            checked={cond.balanceEnabled}
+                                                            onChange={(e) => {
+                                                                const newConditions = [...conditions];
+                                                                newConditions[idx].balanceEnabled = e.target.checked;
+                                                                setConditions(newConditions);
+                                                            }}
+                                                            sx={{ ml: 1 }}
+                                                        />
+                                                    )}
+                                                </Box>
+                                            }
+                                            secondary={
+                                                cond.type === 'radio' && cond.enabled && cond.balanceEnabled ? (
+                                                    <FormControl component="fieldset">
+                                                        <RadioGroup
+                                                            value={cond.options?.find(opt => opt.selected)?.key || 'points'}
+                                                            onChange={(e) => {
+                                                                const newConditions = [...conditions];
+                                                                const balanceCondition = newConditions[idx];
+                                                                if (balanceCondition.options) {
+                                                                    balanceCondition.options.forEach(opt => {
+                                                                        opt.selected = opt.key === e.target.value;
+                                                                    });
+                                                                    setConditions(newConditions);
+                                                                }
+                                                            }}
+                                                        >
+                                                            {cond.options?.map(option => (
+                                                                <FormControlLabel
+                                                                    key={option.key}
+                                                                    value={option.key}
+                                                                    control={<Radio size="small" />}
+                                                                    label={option.label}
+                                                                />
+                                                            ))}
+                                                        </RadioGroup>
+                                                    </FormControl>
+                                                ) : null
+                                            }
+                                        />
                                     </ListItem>
                                 ))}
                             </List>

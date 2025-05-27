@@ -181,7 +181,7 @@ export default function Stats() {
 					// createData(assist,nextAssist+kai),
 					// createData(okamotoPoint,nextOkamoto+'pt'),
 					createData(baseInfo, ""),
-					createData(age, (userInfo && userInfo[9]) ? calculateAge(userInfo[9]) : ''),
+					createData((userInfo && userInfo[9]) ? age: '', (userInfo && userInfo[9]) ? calculateAge(userInfo[9]) : ''),
 					createData(birthDay, formatDateToSingaporeTime(userInfo[9])),
 					createData(position, lang === 'ja-JP' ? positionKey ? optionMap.position[positionKey] : '' : userInfo[7]),
 					createData(tier, lang === 'ja-JP' ? tierKey ? optionMap.rating[tierKey] : '' : userInfo[8]),
@@ -381,14 +381,6 @@ export default function Stats() {
 				<>
 					{statsTable.length > 0 && (
 						<Card sx={{ width: '100%', display: 'inline-block', '@media (min-width: 600px)': { display: 'inline-block' } }}>
-							{/* <CardHeader
-								sx={{
-									backgroundImage: 'url(https://lh3.googleusercontent.com/d/1hS24zXApgUabcss_3ciewfg64qMti_hT)',
-									backgroundSize: 'cover',
-									backgroundPosition: 'center',
-									height: '150px',
-								}}
-							/> */}
 							<CardHeader
 								title={'STATS'}
 								titleTypographyProps={{
@@ -463,13 +455,15 @@ export default function Stats() {
 														</TableRow>
 													);
 												} else {
-													return (
-														<TableRow key={row.title}>
-															<TableCell align="center" colSpan={2}>
-																{row.title}
-															</TableCell>
-														</TableRow>
-													);
+													if(row.title !== ''){
+														return (
+															<TableRow key={row.title}>
+																<TableCell align="center" colSpan={2}>
+																	{row.title}
+																</TableCell>
+															</TableRow>
+														);
+													}
 												}
 											})}
 										</TableBody>
@@ -479,14 +473,6 @@ export default function Stats() {
 						</Card>
 					)}
 					<Card sx={{ width: '100%', display: 'inline-block', '@media (min-width: 600px)': { display: 'inline-block' } }}>
-						{/* <CardHeader
-							sx={{
-								backgroundImage: 'url(https://lh3.googleusercontent.com/d/17zIme0aExyAlixjWapLwoIW1PyWN4lbs)',
-								backgroundSize: 'cover',
-								backgroundPosition: 'center',
-								height: '150px',
-							}}
-						/> */}
 						<CardHeader
 							title={'SCORE'}
 							titleTypographyProps={{
@@ -565,14 +551,6 @@ export default function Stats() {
 						</CardContent>
 					</Card>
 					<Card sx={{ width: '100%', display: 'inline-block', '@media (min-width: 600px)': { display: 'inline-block' } }}>
-						{/* <CardHeader
-							sx={{
-								backgroundImage: 'url(https://lh3.googleusercontent.com/d/1yQjFWp8t1RwrfyeqDc1pOHHpMo7u1lH8)',
-								backgroundSize: 'cover',
-								backgroundPosition: 'center',
-								height: '150px',
-							}}
-						/> */}
 						<CardHeader
 							title={'ASSIST'}
 							titleTypographyProps={{
