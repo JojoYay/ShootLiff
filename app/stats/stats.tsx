@@ -2,12 +2,11 @@
 import { useLiff } from '@/app/liffProvider';
 import { Profile } from '@liff/get-profile';
 import { useEffect, useState, useRef } from 'react';
-import { Card, CardContent, CardHeader, Box, Grid, Table, TableBody, TableCell, TableContainer, TableRow, Button, Dialog, DialogContent, CircularProgress, Typography } from '@mui/material';
+import { Card, CardContent, CardHeader, Box, Table, TableBody, TableCell, TableContainer, TableRow, Button, Dialog, DialogContent, CircularProgress, Typography } from '@mui/material';
 import AvatarIcon from './avatarIcon';
 import LoadingSpinner from '../calendar/loadingSpinner';
-import { toPng } from 'html-to-image';
+import { toJpeg } from 'html-to-image';
 import ContentCopyIcon from '@mui/icons-material/ContentCopy';
-import OpenInNewIcon from '@mui/icons-material/OpenInNew';
 
 interface ProfileDen {
 	lineProfile: Profile;
@@ -398,14 +397,10 @@ export default function Stats() {
 		if (pdfRef.current) {
 			try {
 				setIsImageLoading(true);
-				const dataUrl = await toPng(pdfRef.current, {
-					quality: 0.95,
-					pixelRatio: 1,
+				const dataUrl = await toJpeg(pdfRef.current, {
+					quality: 0.8,
+					pixelRatio: 1.0,
 					backgroundColor: '#ffffff',
-					style: {
-						transform: 'scale(1)',
-						transformOrigin: 'top left',
-					},
 					filter: (node) => {
 						return true;
 					}

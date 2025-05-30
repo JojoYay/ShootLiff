@@ -77,6 +77,24 @@ export default function Calendar() {
     const [calendar, setCalendar] = useState<(string | { day: number, events: CalendarEvent[] })[][]>([]);
     const [expandedEventDetails, setExpandedEventDetails] = useState<{[eventId: string]: boolean}>({});
 
+    // calendarEventsが更新されたときにcurrentDateを更新
+    useEffect(() => {
+        if (calendarEvents.length > 0) {
+            const now = new Date();
+            const nextEvent = calendarEvents
+                .filter(event => event.event_status === 20)
+                .sort((a, b) => new Date(a.start_datetime).getTime() - new Date(b.start_datetime).getTime())[0];
+
+            if (nextEvent) {
+                const nextEventDate = new Date(nextEvent.start_datetime);
+                // 次のイベントが来月以降の場合、その月を表示
+                if (nextEventDate.getMonth() > now.getMonth() || nextEventDate.getFullYear() > now.getFullYear()) {
+                    setCurrentDate(new Date(nextEventDate.getFullYear(), nextEventDate.getMonth(), 1));
+                }
+            }
+        }
+    }, [calendarEvents]);
+
     // 月または年が変わったときにカレンダーを再生成
     useEffect(() => {
         if(profile?.userId){
