@@ -237,14 +237,14 @@ export default function Video() {
 											{mipPics.slice(0, 5).map((picUrl, index) => {
 												const userNameColumns = [5, 17, 18, 19, 20]; // 対応するユーザー名の列インデックス
 												const userName = event[userNameColumns[index]]; // indexに対応する列からユーザー名を取得
-												return picUrl ? (
+												return (
 													<div key={index} style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', margin: '0 10px' }}>
 														<AvatarIcon picUrl={picUrl} name={userName} width={iconSize} height={iconSize} /> {/* iconSize stateを使用 */}
 														<Typography variant="caption" style={{ padding: '3px', fontWeight: 'bold', color: '#333', textAlign: 'center' }}>
 															{userName}
 														</Typography>
 													</div>
-												) : null;
+												);
 											})}
 										</TableCell>
 									</TableRow>
