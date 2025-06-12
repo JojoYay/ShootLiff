@@ -36,3 +36,9 @@ export interface Invoice {
     picUrl: string;
     status: '未清算'|'清算済';
 }
+
+export interface YTComment {
+    author: string;
+    comment: string;
+    publishedAt: string;
+}

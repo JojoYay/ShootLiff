@@ -208,7 +208,7 @@ export default function Video() {
 
 	// 現在のページの動画をpageGroupsから計算
 	const startIndex = pageGroups[currentPage - 1] || 0;
-	const endIndex = pageGroups[currentPage] || videos?.length || 0;
+	const endIndex = pageGroups[currentPage] || (videos && videos.length >= 10 ? 0 : videos?.length || 0);
 	const currentItems = videos 
     ? videos.slice(startIndex, endIndex)
     : [];
@@ -279,7 +279,6 @@ export default function Video() {
 										actDate={actDate}
 										fetchVideo={fetchVideo}
 										kanji={isUserManager}
-										// accessToken={token.access_token as string}
 									/>
 								) : (
 									<VideoCard 
