@@ -35,18 +35,12 @@ export default function Registration() {
 
 	useEffect(() => {
         if (liff) {
-            liff.ready.then(() => {
-                if (!liff.isLoggedIn()) {
-                    const redirectUri = new URL(window.location.href).href;
-                    liff.login({ redirectUri: redirectUri });
-                } else {
-                    liff.getProfile().then(profile => {
-                        setProfile(profile);
-						console.log('profile',profile);
-                    });
-					setLang(liff.getLanguage());
-                }
-            });
+            if (liff.isLoggedIn()) {
+                liff.getProfile().then(profile => {
+                    setProfile(profile);
+                });
+                setLang(liff.getLanguage());
+            }
         }
     }, [liff]);
 

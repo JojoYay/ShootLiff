@@ -51,24 +51,19 @@ export default function Calendar() {
 
     useEffect(() => {
         if (liff) {
-            liff.ready.then(() => {
-                if (!liff.isLoggedIn()) {
-                    const redirectUri = new URL(window.location.href).href;
-                    liff.login({ redirectUri: redirectUri });
-                } else {
-                    liff.getProfile().then(profile => {
-                        const user: User = {
-                            userId: profile.userId, // Assuming profile has userId
-                            lineName: profile.displayName || '', // Map displayName to lineName
-                            isKanji: false, // Set this based on your logic
-                            displayName: profile.displayName || '',
-                            pictureUrl: profile.pictureUrl || '',
-                        };
-                        setProfile(user);
-                        setLang(liff.getLanguage());
-                    });
-                }
-            });
+            if (liff.isLoggedIn()) {
+                liff.getProfile().then(profile => {
+                    const user: User = {
+                        userId: profile.userId,
+                        lineName: profile.displayName || '',
+                        isKanji: false,
+                        displayName: profile.displayName || '',
+                        pictureUrl: profile.pictureUrl || '',
+                    };
+                    setProfile(user);
+                    setLang(liff.getLanguage());
+                });
+            }
         }
     }, [liff]);
 

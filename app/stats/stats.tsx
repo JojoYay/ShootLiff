@@ -35,21 +35,15 @@ export default function Stats() {
 
     useEffect(() => {
         if (liff) {
-            liff.ready.then(() => {
-                if (!liff.isLoggedIn()) {
-                    const redirectUri = new URL(window.location.href).href;
-                    liff.login({ redirectUri: redirectUri });
-                } else {
-                    liff.getProfile().then(profile => {
-						if (profile) {
-							const profDen = { lineProfile: profile, densukeName: '', trophy: false };
-							setProfile(profDen);
-						}
-                        setLang(liff.getLanguage());
-						// console.log(liff.getLanguage());
-                    });
-                }
-            });
+            if (liff.isLoggedIn()) {
+                liff.getProfile().then(profile => {
+                    if (profile) {
+                        const profDen = { lineProfile: profile, densukeName: '', trophy: false };
+                        setProfile(profDen);
+                    }
+                    setLang(liff.getLanguage());
+                });
+            }
         }
     }, [liff]);
 
