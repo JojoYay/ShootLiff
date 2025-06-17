@@ -20,7 +20,8 @@ function loadEnvConfig() {
 }
 
 function getFirebaseConfig() {
-  const result = execSync('firebase functions:config:get', { encoding: 'utf-8' });
+  const env = process.argv[2] || 'test';
+  const result = execSync(`firebase functions:config:get --project ${env}`, { encoding: 'utf-8' });
   return JSON.parse(result);
 }
 
@@ -28,14 +29,24 @@ function setEnvFile(config) {
   const firebaseConfig = getFirebaseConfig();
   const envConfig = loadEnvConfig(); // 設定ファイルを読み込む
 
+  // デプロイ時の日時情報を取得
+  const now = new Date();
+  const deployDate = now.toISOString();
+  const deployVersion = `${now.getFullYear()}${String(now.getMonth() + 1).padStart(2, '0')}${String(now.getDate()).padStart(2, '0')}.${String(now.getHours()).padStart(2, '0')}${String(now.getMinutes()).padStart(2, '0')}`;
+
+  // デフォルトのFirebaseConfigの内容を設定
   let envContent = `NEXT_PUBLIC_LIFF_ID=${firebaseConfig.project_config.liff_id}\n`;
   envContent += `NEXT_PUBLIC_SERVER_URL=${firebaseConfig.project_config.server_url}\n`;
   envContent += `NEXT_PUBLIC_GA_ID=${firebaseConfig.project_config.ga_id}\n`;
+  envContent += `NEXT_PUBLIC_DEPLOY_DATE="${deployDate}"\n`;
+  envContent += `NEXT_PUBLIC_DEPLOY_VERSION="${deployVersion}"\n`;
 
-  // envConfigの内容を.env.localに追加
+  // envConfigの内容を.env.localに追加（FirebaseConfigの内容を上書き）
   for (const key in envConfig) {
     if (envConfig.hasOwnProperty(key)) {
-      envContent += `NEXT_PUBLIC_${toSnakeCase(key).toUpperCase()}="${envConfig[key]}"\n`;
+      const envKey = `NEXT_PUBLIC_${toSnakeCase(key).toUpperCase()}`;
+      envContent = envContent.replace(new RegExp(`${envKey}=.*\n`), ''); // 既存の設定を削除
+      envContent += `${envKey}="${envConfig[key]}"\n`; // 新しい設定を追加
     }
   }
 

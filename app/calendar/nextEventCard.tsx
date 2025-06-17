@@ -252,10 +252,11 @@ export const NextEventCard: React.FC<NextEventCardProps> = ({
                             label={lang === 'ja-JP' ? '大人' : 'Adult'}
                             onChange={(e) => {
                                 if(nextEvent.ID){
+                                    const currentStatus = pendingParticipationStatus[nextEvent.ID] || nextEvent.attendance?.status || '〇' as '〇' | '△' | '×';
                                     if(isProxyReplyMode && proxyReplyUser){
                                         handleParticipationChange(
                                             nextEvent,
-                                            nextEvent.attendance?.status as '〇' | '△' | '×',
+                                            currentStatus,
                                             proxyReplyUser.userId,
                                             e.target.value as number,
                                             pendingParticipationStatusCount[nextEvent.ID]?.child ?? 0
@@ -263,7 +264,7 @@ export const NextEventCard: React.FC<NextEventCardProps> = ({
                                     } else {
                                         handleParticipationChange(
                                             nextEvent,
-                                            nextEvent.attendance?.status as '〇' | '△' | '×',
+                                            currentStatus,
                                             profile?.userId || '',
                                             e.target.value as number,
                                             pendingParticipationStatusCount[nextEvent.ID]?.child ?? nextEvent.attendance?.child_count ?? 0
@@ -295,10 +296,11 @@ export const NextEventCard: React.FC<NextEventCardProps> = ({
                             label={lang === 'ja-JP' ? '子供' : 'Child'}
                             onChange={(e) => {
                                 if(nextEvent.ID){
+                                    const currentStatus = pendingParticipationStatus[nextEvent.ID] || nextEvent.attendance?.status || '〇' as '〇' | '△' | '×';
                                     if(isProxyReplyMode && proxyReplyUser){
                                         handleParticipationChange(
                                             nextEvent,
-                                            nextEvent.attendance?.status as '〇' | '△' | '×',
+                                            currentStatus,
                                             proxyReplyUser.userId,
                                             pendingParticipationStatusCount[nextEvent.ID]?.adult ?? 1,
                                             e.target.value as number
@@ -306,7 +308,7 @@ export const NextEventCard: React.FC<NextEventCardProps> = ({
                                     } else {
                                         handleParticipationChange(
                                             nextEvent,
-                                            nextEvent.attendance?.status as '〇' | '△' | '×',
+                                            currentStatus,
                                             profile?.userId || '',
                                             pendingParticipationStatusCount[nextEvent.ID]?.adult ?? nextEvent.attendance?.adult_count ?? 1,
                                             e.target.value as number

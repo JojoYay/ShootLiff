@@ -30,6 +30,7 @@ import { NextEventCard } from './nextEventCard';
 import { useRouter } from 'next/navigation';
 import AddCalendarButton from './addCalendar';
 import AttendanceList from './attendanceList';
+import LoadingModal from '../components/LoadingModal';
 
 export default function Calendar() {
     const router = useRouter();
@@ -253,12 +254,11 @@ export default function Calendar() {
                     remark: item[6],
                     event_status: item[7],
                 }));
-                // console.log(processedCalendarEvents);
                 setCalendarEvents(processedCalendarEvents);
                 setUsers(data.users.slice(1));
                 const fetchedAttendance = data.attendance.slice(1).map((item: string[]) => {
                     const calendar_id = item[6];
-                    const relatedCalendarEvent = processedCalendarEvents.find(event => event.ID === calendar_id); // calendar_id に一致する CalendarEvent を検索
+                    const relatedCalendarEvent = processedCalendarEvents.find(event => event.ID === calendar_id);
                     return {
                         attendance_id: item[0],
                         user_id: item[1],
@@ -272,10 +272,8 @@ export default function Calendar() {
                         child_count: item[8],
                     };
                 });
-                // console.log(fetchedAttendance);
                 setAttendance(fetchedAttendance);
             }
-            // console.log('calendar loaded with attendance');
         } catch (error) {
             console.error('Error fetching calendar events:', error);
         }
@@ -416,7 +414,7 @@ export default function Calendar() {
                 if (allOk) {
                     setPendingParticipationStatus({}); // 保留中のステータスをクリア
                     setPendingParticipationStatusCount({}); // 保留中のステータスをクリア
-                    fetchCalendarEvents();
+                    await fetchCalendarEvents(); // awaitを追加
                 } else {
                     console.error('Failed to update some participation statuses');
                 }
@@ -555,6 +553,7 @@ export default function Calendar() {
     const nextEvent = getNextEvent();
     return (
         <>
+            <LoadingModal open={isSaving} />
             {(calendarEvents.length > 0 && profile)? (
                 <>
                     <Box sx={{display:"flex", flexDirection:'column'}}>
@@ -708,7 +707,6 @@ export default function Calendar() {
                                                             <FormControl size="small" >
                                                                 <InputLabel id="adult-count-select-label">{lang === 'ja-JP' ? '大人' : 'Adult'}</InputLabel>
                                                                 <Select
-                                                                    // sx={{minWidth:'100px'}}
                                                                     labelId="adult-count-select-label"
                                                                     id="adult-count-select"
                                                                     value={calendar.attendance?.adult_count ?? 1}
@@ -716,12 +714,13 @@ export default function Calendar() {
                                                                     disabled={isProxyReplyMode}
                                                                     onChange={(e) => {
                                                                         if(calendar.ID){
+                                                                            const currentStatus = pendingParticipationStatus[calendar.ID] ||　calendar.attendance?.status || '〇' as '〇' | '△' | '×';
                                                                             if(isProxyReplyMode && proxyReplyUser){
-                                                                                handleParticipationChange(calendar, e.target.value as '〇' | '△' | '×', proxyReplyUser.userId, e.target.value as number, pendingParticipationStatusCount[calendar.ID]?.child ?? 0);
+                                                                                handleParticipationChange(calendar, currentStatus, proxyReplyUser.userId, e.target.value as number, pendingParticipationStatusCount[calendar.ID]?.child ?? 0);
                                                                             } else {
-                                                                                handleParticipationChange(calendar, e.target.value as '〇' | '△' | '×', profile?.userId, e.target.value as number, pendingParticipationStatusCount[calendar.ID]?.child ?? calendar.attendance?.child_count ?? 0);
+                                                                                handleParticipationChange(calendar, currentStatus, profile?.userId, e.target.value as number, calendar.attendance?.child_count ?? 0);
                                                                                 if(calendar.attendance){
-                                                                                    calendar.attendance.adult_count = e.target.value as number; // Update adultCount
+                                                                                    calendar.attendance.adult_count = e.target.value as number;
                                                                                 }
                                                                             }
                                                                         }
@@ -735,7 +734,6 @@ export default function Calendar() {
                                                             <FormControl size="small" >
                                                                 <InputLabel id="child-count-select-label">{lang === 'ja-JP' ? '子供' : 'Child'}</InputLabel>
                                                                 <Select
-                                                                    // sx={{minWidth:'100px'}}                                                            
                                                                     labelId="child-count-select-label"
                                                                     id="child-count-select"
                                                                     value={calendar.attendance?.child_count ?? 0}
@@ -743,12 +741,13 @@ export default function Calendar() {
                                                                     disabled={isProxyReplyMode}
                                                                     onChange={(e) => {
                                                                         if(calendar.ID){
+                                                                            const currentStatus = pendingParticipationStatus[calendar.ID] || calendar.attendance?.status || '〇' as '〇' | '△' | '×';
                                                                             if(isProxyReplyMode && proxyReplyUser){
-                                                                                handleParticipationChange(calendar, e.target.value as '〇' | '△' | '×', proxyReplyUser.userId, pendingParticipationStatusCount[calendar.ID]?.adult ?? 1, e.target.value as number);
+                                                                                handleParticipationChange(calendar, currentStatus, proxyReplyUser.userId, pendingParticipationStatusCount[calendar.ID]?.adult ?? 1, e.target.value as number);
                                                                             } else {
-                                                                                handleParticipationChange(calendar, e.target.value as '〇' | '△' | '×', profile?.userId, pendingParticipationStatusCount[calendar.ID]?.adult ?? calendar.attendance?.adult_count ?? 1, e.target.value as number);
+                                                                                handleParticipationChange(calendar, currentStatus, profile?.userId, calendar.attendance?.adult_count ?? 1, e.target.value as number);
                                                                                 if(calendar.attendance){
-                                                                                    calendar.attendance.child_count = e.target.value as number; // Update childCount
+                                                                                    calendar.attendance.child_count = e.target.value as number;
                                                                                 }
                                                                             }
                                                                         }
@@ -805,6 +804,19 @@ export default function Calendar() {
                                 ))}
                                 <AddCalendarButton />
                                 <Comment componentId='calendar' users={users} user={profile} category='calendar_all' lang={lang} />
+                                <Box sx={{ 
+                                    display: 'flex', 
+                                    justifyContent: 'center', 
+                                    alignItems: 'center',
+                                    mt: 2,
+                                    mb: 2,
+                                    color: '#757575',
+                                    fontSize: '0.8rem'
+                                }}>
+                                    <Typography variant="caption">
+                                        {process.env.NEXT_PUBLIC_DEPLOY_VERSION ? `v${process.env.NEXT_PUBLIC_DEPLOY_VERSION}` : ''}
+                                    </Typography>
+                                </Box>
                         
                     </Box>
 
