@@ -175,8 +175,7 @@ export const NextEventCard: React.FC<NextEventCardProps> = ({
                             <TextField {...params} label={lang === 'ja-JP' ? '代理ユーザーを選択' : 'Select Proxy User'} variant="outlined" />
                         )}
                     />
-
-                    // <FormControl fullWidth margin="dense" size="small">
+                      // <FormControl fullWidth margin="dense" size="small">
                     //     <InputLabel id="proxy-user-select-label">{lang === 'ja-JP' ? '代理ユーザーを選択' : 'Select Proxy User'}</InputLabel>
                     //     <Select
                     //         labelId="proxy-user-select-label"
@@ -205,10 +204,11 @@ export const NextEventCard: React.FC<NextEventCardProps> = ({
                     //         ))}
                     //     </Select>
                     // </FormControl>
-                )}
+              )}
                 {/* 参加ステータス選択 */}
                 <Box sx={{ display: 'flex', alignItems: 'center', gap: 2, mt:2, mb:2, flexDirection:'row' }}>
-                    <FormControl size="small">
+              
+      <FormControl size="small">
                         <InputLabel id="status-select-label">{lang === 'ja-JP' ? '参加可否' : 'Status'}</InputLabel>
                         <Select
                             labelId='status-select-label'

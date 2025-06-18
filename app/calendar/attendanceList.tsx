@@ -1,58 +1,88 @@
-import React from 'react';
-import { Box, Typography } from '@mui/material';
+import React, { useState } from 'react';
+import { Box, Typography, Table, TableBody, TableCell, TableRow, IconButton, Tooltip, Divider } from '@mui/material';
 import AvatarIcon from '../stats/avatarIcon';
 import { Attendance } from '../types/calendar';
-
+import ViewListIcon from '@mui/icons-material/ViewList';
+import ViewModuleIcon from '@mui/icons-material/ViewModule';
 
 interface AttendanceListProps {
-    lang: string;
     attendances: Attendance[];
     status: string;
+    lang: string;
 }
 
-const AttendanceList: React.FC<AttendanceListProps> = ({ lang, attendances = [], status }) => { // Default to empty array
-    const filteredAttendances = attendances.filter(att => att.status === status).sort();
+export default function AttendanceList({ attendances, status, lang }: AttendanceListProps) {
+    const [isTableView, setIsTableView] = useState(false);
+
+    const filteredAttendances = attendances.filter(attendance => attendance.status === status);
+    if (filteredAttendances.length === 0) return null;
+
+    const statusText = status === '〇' ? (lang === 'ja-JP' ? '参加' : 'Yes') :
+                      status === '△' ? (lang === 'ja-JP' ? '未定' : 'Maybe') :
+                      (lang === 'ja-JP' ? '不参加' : 'No');
+
     const totalAdults = filteredAttendances.reduce((total, att) => total + (att.adult_count || 1), 0);
     const totalChildren = filteredAttendances.reduce((total, att) => total + (att.child_count || 0), 0);
-    return (
-        <Box>
-            <Typography variant="subtitle2" style={{ color: '#757575', fontWeight: 'bold' }}>{status} :
-                <Typography variant="body2" sx={{ color: '#757575' }}>
-                大人: {totalAdults}, 子供: {totalChildren} 
-                </Typography>
-            </Typography>
 
-            {process.env.NEXT_PUBLIC_APP_TITLE === 'Scout App' ? (
-                <Box sx={{ display: 'flex', flexDirection: 'column', flexWrap: 'wrap',}}>
-                        {filteredAttendances.map((attend, index) => (
-                            <>
-                                <Box sx={{ display: 'flex', flexDirection: 'row', alignItems: 'center', flexWrap: 'wrap'}}>
+    return (
+        <Box sx={{ m: 1 }}>
+            <Box sx={{ display: 'flex', alignItems: 'center', mb: 1 }}>
+                <Typography variant="subtitle1" sx={{ color: '#757575', fontWeight: 'bold', flexGrow: 1 }}>
+                    {statusText} ({filteredAttendances.length}名)
+                </Typography>
+                <Typography variant="subtitle2" sx={{ color: '#757575', mr: 2 }}>
+                    {lang === 'ja-JP' ? `大人: ${totalAdults}, 子供: ${totalChildren}` : `Adult: ${totalAdults}, Child: ${totalChildren}`}
+                </Typography>
+                <Tooltip title={isTableView ? (lang === 'ja-JP' ? 'リスト表示' : 'List') : (lang === 'ja-JP' ? 'グリッド表示' : 'Grid')}>
+                    <IconButton onClick={() => setIsTableView(!isTableView)} size="small">
+                        {isTableView ? <ViewModuleIcon /> : <ViewListIcon />}
+                    </IconButton>
+                </Tooltip>
+            </Box>
+            <Divider sx={{ mb: 1 }} />
+            {isTableView ? (
+                filteredAttendances.map((attend, index) => (
+                    <Table key={index} size="small">
+                        <TableBody>
+                            <TableRow>
+                                <TableCell sx={{ padding: '4px', width: '40px' }}>
                                     <AvatarIcon
-                                        key={index} 
                                         name={attend.profile?.displayName || ''} 
                                         picUrl={attend.profile?.pictureUrl}  
                                         width={24} height={24} showTooltip={true} 
                                     />
-                                    <Typography variant="subtitle2" sx={{color: '#757575', marginLeft:'3px', marginRight:'3px'}}>{`大人:${attend.adult_count || '1'}`}</Typography>
-                                    <Typography variant="subtitle2" sx={{color: '#757575', marginLeft:'3px', marginRight:'3px'}}>{`子供:${attend.child_count || '0'}`}</Typography>
-                                </Box>
-                            </>
-                        ))}
-                </Box>
+                                </TableCell>
+                                <TableCell sx={{ padding: '4px', width: '120px' }}>
+                                    <Typography variant="subtitle2" sx={{color: '#757575'}}>
+                                        {attend.profile?.displayName}
+                                    </Typography>
+                                </TableCell>
+                                <TableCell sx={{ padding: '4px', width: '80px' }}>
+                                    <Typography variant="subtitle2" sx={{color: '#757575'}}>
+                                        {lang === 'ja-JP' ? `大人:${attend.adult_count || '1'}` : `Adult:${attend.adult_count || '1'}`}
+                                    </Typography>
+                                </TableCell>
+                                <TableCell sx={{ padding: '4px', width: '80px' }}>
+                                    <Typography variant="subtitle2" sx={{color: '#757575'}}>
+                                        {lang === 'ja-JP' ? `子供:${attend.child_count || '0'}` : `Child:${attend.child_count || '0'}`}
+                                    </Typography>
+                                </TableCell>
+                            </TableRow>
+                        </TableBody>
+                    </Table>
+                ))
             ) : (
                 <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 1 }}>
                     {filteredAttendances.map((attend, index) => (
                         <AvatarIcon
-                            key={index} 
-                            name={`${attend.profile?.displayName} 大人:${attend.adult_count || '1'} 子供:${attend.child_count || '0'}`} 
-                            picUrl={attend.profile?.pictureUrl}  
-                            width={24} height={24} showTooltip={true} 
+                            key={index}
+                            name={`${attend.profile?.displayName} ${lang === 'ja-JP' ? `大人:${attend.adult_count || '1'} 子供:${attend.child_count || '0'}` : `Adult:${attend.adult_count || '1'} Child:${attend.child_count || '0'}`}`}
+                            picUrl={attend.profile?.pictureUrl}
+                            width={24} height={24} showTooltip={true}
                         />
                     ))}
                 </Box>
             )}
         </Box>
     );
-};
-
-export default AttendanceList;
+}
