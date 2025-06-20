@@ -24,6 +24,7 @@ interface NextEventCardProps {
     ProxyReplyButton: () => React.JSX.Element;
     SaveButton:() => React.JSX.Element;
     pendingParticipationStatusCount: { [eventId: string]: { adult: number; child: number } };
+    filteredUsers: string[][];
 }
 
 
@@ -42,7 +43,8 @@ export const NextEventCard: React.FC<NextEventCardProps> = ({
     setProxyReplyUser,
     ProxyReplyButton,
     SaveButton,
-    pendingParticipationStatusCount
+    pendingParticipationStatusCount,
+    filteredUsers
 }) => {
 
     const router = useRouter();
@@ -365,6 +367,16 @@ export const NextEventCard: React.FC<NextEventCardProps> = ({
                         <Box>
                             <AttendanceList lang={lang} attendances={nextEvent.attendances || []} status="×" />
                         </Box>
+                        {filteredUsers.length > 0 && (
+                            <Box>
+                                <AttendanceList 
+                                    lang={lang} 
+                                    attendances={[]} 
+                                    status="?" 
+                                    filteredUsers={filteredUsers}
+                                />
+                            </Box>
+                        )}
                     </Box>
                 </Collapse>
             </Box>

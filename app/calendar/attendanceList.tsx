@@ -9,20 +9,67 @@ interface AttendanceListProps {
     attendances: Attendance[];
     status: string;
     lang: string;
+    filteredUsers?: string[][];
 }
 
-export default function AttendanceList({ attendances, status, lang }: AttendanceListProps) {
+export default function AttendanceList({ attendances, status, lang, filteredUsers }: AttendanceListProps) {
     const [isTableView, setIsTableView] = useState(false);
 
     const filteredAttendances = attendances.filter(attendance => attendance.status === status);
-    if (filteredAttendances.length === 0) return null;
+    if (filteredAttendances.length === 0 && status !== '?') return null;
 
     const statusText = status === '〇' ? (lang === 'ja-JP' ? '参加' : 'Yes') :
                       status === '△' ? (lang === 'ja-JP' ? '未定' : 'Maybe') :
-                      (lang === 'ja-JP' ? '不参加' : 'No');
+                      status === '×' ? (lang === 'ja-JP' ? '不参加' : 'No') :
+                      (lang === 'ja-JP' ? 'もしかして...' : 'Is he coming?...');
 
     const totalAdults = filteredAttendances.reduce((total, att) => total + (att.adult_count || 1), 0);
     const totalChildren = filteredAttendances.reduce((total, att) => total + (att.child_count || 0), 0);
+
+    if (status === '?') {
+        if (!filteredUsers || filteredUsers.length === 0) return null;
+        return (
+            <Box sx={{ m: 1 }}>
+                <Box sx={{ display: 'flex', alignItems: 'center', mb: 1 }}>
+                    <Typography variant="subtitle1" sx={{ color: '#757575', fontWeight: 'bold', flexGrow: 1 }}>
+                        {statusText} ({filteredUsers.length}名)
+                    </Typography>
+                    <Tooltip title={isTableView ? (lang === 'ja-JP' ? 'リスト表示' : 'List') : (lang === 'ja-JP' ? 'グリッド表示' : 'Grid')}>
+                        <IconButton onClick={() => setIsTableView(!isTableView)} size="small">
+                            {isTableView ? <ViewModuleIcon /> : <ViewListIcon />}
+                        </IconButton>
+                    </Tooltip>
+                </Box>
+                {!isTableView ? (
+                    <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 1 }}>
+                        {filteredUsers.map((user, index) => (
+                            <AvatarIcon
+                                key={index}
+                                name={user[1]}
+                                picUrl={user[4]}
+                                width={24} height={24} showTooltip={true}
+                            />
+                        ))}
+                    </Box>
+                ) : (
+                    <Box sx={{ display: 'flex', flexDirection: 'column', gap: 1 }}>
+                        {filteredUsers.map((user, index) => (
+                            <Box key={index} sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+                                <AvatarIcon
+                                    name={user[1]}
+                                    picUrl={user[4]}
+                                    width={24} height={24} showTooltip={true}
+                                />
+                                <Typography variant="body2" sx={{ color: '#757575' }}>
+                                    {user[1]}
+                                </Typography>
+                            </Box>
+                        ))}
+                    </Box>
+                )}
+            </Box>
+        );
+    }
 
     return (
         <Box sx={{ m: 1 }}>

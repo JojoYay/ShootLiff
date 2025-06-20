@@ -470,6 +470,63 @@ export default function Calendar() {
         return nextEvent;
     }
 
+    // 前回のイベントを取得する関数
+    function getPreviousEvent(): CalendarEvent | null {
+        const nextEvent = getNextEvent();
+        if (!nextEvent) {
+            return null;
+        }
+
+        const nextEventDate = new Date(nextEvent.start_datetime);
+        const pastEvents = calendarEvents
+            .filter(event => 
+                new Date(event.start_datetime) < nextEventDate
+            )
+            .sort((a, b) => new Date(b.start_datetime).getTime() - new Date(a.start_datetime).getTime());
+
+        if (pastEvents.length > 0) {
+            const lastEvent = pastEvents[0];
+            return calendarEvents.find(event => event.ID === lastEvent.ID) || null;
+        }
+        return null;
+    }
+
+    // フィルタリングされたユーザーリストを生成する関数
+    function getFilteredUsers(): string[][] {
+        const currentNextEvent = getNextEvent();
+        const previousEvent = getPreviousEvent();
+
+        console.log("nextEvent",nextEvent);
+        console.log("previousEvent",previousEvent);
+
+        if (!currentNextEvent || !previousEvent) {
+            return [];
+        }
+
+        // 次のイベントの出席回答者IDを取得（〇、△、×のいずれかで回答している人）
+        const nextEventResponderIds = currentNextEvent.attendances
+            ?.filter(att => ['〇', '△', '×'].includes(att.status))
+            .map(att => att.user_id) || [];
+
+        // 前回のイベントの出席者情報を取得
+        const previousEventAttendances = getAllAttendanceForDayAndEvent(
+            new Date(previousEvent.start_datetime),
+            attendance,
+            previousEvent.ID,
+            users
+        );
+//前回のイベントで回答があったユーザーIDを取得
+        const previousEventResponderIds = previousEventAttendances
+            .filter(att => ['〇', '△', '×'].includes(att.status))
+            .map(att => att.user_id);
+
+        // フィルタリング条件に合致するユーザーのみを返す
+        return users.filter(user => 
+            !nextEventResponderIds.includes(user[2]) && // 次のイベントの出席回答者に含まれていない
+            previousEventResponderIds.includes(user[2]) // 前回のイベントで回答があった
+        );
+    }
+
     const ProxyReplyButton = () => ( // 代理返信モード切り替えボタン
         <Button
             variant="outlined"
@@ -546,6 +603,7 @@ export default function Calendar() {
     
     const isUserManager = users.some(user => user[2] === profile?.userId && user[3] === '幹事');
     const nextEvent = getNextEvent();
+    const filteredUsers = getFilteredUsers();
     return (
         <>
             <LoadingModal open={isSaving} />
@@ -568,6 +626,7 @@ export default function Calendar() {
                                     proxyReplyUser={proxyReplyUser}
                                     setProxyReplyUser={setProxyReplyUser}
                                     users={users}
+                                    filteredUsers={filteredUsers}
                                     />
     
                                 {/* カレンダー表示領域 */}
