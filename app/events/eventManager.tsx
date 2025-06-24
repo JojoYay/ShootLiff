@@ -1,4 +1,4 @@
- 'use client';
+'use client';
 import React, { useEffect, useState } from 'react';
 import {
     Card,
@@ -21,7 +21,7 @@ import {
     FormControlLabel,
     Switch
 } from '@mui/material';
-import { Add as AddIcon, Edit as EditIcon, Delete as DeleteIcon } from '@mui/icons-material';
+import { Add as AddIcon, Edit as EditIcon, Delete as DeleteIcon, LocalDiningRounded } from '@mui/icons-material';
 import { LocalizationProvider } from '@mui/x-date-pickers/LocalizationProvider';
 import { AdapterDateFns } from '@mui/x-date-pickers/AdapterDateFns';
 import ja from 'date-fns/locale/ja/index.js';
@@ -29,6 +29,7 @@ import { DatePicker, TimePicker } from '@mui/x-date-pickers';
 import LoadingSpinner from '../calendar/loadingSpinner';
 import Link from 'next/link';
 import { BALL, BEER, LOGO } from '../utils/constants';
+import LoadingModal from '../components/LoadingModal';
 
 interface Event {
     id: string;
@@ -674,7 +675,7 @@ export default function EventManager() {
                     </Button>
                 </DialogActions>
             </Dialog>
-
+            <LoadingModal open={isSubmitting} />
         </Box>
     );
 }
