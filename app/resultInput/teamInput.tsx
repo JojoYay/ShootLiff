@@ -191,6 +191,17 @@ const groupRecursive = (
     return result;
 };
 
+// 子供メンバーかどうかを判定する関数
+// _Child または _Child + 数字（例：Yamada_Child1, Kawano_Child2）で終わる名前を判定
+const isChildMember = (name: string): boolean => {
+    return name.endsWith('_Child') || /_Child\d+$/.test(name);
+};
+
+// 大人メンバーかどうかを判定する関数
+const isAdultMember = (name: string): boolean => {
+    return !isChildMember(name);
+};
+
 export default function TeamInput() {
     const [teams, setTeams] = useState<string[]>([]);
     // const [value, setValue] = useState<string>('');
@@ -223,6 +234,7 @@ export default function TeamInput() {
             { key: 'points', label: '岡本ポイント', selected: true },
             { key: 'age', label: '年齢', selected: false }
         ], balanceEnabled: false},
+        { key: 'includeChildren', label: '子供を含める', enabled: false },
     ];
 
     const [conditions, setConditions] = useState<Condition[]>(initialConditions);
@@ -536,6 +548,10 @@ export default function TeamInput() {
     }) => {
         const [selectedUnassignedUser, setSelectedUnassignedUser] = useState<string | null>(null);
 
+        // チーム内の大人と子供の数を計算
+        const adultCount = players.filter(isAdultMember).length;
+        const childCount = players.filter(isChildMember).length;
+
         const handleChange = (event: { target: { value: SetStateAction<string | null>; }; }) => {
             const selectedUser1 = event.target.value;
             if (selectedUser1) {
@@ -553,6 +569,13 @@ export default function TeamInput() {
             <Grid item xs={12} sm={6} md={4} key={teamNumber}>
                 <Typography variant="h6" component="div" sx={{ textAlign: 'center', mb: 1, fontWeight: 'bold' }}>
                     {teamName}
+                    {players.length > 0 && (
+                        <span style={{ fontSize: '0.8em', fontWeight: 'normal', marginLeft: '8px' }}>
+                            {`(大人: ${adultCount}人`}
+                            {childCount > 0 ? `, 子供: ${childCount}人` : ''}
+                            {`)`}
+                        </span>
+                    )}
                 </Typography>
 
                 {teamNumber !== 0 && ( // teamNumber が 0 でない場合のみ ComboBox を表示
@@ -598,6 +621,14 @@ export default function TeamInput() {
     };
 
     const totalMembers = team1.length + team2.length + team3.length + team4.length + team5.length + team6.length + team7.length + team8.length + team9.length + team10.length + unassignedUsers.length;
+    
+    // 大人と子供の数を計算
+    const allCurrentMembers = [
+        ...team1, ...team2, ...team3, ...team4, ...team5,
+        ...team6, ...team7, ...team8, ...team9, ...team10, ...unassignedUsers
+    ];
+    const adultMembers = allCurrentMembers.filter(isAdultMember).length;
+    const childMembers = allCurrentMembers.filter(isChildMember).length;
 
     const [selectedTeamCount, setSelectedTeamCount] = useState<number>(2); // デフォルトのチーム数を設定
 
@@ -608,45 +639,49 @@ export default function TeamInput() {
             ...team6, ...team7, ...team8, ...team9, ...team10, ...unassignedUsers
         ];
 
-        // 条件の有効・優先順リスト
-        const activeConditions = conditions.filter(c => c.enabled);
+        // 大人と子供を分離
+        const adultMembers = allMembers.filter(isAdultMember);
+        const childMembers = allMembers.filter(isChildMember);
 
-        // グループ分け実行
-        console.log('\n=== チーム分け開始 ===');
-        let groupedLists = groupRecursive(allMembers, 0, activeConditions, eventResult, users);
-        console.log('\n=== 最終的なグループ分け結果 ===');
-        groupedLists.forEach((group, index) => {
-            console.log(`グループ${index + 1}: ${group.join(', ')}`);
+        // 子供を含めるかどうかの条件を取得
+        const includeChildrenCondition = conditions.find(c => c.key === 'includeChildren');
+        const includeChildren = includeChildrenCondition?.enabled ?? false;
+
+        // 条件の有効・優先順リスト（子供を含める条件は除外）
+        const activeConditions = conditions.filter(c => c.enabled && c.key !== 'includeChildren');
+
+        // 新しいチーム分けロジック
+        const newTeams: string[][] = Array.from({ length: selectedTeamCount }, () => []);
+
+        // 大人メンバーのチーム分け
+        console.log('\n=== 大人メンバーのチーム分け開始 ===');
+        let adultGroupedLists = groupRecursive(adultMembers, 0, activeConditions, eventResult, users);
+        console.log('\n=== 大人メンバーの最終的なグループ分け結果 ===');
+        adultGroupedLists.forEach((group, index) => {
+            console.log(`大人グループ${index + 1}: ${group.join(', ')}`);
         });
 
-        // グループの順序をシャッフル
-        groupedLists = groupedLists.sort(() => Math.random() - 0.5);
-        console.log('\n=== シャッフル後のグループ分け結果 ===');
-        groupedLists.forEach((group, index) => {
-            console.log(`グループ${index + 1}: ${group.join(', ')}`);
-        });
+        // 大人グループの順序をシャッフル
+        adultGroupedLists = adultGroupedLists.sort(() => Math.random() - 0.5);
 
         const balanceCondition = conditions.find(c => c.key === 'balance');
         const balanceEnabled = balanceCondition?.balanceEnabled ?? false;
         const balanceType = getSelectedBalanceType(conditions);
 
         if (balanceEnabled) {
-            // バランス調整を考慮してグループをソート
-            groupedLists = sortGroupsByAverage(groupedLists, conditions, eventResult, users);
-            console.log(`\n=== ${balanceType === 'points' ? '岡本ポイント' : '年齢'}考慮後のグループ分け結果 ===`);
-            groupedLists.forEach((group, index) => {
-                console.log(`グループ${index + 1}: ${group.join(', ')}`);
+            // バランス調整を考慮して大人グループをソート
+            adultGroupedLists = sortGroupsByAverage(adultGroupedLists, conditions, eventResult, users);
+            console.log(`\n=== 大人メンバー ${balanceType === 'points' ? '岡本ポイント' : '年齢'}考慮後のグループ分け結果 ===`);
+            adultGroupedLists.forEach((group, index) => {
+                console.log(`大人グループ${index + 1}: ${group.join(', ')}`);
             });
         }
 
-        // グループの順序を再度シャッフル
-        groupedLists = groupedLists.sort(() => Math.random() - 0.5);
+        // 大人グループの順序を再度シャッフル
+        adultGroupedLists = adultGroupedLists.sort(() => Math.random() - 0.5);
 
-        // 新しいチーム分けロジック
-        const newTeams: string[][] = Array.from({ length: selectedTeamCount }, () => []);
-        
-        // 各グループ内のメンバーをソート
-        const sortedGroups = groupedLists.map(group => {
+        // 大人メンバーを各グループ内でソート
+        const sortedAdultGroups = adultGroupedLists.map(group => {
             return group.sort((a, b) => {
                 if (balanceEnabled) {
                     if (balanceType === 'points') {
@@ -665,8 +700,8 @@ export default function TeamInput() {
             });
         });
 
-        // 蛇行パターンでチームに割り当て
-        sortedGroups.forEach((group, groupIndex) => {
+        // 大人メンバーを蛇行パターンでチームに割り当て
+        sortedAdultGroups.forEach((group, groupIndex) => {
             group.forEach((member, memberIndex) => {
                 // 蛇行パターンの計算
                 const isEvenGroup = groupIndex % 2 === 0;
@@ -677,6 +712,36 @@ export default function TeamInput() {
                 newTeams[teamIndex].push(member);
             });
         });
+
+        // 子供を含める場合の処理
+        if (includeChildren && childMembers.length > 0) {
+            console.log('\n=== 子供メンバーのチーム分け開始 ===');
+            
+            // 子供メンバーをランダムにシャッフル
+            const shuffledChildMembers = [...childMembers].sort(() => Math.random() - 0.5);
+            console.log(`子供メンバー: ${shuffledChildMembers.join(', ')}`);
+
+            // 子供メンバーをチームに均等に分配
+            shuffledChildMembers.forEach((child, index) => {
+                const teamIndex = index % selectedTeamCount;
+                newTeams[teamIndex].push(child);
+            });
+
+            console.log('\n=== 子供メンバーのチーム分配結果 ===');
+            newTeams.forEach((team, index) => {
+                const childrenInTeam = team.filter(isChildMember);
+                if (childrenInTeam.length > 0) {
+                    console.log(`チーム${index + 1}の子供: ${childrenInTeam.join(', ')}`);
+                }
+            });
+        }
+
+        // 子供を含めない場合は、子供メンバーを未所属に移動
+        if (!includeChildren) {
+            setUnassignedUsers(childMembers);
+        } else {
+            setUnassignedUsers([]); // 子供を含める場合は未所属ユーザーをリセット
+        }
 
         // 新しいチームを設定
         setTeam1(newTeams[0] || []);
@@ -689,17 +754,21 @@ export default function TeamInput() {
         setTeam8(newTeams[7] || []);
         setTeam9(newTeams[8] || []);
         setTeam10(newTeams[9] || []);
-        setUnassignedUsers([]); // 未所属ユーザーをリセット
 
         // チーム分け完了後の各チームの平均点を表示
         console.log('\n=== チーム分け完了後の各チームの平均 ===');
         newTeams.forEach((team, index) => {
             if (team.length > 0) {
-                const avg = calculateGroupAverage(team, conditions, eventResult, users);
-                const unit = balanceEnabled ? 
-                    (balanceType === 'points' ? '点' : '歳') : 
-                    '';
-                console.log(`チーム${index + 1} (平均${avg.toFixed(1)}${unit}): ${team.join(', ')}`);
+                const adultMembersInTeam = team.filter(isAdultMember);
+                if (adultMembersInTeam.length > 0) {
+                    const avg = calculateGroupAverage(adultMembersInTeam, conditions, eventResult, users);
+                    const unit = balanceEnabled ? 
+                        (balanceType === 'points' ? '点' : '歳') : 
+                        '';
+                    console.log(`チーム${index + 1} (大人平均${avg.toFixed(1)}${unit}): ${team.join(', ')}`);
+                } else {
+                    console.log(`チーム${index + 1}: ${team.join(', ')}`);
+                }
             }
         });
 
@@ -763,7 +832,16 @@ export default function TeamInput() {
             {teams.length > 0 ? (
                 <>
                     <Box style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: 1 }}>
-                        <Typography>{`Total Members: ${totalMembers}`}</Typography>
+                        <Box>
+                            <Typography variant="body2" sx={{ mb: 0.5 }}>
+                                {`Total Adult Members: ${adultMembers}`}
+                            </Typography>
+                            {childMembers > 0 && (
+                                <Typography variant="body2">
+                                    {`Total Child Members: ${childMembers}`}
+                                </Typography>
+                            )}
+                        </Box>
                         <Box>
                             <Button
                                 variant="contained"
@@ -814,7 +892,7 @@ export default function TeamInput() {
                                     <ListItem
                                         key={cond.key}
                                         secondaryAction={
-                                            cond.key !== 'balance' && (
+                                            cond.key !== 'balance' && cond.key !== 'includeChildren' && (
                                                 <Box>
                                                     <IconButton
                                                         size="small"
