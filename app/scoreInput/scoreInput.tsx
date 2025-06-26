@@ -38,6 +38,8 @@ export default function ScoreInput() {
     const [team2Players, setTeam2Players] = useState<string[]>([]); // チーム2の選手リスト
     const [team1Helper, setTeam1Helper] = useState<string | null>(null); // チーム1の助っ人
     const [team2Helper, setTeam2Helper] = useState<string | null>(null); // チーム2の助っ人
+    const [team1Children, setTeam1Children] = useState<string[]>([]); // チーム1の子供リスト
+    const [team2Children, setTeam2Children] = useState<string[]>([]); // チーム2の子供リスト
     const [currentGoal, setCurrentGoal] = useState<{
         scoreId: string | null, // 追加: scoreId
         scorer: string | null,
@@ -90,6 +92,8 @@ export default function ScoreInput() {
                 setSelectedVideo(null);
                 setTeam1Players([]);
                 setTeam2Players([]);
+                setTeam1Children([]); // 子供リストをリセット
+                setTeam2Children([]); // 子供リストをリセット
                 setVideos(null);
                 setTeams(null);
             }
@@ -142,7 +146,9 @@ export default function ScoreInput() {
                 setTeam1Players(team1PlayersList);
                 setTeam2Players(team2PlayersList);
                 setTeam1Helper(null); // 助っ人をリセット
-                setTeam2Helper(null); // 助っ人をリセット                
+                setTeam2Helper(null); // 助っ人をリセット
+                setTeam1Children([]); // 子供リストをリセット
+                setTeam2Children([]); // 子供リストをリセット
             }
         }
     };
@@ -240,7 +246,7 @@ export default function ScoreInput() {
                     } 
                 </div> 
 
-                <FormControl fullWidth margin="normal">
+                <FormControl fullWidth margin="normal" sx={{ mt: 2, mb: 2 }}>
                     <InputLabel id={`helper-select-label-${teamNumber}`}>助っ人追加</InputLabel>
                     <Select
                         size='small'
@@ -248,22 +254,69 @@ export default function ScoreInput() {
                         id={`helper-select-${teamNumber}`}
                         value={teamNumber === 1 ? team1Helper || '' : team2Helper || ''}
                         label="助っ人追加"
+                        displayEmpty
+                        disabled={teamNumber === 1 ? !!team1Helper : !!team2Helper}
+                        renderValue={(selected) => selected ? selected : ''}
                         onChange={(e) => {
                             const helperName = e.target.value as string;
-                            // const helperData = users?.find(user => user[1] === helperName);
                             if (teamNumber === 1) {
                                 setTeam1Helper(helperName);
-                                setTeam1Players(prevPlayers => [...prevPlayers, helperName]); // 助っ人をチームに追加
+                                setTeam1Players(prevPlayers => [...prevPlayers, helperName]);
                             } else {
                                 setTeam2Helper(helperName);
-                                setTeam2Players(prevPlayers => [...prevPlayers, helperName]); // 助っ人をチームに追加
+                                setTeam2Players(prevPlayers => [...prevPlayers, helperName]);
                             }
                         }}
-                        displayEmpty={(teamNumber === 1 && team1Helper !== null) || (teamNumber === 2 && team2Helper !== null)}
-
                     >
                     {teams && users && teams.slice(1).map(team => team[0]).filter(playerName =>
                             playerName &&
+                            !playerName.endsWith('_Child') &&
+                            !playerName.match(/_Child\d+$/) &&
+                            !team1Players.includes(playerName) &&
+                            !team2Players.includes(playerName) &&
+                            !team1Children.includes(playerName) &&
+                            !team2Children.includes(playerName)
+                        ).map((playerName) => (
+                            <MenuItem key={playerName} value={playerName}>{playerName}</MenuItem>
+                        ))}
+                    </Select>
+                </FormControl>
+
+                <FormControl fullWidth margin="normal" sx={{ mb: 2 }}>
+                    <InputLabel id={`children-select-label-${teamNumber}`}>子供追加</InputLabel>
+                    <Select
+                        size='small'
+                        multiple
+                        labelId={`children-select-label-${teamNumber}`}
+                        id={`children-select-${teamNumber}`}
+                        value={teamNumber === 1 ? team1Children : team2Children}
+                        label="子供追加"
+                        displayEmpty
+                        renderValue={(selected) => (selected as string[]).length > 0 ? (selected as string[]).join(', ') : ''}
+                        onChange={(e) => {
+                            const selectedChildren = e.target.value as string[];
+                            if (teamNumber === 1) {
+                                setTeam1Children(selectedChildren);
+                                setTeam1Players(prevPlayers => 
+                                    prevPlayers.filter(player => 
+                                        !team1Children.includes(player) && 
+                                        !selectedChildren.includes(player)
+                                    ).concat(selectedChildren)
+                                );
+                            } else {
+                                setTeam2Children(selectedChildren);
+                                setTeam2Players(prevPlayers => 
+                                    prevPlayers.filter(player => 
+                                        !team2Children.includes(player) && 
+                                        !selectedChildren.includes(player)
+                                    ).concat(selectedChildren)
+                                );
+                            }
+                        }}
+                    >
+                    {teams && users && teams.slice(1).map(team => team[0]).filter(playerName =>
+                            playerName &&
+                            (playerName.endsWith('_Child') || playerName.match(/_Child\d+$/)) &&
                             !team1Players.includes(playerName) &&
                             !team2Players.includes(playerName)
                         ).map((playerName) => (
@@ -272,23 +325,46 @@ export default function ScoreInput() {
                     </Select>
                 </FormControl>
 
-                {(teamNumber === 1 && team1Helper) || (teamNumber === 2 && team2Helper) ? (
-                    <Button
-                        variant="contained"
-                        color="secondary"
-                        onClick={() => {
-                            if (teamNumber === 1) {
-                                setTeam1Players(prevPlayers => prevPlayers.filter(player => player !== team1Helper)); // 助っ人を削除
-                                setTeam1Helper(null);
-                            } else {
-                                setTeam2Players(prevPlayers => prevPlayers.filter(player => player !== team2Helper)); // 助っ人を削除
-                                setTeam2Helper(null);
-                            }
-                        }}
-                    >
-                        助っ人削除
-                    </Button>
-                ) : null}
+                <Grid container spacing={2} sx={{ mb: 2 }}>
+                    {(teamNumber === 1 && team1Helper) || (teamNumber === 2 && team2Helper) ? (
+                        <Grid item>
+                            <Button
+                                variant="contained"
+                                color="secondary"
+                                onClick={() => {
+                                    if (teamNumber === 1) {
+                                        setTeam1Players(prevPlayers => prevPlayers.filter(player => player !== team1Helper));
+                                        setTeam1Helper(null);
+                                    } else {
+                                        setTeam2Players(prevPlayers => prevPlayers.filter(player => player !== team2Helper));
+                                        setTeam2Helper(null);
+                                    }
+                                }}
+                            >
+                                助っ人削除
+                            </Button>
+                        </Grid>
+                    ) : null}
+                    {(teamNumber === 1 && team1Children.length > 0) || (teamNumber === 2 && team2Children.length > 0) ? (
+                        <Grid item>
+                            <Button
+                                variant="contained"
+                                color="secondary"
+                                onClick={() => {
+                                    if (teamNumber === 1) {
+                                        setTeam1Players(prevPlayers => prevPlayers.filter(player => !team1Children.includes(player)));
+                                        setTeam1Children([]);
+                                    } else {
+                                        setTeam2Players(prevPlayers => prevPlayers.filter(player => !team2Children.includes(player)));
+                                        setTeam2Children([]);
+                                    }
+                                }}
+                            >
+                                子供削除
+                            </Button>
+                        </Grid>
+                    ) : null}
+                </Grid>
 
             </Card>
         </Grid>

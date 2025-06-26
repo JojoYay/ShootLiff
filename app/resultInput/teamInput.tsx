@@ -772,6 +772,51 @@ export default function TeamInput() {
             }
         });
 
+        // 人数が多い順にチームを入れ替え
+        console.log('\n=== 人数によるチーム並び替え ===');
+        const teamSizes = newTeams.map((team, index) => ({
+            teamIndex: index,
+            size: team.length,
+            members: team
+        })).filter(team => team.size > 0);
+
+        // 人数の多い順にソート
+        teamSizes.sort((a, b) => b.size - a.size);
+
+        console.log('人数順（多い順）:');
+        teamSizes.forEach((team, index) => {
+            const adultCount = team.members.filter(isAdultMember).length;
+            const childCount = team.members.filter(isChildMember).length;
+            console.log(`${index + 1}位: チーム${team.teamIndex + 1} (${team.size}人 - 大人:${adultCount}人, 子供:${childCount}人)`);
+        });
+
+        // 人数順にチームを再配置
+        const reorderedTeams: string[][] = Array.from({ length: selectedTeamCount }, () => []);
+        teamSizes.forEach((team, index) => {
+            reorderedTeams[index] = team.members;
+        });
+
+        // 人数順に並び替えたチームを設定
+        setTeam1(reorderedTeams[0] || []);
+        setTeam2(reorderedTeams[1] || []);
+        setTeam3(reorderedTeams[2] || []);
+        setTeam4(reorderedTeams[3] || []);
+        setTeam5(reorderedTeams[4] || []);
+        setTeam6(reorderedTeams[5] || []);
+        setTeam7(reorderedTeams[6] || []);
+        setTeam8(reorderedTeams[7] || []);
+        setTeam9(reorderedTeams[8] || []);
+        setTeam10(reorderedTeams[9] || []);
+
+        console.log('\n=== 人数順並び替え後の最終結果 ===');
+        reorderedTeams.forEach((team, index) => {
+            if (team.length > 0) {
+                const adultCount = team.filter(isAdultMember).length;
+                const childCount = team.filter(isChildMember).length;
+                console.log(`チーム${index + 1} (${team.length}人 - 大人:${adultCount}人, 子供:${childCount}人): ${team.join(', ')}`);
+            }
+        });
+
         setHasChanges(true); // 変更フラグを設定
     };
 
