@@ -3,9 +3,10 @@ import { Dialog, DialogContent, CircularProgress, Typography, Box } from '@mui/m
 
 interface LoadingModalProps {
     open: boolean;
+    message?: string;
 }
 
-const LoadingModal: React.FC<LoadingModalProps> = ({ open }) => {
+const LoadingModal: React.FC<LoadingModalProps> = ({ open, message }) => {
     return (
         <Dialog
             open={open}
@@ -33,7 +34,7 @@ const LoadingModal: React.FC<LoadingModalProps> = ({ open }) => {
                 >
                     <CircularProgress sx={{ color: 'white', mb: 2 }} />
                     <Typography variant="h6" sx={{ color: 'white' }}>
-                        処理完了までお待ちください
+                        {message || '処理完了までお待ちください'}
                     </Typography>
                 </Box>
             </DialogContent>

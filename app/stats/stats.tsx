@@ -32,6 +32,12 @@ export default function Stats() {
 	const [isImageLoading, setIsImageLoading] = useState(false);
 	const [imageUrl, setImageUrl] = useState<string | null>(null);
 	const [isImageDialogOpen, setIsImageDialogOpen] = useState(false);
+	const [isDownloadMode, setIsDownloadMode] = useState(false);
+	
+	// iPhone以外かどうかを判定
+	const isNotIPhone = () => {
+		return !/iPhone|iPad|iPod/i.test(navigator.userAgent);
+	};
 
     useEffect(() => {
         if (liff) {
@@ -252,11 +258,24 @@ export default function Stats() {
 		// 出席数で降順ソート
 		attendanceData.sort((a, b) => b.attendanceCount - a.attendanceCount);
 
+		// 同着処理を含む順位計算
+		let currentRank = 1;
+		let currentScore = -1;
+		let skipCount = 0;
+
 		rankTable = attendanceData.map((data, index) => {
-			const place = index + 1;
+			// 同着処理
+			if (data.attendanceCount !== currentScore) {
+				currentRank = index + 1;
+				currentScore = data.attendanceCount;
+				skipCount = 0;
+			} else {
+				skipCount++;
+			}
+
 			return createRanking(
-				chooseMedal(place), // 順位に応じたメダル
-				translatePlace(place.toString(), lang), // 順位を文字列に変換
+				chooseMedal(currentRank), // 順位に応じたメダル
+				translatePlace(currentRank.toString(), lang), // 順位を文字列に変換
 				data.facePic,
 				data.name,
 				data.attendanceCount.toString() + (lang === 'ja-JP' ? '回' : ''), // スコア（出席回数）
@@ -390,11 +409,22 @@ export default function Stats() {
 	const handleDownloadImage = async () => {
 		if (pdfRef.current) {
 			try {
+				setIsDownloadMode(true);
 				setIsImageLoading(true);
+				
+				// スタイル適用を待つための短い待機時間
+				await new Promise(resolve => setTimeout(resolve, 1000));
+				
 				const dataUrl = await toJpeg(pdfRef.current, {
 					quality: 0.8,
 					pixelRatio: 1.0,
 					backgroundColor: '#ffffff',
+					style: {
+						transform: 'scale(1)',
+						transformOrigin: 'top left',
+						width: '100%',
+						height: 'auto'
+					},
 					filter: (node) => {
 						return true;
 					}
@@ -406,9 +436,47 @@ export default function Stats() {
 				}
 			} catch (error) {
 				console.error('画像生成エラー:', error);
-				alert(lang === 'ja-JP' ? '画像の生成に失敗しました。もう一度お試しください。' : 'Failed to generate image. Please try again.');
+				// alert(lang === 'ja-JP' ? '画像の生成に失敗しました。もう一度お試しください。' : 'Failed to generate image. Please try again.');
+				
+				// エラーメッセージを適切に取得
+				let errorMessage = '';
+				
+				// Eventオブジェクトの場合の処理
+				if (error instanceof Event) {
+					// LINEブラウザでのデバッグ用に詳細情報をalertで表示
+					const eventInfo = {
+						type: error.type,
+						target: error.target ? error.target.constructor.name : 'null',
+						currentTarget: error.currentTarget ? error.currentTarget.constructor.name : 'null',
+						detail: (error as any).detail,
+						error: (error as any).error,
+						message: (error as any).message,
+						reason: (error as any).reason,
+						code: (error as any).code
+					};
+					
+					errorMessage = `Event Error:\nType: ${eventInfo.type}\nTarget: ${eventInfo.target}\nDetail: ${eventInfo.detail}\nError: ${eventInfo.error}\nMessage: ${eventInfo.message}\nReason: ${eventInfo.reason}\nCode: ${eventInfo.code}`;
+				} else if (error instanceof Error) {
+					errorMessage = error.message;
+				} else if (typeof error === 'string') {
+					errorMessage = error;
+				} else if (error && typeof error === 'object' && 'message' in error) {
+					errorMessage = String(error.message);
+				} else {
+					// デバッグ用にエラーオブジェクトの詳細をログ出力
+					console.error('Unknown error type:', {
+						type: typeof error,
+						constructor: error?.constructor?.name,
+						keys: error ? Object.keys(error) : [],
+						error: error
+					});
+					errorMessage = lang === 'ja-JP' ? '画像の生成に失敗しました。もう一度お試しください。' : 'Failed to generate image. Please try again.';
+				}
+				
+				alert(errorMessage);
 			} finally {
 				setIsImageLoading(false);
+				setIsDownloadMode(false);
 			}
 		}
 	};
@@ -422,21 +490,23 @@ export default function Stats() {
 		<>
 			{eventResult && eventResult.length > 0 && profile ? (
 				<>
-					<Box sx={{ display: 'flex', justifyContent: 'flex-end', mb: 2 }}>
-						<Button 
-							variant="contained" 
-							color="primary" 
-							onClick={handleDownloadImage}
-							sx={{ 
-								backgroundColor: '#2e7d32',
-								'&:hover': {
-									backgroundColor: '#1b5e20',
-								}
-							}}
-						>
-							{lang === 'ja-JP' ? '画像形式でダウンロード' : 'Download as Image'}
-						</Button>
-					</Box>
+					{isNotIPhone() && (
+						<Box sx={{ display: 'flex', justifyContent: 'flex-end', mb: 2 }}>
+							<Button 
+								variant="contained" 
+								color="primary" 
+								onClick={handleDownloadImage}
+								sx={{ 
+									backgroundColor: '#2e7d32',
+									'&:hover': {
+										backgroundColor: '#1b5e20',
+									}
+								}}
+							>
+								{lang === 'ja-JP' ? '画像形式でダウンロード' : 'Download as Image'}
+							</Button>
+						</Box>
+					)}
 
 					{/* ローディングモーダル */}
 					<Dialog
@@ -577,8 +647,8 @@ export default function Stats() {
 								/>
 								<CardContent>
 									<TableContainer sx={{ 
-										maxHeight: '65vh',  // ビューポートの高さの60%
-										overflowY: 'auto'   // 縦方向のスクロールを有効化
+										maxHeight: isDownloadMode ? 'none' : '65vh',  // ダウンロードモード時は高さ制限なし
+										overflowY: isDownloadMode ? 'visible' : 'auto'   // ダウンロードモード時はスクロール無効
 									}}>
 										<Table sx={{ width: '100%' }} size="small" aria-label="simple table">
 											<TableBody>
@@ -643,8 +713,8 @@ export default function Stats() {
 							/>
 							<CardContent>
 								<TableContainer sx={{ 
-										maxHeight: '65vh',  // ビューポートの高さの60%
-										overflowY: 'auto'   // 縦方向のスクロールを有効化
+										maxHeight: isDownloadMode ? 'none' : '65vh',  // ダウンロードモード時は高さ制限なし
+										overflowY: isDownloadMode ? 'visible' : 'auto'   // ダウンロードモード時はスクロール無効
 									}}>
 									<Table sx={{ width: '100%' }} size="small" aria-label="simple table">
 										<TableBody>
@@ -721,8 +791,8 @@ export default function Stats() {
 							/>
 							<CardContent>
 								<TableContainer sx={{ 
-										maxHeight: '65vh',  // ビューポートの高さの60%
-										overflowY: 'auto'   // 縦方向のスクロールを有効化
+										maxHeight: isDownloadMode ? 'none' : '65vh',  // ダウンロードモード時は高さ制限なし
+										overflowY: isDownloadMode ? 'visible' : 'auto'   // ダウンロードモード時はスクロール無効
 									}}>
 									<Table sx={{ width: '100%' }} size="small" aria-label="simple table">
 										<TableBody>
@@ -807,8 +877,8 @@ export default function Stats() {
 							/>
 							<CardContent>
 								<TableContainer sx={{ 
-										maxHeight: '65vh',  // ビューポートの高さの60%
-										overflowY: 'auto'   // 縦方向のスクロールを有効化
+										maxHeight: isDownloadMode ? 'none' : '65vh',  // ダウンロードモード時は高さ制限なし
+										overflowY: isDownloadMode ? 'visible' : 'auto'   // ダウンロードモード時はスクロール無効
 									}}>
 									<Table sx={{ width: '100%' }} size="small" aria-label="simple table">
 										<TableBody>
@@ -885,8 +955,8 @@ export default function Stats() {
 							/>
 							<CardContent>
 								<TableContainer sx={{
-									maxHeight: '65vh',  // ビューポートの高さの60%
-									overflowY: 'auto'   // 縦方向のスクロールを有効化
+									maxHeight: isDownloadMode ? 'none' : '65vh',  // ダウンロードモード時は高さ制限なし
+									overflowY: isDownloadMode ? 'visible' : 'auto'   // 縦方向のスクロールを有効化
 								}}>
 									<Table sx={{ width: '100%' }} size="small" aria-label="simple table">
 										<TableBody>
