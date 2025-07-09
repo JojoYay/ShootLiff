@@ -466,53 +466,40 @@ export default function EventManager() {
                                 </Typography>
                             )}
 
-                            {(event.event_type === 'フットサル' || event.event_type === 'いつもの') && (
-                                <Box sx={{ display: 'flex', justifyContent: 'flex-end', marginTop: 1 }}>
-                                    {event.event_status !== 20 && (
-                                        <Button
-                                            variant="contained"
-                                            size="small"
-                                            onClick={() => handleStatusChange(event, 20)}
-                                            disabled={isSubmitting}
-                                            sx={{ marginRight: 1 }}
-                                        >
-                                            集計対象にする
-                                        </Button>
-                                    )}
-                                    {event.event_status === 20 && (
-                                        <Button
-                                            variant="contained"
-                                            size="small"
-                                            onClick={() => handleStatusChange(event, 99)}
-                                            disabled={isSubmitting}
-                                        >
-                                            集計完了にする
-                                        </Button>
-                                    )}
-                                </Box>
-                            )}
-                            {event.event_type === '飲み会' && ( // 飲み会の場合のみ表示
-                                <Box sx={{ display: 'flex', justifyContent: 'flex-end', marginTop: 1 }}>
-                                    <Link href={`/expense/create?calendarId=${event.id}`} passHref>
-                                        <Button
-                                            variant="contained"
-                                            size="small"
-                                            component="a" // Link を Button としてレンダリング
-                                            disabled={isSubmitting}
-                                        >
-                                            経費作成
-                                        </Button>
-                                    </Link>
+                            <Box sx={{ display: 'flex', justifyContent: 'flex-end', marginTop: 1 }}>
+                                {event.event_status !== 20 && (
                                     <Button
-                                            variant="contained"
-                                            size="small"
-                                            onClick={() => handleStatusChange(event, 99)}
-                                            disabled={isSubmitting}
-                                        >
-                                            集計完了にする
+                                        variant="contained"
+                                        size="small"
+                                        onClick={() => handleStatusChange(event, 20)}
+                                        disabled={isSubmitting}
+                                        sx={{ marginRight: 1 }}
+                                    >
+                                        集計対象にする
                                     </Button>
-                                </Box>
-                            )}
+                                )}
+                                {event.event_status === 20 && (
+                                    <Button
+                                        variant="contained"
+                                        size="small"
+                                        onClick={() => handleStatusChange(event, 99)}
+                                        disabled={isSubmitting}
+                                        sx={{ marginRight: 1 }}
+                                    >
+                                        集計完了にする
+                                    </Button>
+                                )}
+                                <Link href={`/expense/create?calendarId=${event.id}`} passHref>
+                                    <Button
+                                        variant="contained"
+                                        size="small"
+                                        component="a" // Link を Button としてレンダリング
+                                        disabled={isSubmitting}
+                                    >
+                                        経費作成
+                                    </Button>
+                                </Link>
+                            </Box>
                         </CardContent>
                     </Card>
                     )
