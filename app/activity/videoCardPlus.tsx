@@ -3,6 +3,7 @@ import { CardActionArea, Card, CardMedia, Typography, Table, TableHead, TableRow
 import AvatarIcon from '../stats/avatarIcon';
 import { useRef, useState } from 'react';
 import YouTubeComment from '../calendar/youTubeComment';
+import { constants } from 'http2';
 
 const Overlay2 = styled('div')({
   position: 'absolute',
@@ -111,70 +112,102 @@ const uploadVideo = async(file: File) => {
       formData.append('fileSize', file.size.toString());
       formData.append('actDate', props.actDate);
       
-      const res = await fetch(url, {
-        method: "POST",
-        headers: { 'Accept': 'application/json' },
-        body: formData,
-      });
-  
-      const { uploadUrl, token, err } = await res.json();
-      // console.log(uploadUrl);
-      // console.log(token);
-      setUploadProgress(10);
+      // ファイルをBase64エンコードして送信
+      const fileReader = new FileReader();
+      fileReader.readAsDataURL(file);
+      fileReader.onload = async () => {
+        if (fileReader.result) {
+          const base64File = (fileReader.result as string).split(',')[1];
+          formData.append('file', base64File);
+          
+          try {
+            const res = await fetch(url, {
+              method: "POST",
+              headers: { 'Accept': 'application/json' },
+              body: formData,
+            });
+        
+            if (!res.ok) {
+              throw new Error(`HTTP error! status: ${res.status}`);
+            }
+        
+            const { uploadUrl, token, err } = await res.json();
+            console.log('uploadUrl:', uploadUrl);
+            console.log('token:', token);
+            setUploadProgress(10);
 
-      if (err) return alert(err);
-      if (!uploadUrl) return alert("アップロードURLの取得に失敗しました");
-      // Resumable Upload を開始
+            if (err) {
+              alert(`アップロードエラー: ${err}`);
+              return;
+            }
+            if (!uploadUrl) {
+              alert("アップロードURLの取得に失敗しました");
+              return;
+            }
 
-      const chunkSize = 30 * 1024 * 1024; // 30MB チャンク
-      let offset = 0;
-      let isLastChunk = false;
-      let response;
-      while (offset < file.size) {
-        try{
-          const chunk = file.slice(offset, offset + chunkSize);
-          isLastChunk = offset + chunkSize >= file.size; // 最後のチャンクかどうかを判定
-          const progress = Math.min(90, 10 + Math.round((offset / file.size) * 80)); // 進捗率を計算 (最大90%)
-          setUploadProgress(progress);
-          response = await fetch(uploadUrl, {
-            method: "PUT",
-            mode: 'no-cors', // no-corsモードを追加
-            headers: {
-              "Authorization": `Bearer ${token}`,
-              "Content-Length": `${chunk.size}`,
-              "Content-Range": `bytes ${offset}-${offset + chunk.size - 1}/${file.size}`,
-            },
-            body: chunk,
-          });
-          // console.log(`チャンクアップロード成功 bytes ${offset}-${offset + chunk.size - 1}/${file.size}, status: ${response.status}`); // 成功時のログを追加
-        }catch(e:any){
-          //fixme なぜかエラーになるが無視することでアップはできているっぽい=> no-corsで回避
-        } finally {
-          setUploadProgress(90);
-        }
-        offset += chunkSize;
-      }
+            // Resumable Upload を開始
+            const chunkSize = 2 * 1024 * 1024; // 2MB チャンク
+            let offset = 0;
+            let response;
+            
+            while (offset < file.size) {
+              const progress = Math.min(90, 10 + Math.round((offset / file.size) * 80));
+              try{
+                const chunk = file.slice(offset, offset + chunkSize);
+                setUploadProgress(progress);
+                
+                response = await fetch(uploadUrl, {
+                  method: "PUT",
+                  headers: {
+                    "Authorization": `Bearer ${token}`,
+                    "Content-Length": `${chunk.size}`,
+                    "Content-Range": `bytes ${offset}-${offset + chunk.size - 1}/${file.size}`,
+                  },
+                  body: chunk,
+                });
+                
+                console.log(`チャンクアップロード成功 bytes ${offset}-${offset + chunk.size - 1}/${file.size}, status: ${response.status}`);
+              } catch(e: any) {
+                //fixme なぜかエラーになるが無視することでアップはできているっぽい=> no-corsで回避
+              } finally {
+                setUploadProgress(progress);
+              }
+              offset += chunkSize;
+            }
 
-      
-      try {
-        const url = process.env.SERVER_URL + '?func=updateYTVideo&actDate=' + encodeURIComponent(props.actDate) +'&fileName='+props.title;
-        if (url) {
-          const response = await fetch(url, {
-            method: 'GET',
-          });
-          const data = await response.json();
-          if(data.err){
-            alert(data.err);
+            // アップロード完了後の処理
+            try {
+              const updateUrl = process.env.SERVER_URL + '?func=updateYTVideo&actDate=' + encodeURIComponent(props.actDate) +'&fileName='+encodeURIComponent(props.title);
+              if (updateUrl) {
+                const updateResponse = await fetch(updateUrl, {
+                  method: 'GET',
+                });
+                const data = await updateResponse.json();
+                if(data.err){
+                  alert(`更新エラー: ${data.err}`);
+                } else {
+                  // alert("動画がアップロードされました！");
+                  props.fetchVideo();
+                }
+              }
+            } catch (error) {
+              console.error('更新処理エラー:', error);
+              alert('動画の更新処理中にエラーが発生しました');
+            }
+            
+            setUploadProgress(100);
+          } catch (error) {
+            console.error('アップロード処理エラー:', error);
+            alert(`アップロード処理エラー: ${error instanceof Error ? error.message : '不明なエラー'}`);
           }
-          props.fetchVideo();
         }
-      } catch (error) {
-        console.error('Error fetching data:', error);
-      }
-      setUploadProgress(100);
-      // alert("動画がアップロードされました！");
+      };
+      
+    } catch (error) {
+      console.error('ファイル処理エラー:', error);
+      alert(`ファイル処理エラー: ${error instanceof Error ? error.message : '不明なエラー'}`);
     } finally {
-      setIsModalOpen(false); // モーダルを開く
+      setIsModalOpen(false);
     }
 }
 
