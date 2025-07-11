@@ -88,125 +88,147 @@ const [uploadProgress, setUploadProgress] = useState<number>(0);
 
 // ファイル選択時の処理
 const handleFileChange = async (event: React.ChangeEvent<HTMLInputElement>) => {
-  // console.log('handleFileChange called');
+  console.log('handleFileChange called');
   const file = event.target.files?.[0];
-  // console.log(file);
+  console.log('Selected file:', file);
   if (!file) {
     alert('ファイルが選択されませんでした。');
     return;
   }
+  console.log('File details:', {
+    name: file.name,
+    size: file.size,
+    type: file.type
+  });
   uploadVideo(file);
  
 };
 
 const uploadVideo = async(file: File) => {
+    console.log('uploadVideo called with file:', file);
     if (!file) return alert("動画を選択してください");
 
     setIsModalOpen(true); // モーダルを開く
+    console.log('Modal opened');
     try{
       const url = process.env.SERVER_URL + '';
+      console.log('Server URL:', url);
       const formData:FormData = new FormData();
       formData.append('func', 'uploadToYoutube');
       formData.append('fileName', props.title);
       formData.append('fileType', file.type);
       formData.append('fileSize', file.size.toString());
       formData.append('actDate', props.actDate);
+      console.log('FormData prepared:', {
+        func: 'uploadToYoutube',
+        fileName: props.title,
+        fileType: file.type,
+        fileSize: file.size,
+        actDate: props.actDate
+      });
       
-      // ファイルをBase64エンコードして送信
-      const fileReader = new FileReader();
-      fileReader.readAsDataURL(file);
-      fileReader.onload = async () => {
-        if (fileReader.result) {
-          const base64File = (fileReader.result as string).split(',')[1];
-          formData.append('file', base64File);
+      // アップロード用のURLとトークンを取得するためのリクエスト
+      console.log('Sending fetch request to:', url);
+      const res = await fetch(url, {
+        method: "POST",
+        headers: { 'Accept': 'application/json' },
+        body: formData,
+      });
+      console.log('Fetch response status:', res.status);
+      console.log('Fetch response ok:', res.ok);
+
+      if (!res.ok) {
+        console.error('HTTP error response:', res.status, res.statusText);
+        throw new Error(`HTTP error! status: ${res.status}`);
+      }
+
+      const responseData = await res.json();
+      console.log('Response data:', responseData);
+      const { uploadUrl, token, err } = responseData;
+      console.log('uploadUrl:', uploadUrl);
+      console.log('token:', token);
+      console.log('err:', err);
+      setUploadProgress(10);
+
+      if (err) {
+        console.error('Server returned error:', err);
+        alert(`アップロードエラー: ${err}`);
+        return;
+      }
+      if (!uploadUrl) {
+        console.error('No upload URL received');
+        alert("アップロードURLの取得に失敗しました");
+        return;
+      }
+
+      // Resumable Upload を開始
+      console.log('Starting resumable upload...');
+      const chunkSize = 2 * 1024 * 1024; // 2MB チャンク
+      let offset = 0;
+      let response;
+      
+      while (offset < file.size) {
+        const progress = Math.min(90, 10 + Math.round((offset / file.size) * 80));
+        console.log(`Uploading chunk: ${offset}-${offset + chunkSize - 1}/${file.size}, progress: ${progress}%`);
+        try{
+          const chunk = file.slice(offset, offset + chunkSize);
+          setUploadProgress(progress);
           
-          try {
-            const res = await fetch(url, {
-              method: "POST",
-              headers: { 'Accept': 'application/json' },
-              body: formData,
-            });
-        
-            if (!res.ok) {
-              throw new Error(`HTTP error! status: ${res.status}`);
-            }
-        
-            const { uploadUrl, token, err } = await res.json();
-            console.log('uploadUrl:', uploadUrl);
-            console.log('token:', token);
-            setUploadProgress(10);
+          console.log(`Sending chunk request to: ${uploadUrl}`);
+          response = await fetch(uploadUrl, {
+            method: "PUT",
+            headers: {
+              "Authorization": `Bearer ${token}`,
+              "Content-Length": `${chunk.size}`,
+              "Content-Range": `bytes ${offset}-${offset + chunk.size - 1}/${file.size}`,
+            },
+            body: chunk,
+          });
+          
+          console.log(`チャンクアップロード成功 bytes ${offset}-${offset + chunk.size - 1}/${file.size}, status: ${response.status}`);
+        } catch(e: any) {
+          console.error('Chunk upload error:', e);
+          //fixme なぜかエラーになるが無視することでアップはできているっぽい=> no-corsで回避
+        } finally {
+          setUploadProgress(progress);
+        }
+        offset += chunkSize;
+      }
 
-            if (err) {
-              alert(`アップロードエラー: ${err}`);
-              return;
-            }
-            if (!uploadUrl) {
-              alert("アップロードURLの取得に失敗しました");
-              return;
-            }
-
-            // Resumable Upload を開始
-            const chunkSize = 2 * 1024 * 1024; // 2MB チャンク
-            let offset = 0;
-            let response;
-            
-            while (offset < file.size) {
-              const progress = Math.min(90, 10 + Math.round((offset / file.size) * 80));
-              try{
-                const chunk = file.slice(offset, offset + chunkSize);
-                setUploadProgress(progress);
-                
-                response = await fetch(uploadUrl, {
-                  method: "PUT",
-                  headers: {
-                    "Authorization": `Bearer ${token}`,
-                    "Content-Length": `${chunk.size}`,
-                    "Content-Range": `bytes ${offset}-${offset + chunk.size - 1}/${file.size}`,
-                  },
-                  body: chunk,
-                });
-                
-                console.log(`チャンクアップロード成功 bytes ${offset}-${offset + chunk.size - 1}/${file.size}, status: ${response.status}`);
-              } catch(e: any) {
-                //fixme なぜかエラーになるが無視することでアップはできているっぽい=> no-corsで回避
-              } finally {
-                setUploadProgress(progress);
-              }
-              offset += chunkSize;
-            }
-
-            // アップロード完了後の処理
-            try {
-              const updateUrl = process.env.SERVER_URL + '?func=updateYTVideo&actDate=' + encodeURIComponent(props.actDate) +'&fileName='+encodeURIComponent(props.title);
-              if (updateUrl) {
-                const updateResponse = await fetch(updateUrl, {
-                  method: 'GET',
-                });
-                const data = await updateResponse.json();
-                if(data.err){
-                  alert(`更新エラー: ${data.err}`);
-                } else {
-                  // alert("動画がアップロードされました！");
-                  props.fetchVideo();
-                }
-              }
-            } catch (error) {
-              console.error('更新処理エラー:', error);
-              alert('動画の更新処理中にエラーが発生しました');
-            }
-            
-            setUploadProgress(100);
-          } catch (error) {
-            console.error('アップロード処理エラー:', error);
-            alert(`アップロード処理エラー: ${error instanceof Error ? error.message : '不明なエラー'}`);
+      // アップロード完了後の処理
+      console.log('Upload completed, starting update process...');
+      try {
+        const updateUrl = process.env.SERVER_URL + '?func=updateYTVideo&actDate=' + encodeURIComponent(props.actDate) +'&fileName='+encodeURIComponent(props.title);
+        console.log('Update URL:', updateUrl);
+        if (updateUrl) {
+          const updateResponse = await fetch(updateUrl, {
+            method: 'GET',
+          });
+          console.log('Update response status:', updateResponse.status);
+          const data = await updateResponse.json();
+          console.log('Update response data:', data);
+          if(data.err){
+            console.error('Update error:', data.err);
+            alert(`更新エラー: ${data.err}`);
+          } else {
+            console.log('Update successful, calling fetchVideo');
+            // alert("動画がアップロードされました！");
+            props.fetchVideo();
           }
         }
-      };
+      } catch (error) {
+        console.error('更新処理エラー:', error);
+        alert('動画の更新処理中にエラーが発生しました');
+      }
+      
+      setUploadProgress(100);
+      console.log('Upload process completed successfully');
       
     } catch (error) {
       console.error('ファイル処理エラー:', error);
       alert(`ファイル処理エラー: ${error instanceof Error ? error.message : '不明なエラー'}`);
     } finally {
+      console.log('Closing modal');
       setIsModalOpen(false);
     }
 }
@@ -247,7 +269,17 @@ const uploadVideo = async(file: File) => {
               {props.kanji? (
               <Overlay2>
                 <Box style={{ zIndex: 2, display: 'flex', flexDirection: 'column', justifyContent: 'center', alignItems: 'center', height: '90%', padding: '20px' }}>
-                  {isModalOpen ? (<LinearProgress style={{width:'250px', height:'8px', marginBottom:'8px'}} variant="determinate" value={uploadProgress}/>) : null}
+                  {isModalOpen ? (
+                    <Box style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', width: '250px' }}>
+                      <LinearProgress style={{width:'100%', height:'8px', marginBottom:'8px'}} variant="determinate" value={uploadProgress}/>
+                      <Typography variant="body2" style={{ color: 'white', marginBottom: '8px', textAlign: 'center' }}>
+                        {uploadProgress}%
+                      </Typography>
+                      <Typography variant="caption" style={{ color: 'white', textAlign: 'center', fontSize: '10px' }}>
+                        完了前に画面を閉じるとすべてやり直しになります
+                      </Typography>
+                    </Box>
+                  ) : null}
                   <Typography style={{ zIndex: 2, display: 'flex', flexDirection: 'column', alignItems: 'center' }}> {/* flexboxで縦に並べる */}
                     <Button variant="contained" color="primary" fullWidth onClick={() => {
                       fileInputRef.current?.click();
