@@ -2,13 +2,12 @@
 import { useEffect, useState } from 'react';
 
 import { Box, Pagination, Table, TableBody, TableCell, TableHead, TableRow, Typography } from '@mui/material';
-import VideoCardPlus from './videoCardPlus';
 import VideoCard from '../video/videoCard';
 import AvatarIcon from '../stats/avatarIcon';
 import LoadingSpinner from '../calendar/loadingSpinner';
-// import Comment from '../calendar/comment';
 import { useLiff } from '../liffProvider';
-// import YouTubeComment from '../calendar/youTubeComment';
+import VideoCardPlus from './videoCardPlus';
+
 
 export default function Video() {
 	useEffect(() => {
@@ -88,6 +87,7 @@ export default function Video() {
 						}
 					}
 					setMipPics(mipPicsArray); // 複数のMIP写真URLをセット
+					console.log('mipPicsArray',mipPicsArray);
 					setIconSize(calcIconSize(mipPicsArray.length));
 				}
 			}
@@ -120,6 +120,8 @@ export default function Video() {
 						const matchedUser = (users as string[][]).find(user => user[1] === userName);
 						if (matchedUser) {
 							mipPicsArray.push(matchedUser[4]); // ユーザーが見つかったら5列目の画像URLを追加
+						} else {
+							mipPicsArray.push('');
 						}
 					}
 				}
@@ -227,19 +229,53 @@ export default function Video() {
 								</TableHead>
 								< TableBody sx={{ borderBottom: 'none' }}> {/* TableBodyの下線 */}
 									< TableRow sx={{ borderBottom: 'none' }}>
-										<TableCell align="center" style={{ display: 'flex', flexDirection: 'row', justifyContent: 'center', borderBottom: 'none' }}> {/* TableCellの下線 */}
-											{mipPics.slice(0, 5).map((picUrl, index) => {
-												const userNameColumns = [5, 17, 18, 19, 20]; // 対応するユーザー名の列インデックス
-												const userName = event[userNameColumns[index]]; // indexに対応する列からユーザー名を取得
-												return (
-													<div key={index} style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', margin: '0 10px' }}>
-														<AvatarIcon picUrl={picUrl} name={userName} width={iconSize} height={iconSize} /> {/* iconSize stateを使用 */}
-														<Typography variant="caption" style={{ padding: '3px', fontWeight: 'bold', color: '#333', textAlign: 'center' }}>
-															{userName}
-														</Typography>
-													</div>
-												);
-											})}
+										<TableCell align="center" sx={{ borderBottom: 'none', padding: '8px' }}>
+											<Box 
+												sx={{ 
+													display: 'flex', 
+													flexDirection: 'row', 
+													justifyContent: 'center',
+													flexWrap: 'wrap',
+													gap: 1,
+													alignItems: 'flex-start'
+												}}
+											>
+												{mipPics.slice(0, 5).map((picUrl, index) => {
+													const userNameColumns = [5, 17, 18, 19, 20]; // 対応するユーザー名の列インデックス
+													const userName = event[userNameColumns[index]]; // indexに対応する列からユーザー名を取得
+													console.log(userName);
+													return (
+														<Box 
+															key={index} 
+															sx={{ 
+																display: 'flex', 
+																flexDirection: 'column', 
+																alignItems: 'center',
+																minWidth: 0,
+																maxWidth: mipPics.length > 3 ? '80px' : '100px',
+																flex: '0 1 auto'
+															}}
+														>
+															<AvatarIcon picUrl={picUrl} name={userName} width={iconSize} height={iconSize} />
+															<Typography 
+																variant="caption" 
+																sx={{ 
+																	padding: '3px 0', 
+																	fontWeight: 'bold', 
+																	color: '#333', 
+																	textAlign: 'center',
+																	lineHeight: 1.2,
+																	wordBreak: 'break-word',
+																	hyphens: 'auto',
+																	fontSize: mipPics.length > 3 ? '0.65rem' : '0.75rem'
+																}}
+															>
+																{userName}
+															</Typography>
+														</Box>
+													);
+												})}
+											</Box>
 										</TableCell>
 									</TableRow>
 									< TableRow sx={{ borderBottom: 'none' }}> {/* TableRowの下線 */}

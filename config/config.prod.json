@@ -7,5 +7,8 @@
     "beerIcon": "https://lh3.googleusercontent.com/d/1XrzK_UDQHB25toU-Zg0dXauXbLF-AV1T",
     "cate3_cap": "飲み会",
     "loadingPath": "https://lh3.googleusercontent.com/d/1_dFkD99lTQeQEFVwWfIBadXkApYGBGmt",
-    "calendarUrl": "https://calendar.google.com/calendar/u/0?cid=OTAyNjc1ZTQ4ZGZlN2JmMzFiZWU3NWI0OWM2NGQ3YzdlMjEwNmMzNTQ1Mjc4MWI2ZTM4NDY5Y2FkNzk1NzJiN0Bncm91cC5jYWxlbmRhci5nb29nbGUuY29t"
+    "calendarUrl": "https://calendar.google.com/calendar/u/0?cid=OTAyNjc1ZTQ4ZGZlN2JmMzFiZWU3NWI0OWM2NGQ3YzdlMjEwNmMzNTQ1Mjc4MWI2ZTM4NDY5Y2FkNzk1NzJiN0Bncm91cC5jYWxlbmRhci5nb29nbGUuY29t",
+    "driveClientEmail": "",
+    "drivePrivateKey": "",
+    "driveFolderId": ""
 }

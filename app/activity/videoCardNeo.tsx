@@ -41,7 +41,7 @@ function getPicUrl(url: string): string {
   return `https://img.youtube.com/vi/${videoId}/mqdefault.jpg`;
 }
 
-type VideoProps = {
+type VideoPropsNeo = {
   url: string;
   title: string;
   matchId: string;
@@ -62,7 +62,7 @@ type VideoProps = {
   kanji:boolean;
 };
 
-export default function VideoCardPlus(props: VideoProps) {
+export default function VideoCardNeo(props: VideoPropsNeo) {
   const handleCardClick = () => {
     window.open(props.url, '_blank');
   };
