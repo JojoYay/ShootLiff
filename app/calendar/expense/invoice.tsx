@@ -5,6 +5,7 @@ import { Profile } from '@liff/get-profile';
 import CloudUploadIcon from '@mui/icons-material/CloudUpload';
 import { useLiff } from '@/app/liffProvider';
 import LoadingSpinner from '../loadingSpinner';
+import LoadingModal from '@/app/components/LoadingModal';
 import { Invoice } from '@/app/types/calendar';
 import DeleteIcon from '@mui/icons-material/Delete';
 // Existing code for InputExpense component
@@ -30,6 +31,7 @@ export default function InputPatifipationFee() {
     const [remarks, setRemarks] = useState<string>('');
     const [amountErr, setAmountErr] = useState<string>("");
     const [invoices, setInvoices] = useState<Invoice[]>([]);
+    const [isSubmitting, setIsSubmitting] = useState(false);
 
     useEffect(() => {
         if (liff) {
@@ -189,16 +191,24 @@ export default function InputPatifipationFee() {
     }
 
     const handleUpload = async () => {
-        setLoading(true);
         try{
+            if (isSubmitting) return; // 2重送信防止
+            // バリデーションを先に実行
+            if(!amount){
+                setAmountErr("金額をSGDで入力して下さい");
+                return;
+            }
+            if(!file){
+                setAmountErr("請求書のスクリーンショットを添付してください");
+                return;
+            }
+
+            setIsSubmitting(true);
+            setLoading(true);
             const formData = new FormData();
             let targetUserId = profile?.userId;
             if (selectedUserId) {
                 targetUserId = selectedUserId;
-            }
-            if(!amount){
-                setAmountErr("金額をSGDで入力して下さい");
-                return;
             }
     
             if (file && targetUserId) { // Use selectedFile here
@@ -211,43 +221,56 @@ export default function InputPatifipationFee() {
                 const fileReader = new FileReader(); // Use a new FileReader for upload
                 fileReader.readAsDataURL(file);
                 fileReader.onload = async () => {
-                    if (fileReader.result) {
-                        const base64File = (fileReader.result as string).split(',')[1];
-                        formData.append('file', base64File);
-                        // console.log(base64File);
-                        const url = process.env.SERVER_URL;
-                        if (url) {
-                            try {
-                                const response = await fetch(url, {
-                                    method: 'POST',
-                                    body: formData,
-                                    headers: {
-                                        'Accept': 'application/json',
-                                    },
-                                });
-                                if (!response.ok) {
-                                    throw new Error('Network response was not ok');
+                    try{
+                        setLoading(true);
+                        setIsSubmitting(true);
+                        if (fileReader.result) {
+                            const base64File = (fileReader.result as string).split(',')[1];
+                            formData.append('file', base64File);
+                            // console.log(base64File);
+                            const url = process.env.SERVER_URL;
+                            if (url) {
+                                try {
+                                    const response = await fetch(url, {
+                                        method: 'POST',
+                                        body: formData,
+                                        headers: {
+                                            'Accept': 'application/json',
+                                        },
+                                    });
+                                    if (!response.ok) {
+                                        throw new Error('Network response was not ok');
+                                    }
+                                    const data = await response.json();
+                                    const imgElement = document.getElementById('uploadedImage') as HTMLImageElement;
+                                    if (imgElement && data.picUrl) {
+                                        imgElement.src = data.picUrl;
+                                        setSrc(data.picUrl);
+                                    }
+                                    alert("登録が完了しました！");
+                                    loadInvoices(calendarId, profile? profile.userId : '');
+    
+                                    console.log('File uploaded successfully:', data);
+                                } catch (error) {
+                                    console.error('Error uploading file:', error);
+                                    setResult('Error uploading file:'+error);
                                 }
-                                const data = await response.json();
-                                const imgElement = document.getElementById('uploadedImage') as HTMLImageElement;
-                                if (imgElement && data.picUrl) {
-                                    imgElement.src = data.picUrl;
-                                    setSrc(data.picUrl);
-                                }
-                                alert("登録が完了しました！");
-                                loadInvoices(calendarId, profile? profile.userId : '');
-
-                                console.log('File uploaded successfully:', data);
-                            } catch (error) {
-                                console.error('Error uploading file:', error);
-                                setResult('Error uploading file:'+error);
                             }
                         }
+                    } finally {
+                        setLoading(false);
+                        setIsSubmitting(false);
+                        setAmountErr("");
+                        setAmount("");
+                        setFile(null);
+                        setSrc("");
+                        setRemarks("");
                     }
                 };
             }
         } finally {
             setLoading(false);
+            setIsSubmitting(false);
         }
     };
 
@@ -257,7 +280,7 @@ export default function InputPatifipationFee() {
         // Confirmation dialog
         const confirmed = window.confirm("この請求書を削除してもよろしいですか？");
         if (!confirmed) return; // Exit if the user cancels
-
+        setIsSubmitting(true);
         setLoading(true);
         try {
             const formData = new FormData();
@@ -283,161 +306,155 @@ export default function InputPatifipationFee() {
             console.error('Error deleting invoice:', error);
         } finally {
             setLoading(false);
+            setIsSubmitting(false);
         }
     };
 
     return (
         <>
         {actDate ? (
-            <Box>
-                <Box style={{margin:'5px'}}>
-                    <Typography variant="body1">{actDate} </Typography>
-                </Box>
-                <Box style={{margin:'5px'}}>
-                    <Typography variant="body2">{info}</Typography>
-                </Box>
-                {info2 && (
-                <Box style={{margin:'5px'}}>
-                    <Typography variant="body2">{info2}</Typography>
-                </Box>
-                )}
-                {info3 && (
-                <Box style={{margin:'5px'}}>
-                    <Typography variant="body2">{info3}</Typography>
-                </Box>
-                )}
-                <Box style={{margin:'5px'}}>
-
-                    {isKanji && (
-                        // <>
-                        // <FormControl fullWidth margin="normal">
-                        //     <InputLabel id="user-select-label">代理ユーザーを選択</InputLabel>
-                        //     <Select
-                        //         labelId="user-select-label"
-                        //         id="user-select"
-                        //         value={selectedUserId || ''}
-                        //         label="代理ユーザーを選択"
-                        //         onChange={(event: SelectChangeEvent) => handleUserChange(event.target.value)}
-                        //     >
-                        //         <MenuItem value="">
-                        //             <em>なし</em>
-                        //         </MenuItem>
-                        //         {users.map((user) => (
-                        //             <MenuItem key={user[2]} value={user[2]}>
-                        //                 {user[1]}
-                        //             </MenuItem>
-                        //         ))}
-                        //     </Select>
-                        // </FormControl>
-                        // </>
-                        <>
-                            <FormControl fullWidth margin="normal">
-                                <Autocomplete
-                                    options={users}
-                                    getOptionLabel={(option) => option[1]} // 表示するラベル
-                                    value={selectedUserId ? users.find(user => user[2] === selectedUserId) : null}
-                                    onChange={(event, newValue) => {
-                                        handleUserChange(newValue ? newValue[2] : '');
-                                    }}
-                                    renderInput={(params) => (
-                                        <TextField {...params} label="代理ユーザーを選択" variant="outlined" />
-                                    )}
-                                />
-                            </FormControl>
-                        </>
-                    )}
- 
-                    <FormControl fullWidth margin="normal">
-                        <TextField
-                            id="amount"  // 修正: id属性を追加
-                            label="金額"
-                            type="number"
-                            value={amount}
-                            onChange={(e) => setAmount(e.target.value)}
-                            variant="outlined"
-                            fullWidth
-                        />
-                    </FormControl>
-
-                    <FormControl fullWidth margin="normal">
-                        <TextField
-                            id="remarks"  // 修正: id属性を追加
-                            label="メモ"
-                            value={remarks}
-                            onChange={(e) => setRemarks(e.target.value)}
-                            variant="outlined"
-                            fullWidth
-                            multiline
-                        />
-                    </FormControl>
-                    <Button
-                        component="label"
-                        // role={undefined}
-                        variant="contained"
-                        tabIndex={-1}
-                        startIcon={<CloudUploadIcon />}
-                        disabled={loading}
-                    >
-                        {loading && profile ? 'Loading...' : lang === 'ja-JP' ? 'Invoiceを選択' : "Select Invoice Pic"}
-                        <input type="file" onChange={handleFileSelect} style={{ display: 'none' }} />
-                    </Button>
-
+            <>
+                <LoadingModal 
+                    open={isSubmitting} 
+                />
+                <Box>
                     <Box style={{margin:'5px'}}>
-                        <img id="uploadedImage" alt="Uploaded Preview" style={{ maxWidth: '100%', display: (file || src) ? 'block' : 'none' }} />
+                        <Typography variant="body1">{actDate} </Typography>
                     </Box>
-
                     <Box style={{margin:'5px'}}>
-                    {loading ? (
-                        <CircularProgress size={24} />
-                    ) : (
-                        <Button variant="contained" color="primary" onClick={handleUpload} disabled={(!file && !amount) || loading }>
-                            送信
+                        <Typography variant="body2">{info}</Typography>
+                    </Box>
+                    {info2 && (
+                    <Box style={{margin:'5px'}}>
+                        <Typography variant="body2">{info2}</Typography>
+                    </Box>
+                    )}
+                    {info3 && (
+                    <Box style={{margin:'5px'}}>
+                        <Typography variant="body2">{info3}</Typography>
+                    </Box>
+                    )}
+                    <Box style={{margin:'5px'}}>
+
+                        {isKanji && (
+                            <>
+                                <FormControl fullWidth margin="normal">
+                                    <Autocomplete
+                                        options={users}
+                                        getOptionLabel={(option) => option[1]} // 表示するラベル
+                                        value={selectedUserId ? users.find(user => user[2] === selectedUserId) : null}
+                                        onChange={(event, newValue) => {
+                                            handleUserChange(newValue ? newValue[2] : '');
+                                        }}
+                                        renderInput={(params) => (
+                                            <TextField {...params} label="代理ユーザーを選択" variant="outlined" />
+                                        )}
+                                    />
+                                </FormControl>
+                            </>
+                        )}
+
+                        <FormControl fullWidth margin="normal">
+                            <TextField
+                                id="amount"  // 修正: id属性を追加
+                                label="金額"
+                                type="number"
+                                value={amount}
+                                onChange={(e) => setAmount(e.target.value)}
+                                variant="outlined"
+                                fullWidth
+                            />
+                        </FormControl>
+
+                        <FormControl fullWidth margin="normal">
+                            <TextField
+                                id="remarks"  // 修正: id属性を追加
+                                label="メモ"
+                                value={remarks}
+                                onChange={(e) => setRemarks(e.target.value)}
+                                variant="outlined"
+                                fullWidth
+                                multiline
+                            />
+                        </FormControl>
+                        <Button
+                            component="label"
+                            // role={undefined}
+                            variant="contained"
+                            tabIndex={-1}
+                            startIcon={<CloudUploadIcon />}
+                            disabled={loading}
+                        >
+                            {loading && profile ? 'Loading...' : lang === 'ja-JP' ? 'Invoiceを選択' : "Select Invoice Pic"}
+                            <input type="file" onChange={handleFileSelect} style={{ display: 'none' }} />
                         </Button>
-                    )}
+
+                        <Box style={{margin:'5px'}}>
+                            <img id="uploadedImage" alt="Uploaded Preview" style={{ maxWidth: '100%', display: (file || src) ? 'block' : 'none' }} />
+                        </Box>
+
+                        {amountErr && (
+                            <Box style={{margin:'5px', display: 'flex', alignItems: 'center'}}>
+                                <Typography variant="body2" color="error" style={{ maxWidth: '100%' }}>
+                                    {amountErr}
+                                </Typography>
+                            </Box>
+                        )}
+
+                        <Box style={{margin:'5px'}}>
+                        {(loading || isSubmitting)? (
+                            <CircularProgress size={24} />
+                        ) : (
+                            <Button variant="contained" color="primary" onClick={handleUpload} disabled={(!file && !amount) || loading || isSubmitting}>
+                                送信
+                            </Button>
+                        )}
+                        </Box>
+
+                        {result &&
+                            <Box style={{margin:'5px', display: 'flex', alignItems: 'center'}}>
+                                <Typography variant="body2" style={{ maxWidth: '100%', display: result ? 'block' : 'none' }}>
+                                    {result}
+                                </Typography>
+                            </Box>
+                        }
                     </Box>
 
-                    {result &&
-                        <Box style={{margin:'5px', display: 'flex', alignItems: 'center'}}>
-                            <Typography variant="body2" style={{ maxWidth: '100%', display: result ? 'block' : 'none' }}>
-                                {result}
-                            </Typography>
-                        </Box>
-                    }
+                <Box style={{margin:'5px', display: 'flex', alignItems: 'center'}}>
+                    <Typography variant="body2" style={{ maxWidth: '100%', display: result ? 'block' : 'none' }}>
+                        これまでの清算データ
+                    </Typography>
                 </Box>
 
-            <Box style={{margin:'5px', display: 'flex', alignItems: 'center'}}>
-                <Typography variant="body2" style={{ maxWidth: '100%', display: result ? 'block' : 'none' }}>
-                    これまでの清算データ
-                </Typography>
-            </Box>
-
-            <Box>
-                {invoices.reverse().map((invoice) => (
-                    <Box key={invoice.invoiceId} style={{ border: '1px solid #ccc', margin: '10px', padding: '10px', display: 'flex', flexDirection: 'column', position: 'relative' }}>
-                        <Box style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
-                            <Typography variant="h6">金額: SGD {invoice.amount} </Typography>
-                            {invoice.status === '未清算' && ( // Show delete icon for unsettled invoices
-                                <Button 
-                                    onClick={() => handleDeleteInvoice(invoice.invoiceId)} 
-                                    color="secondary" 
-                                    style={{ padding: '0' }} // Remove padding for a better fit
-                                >
-                                    <DeleteIcon />
-                                </Button>
-                            )}
+                <Box>
+                    {invoices.reverse().map((invoice) => (
+                        <Box key={invoice.invoiceId} style={{ border: '1px solid #ccc', margin: '10px', padding: '10px', display: 'flex', flexDirection: 'column', position: 'relative' }}>
+                            <Box style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
+                                <Typography variant="h6">金額: SGD {invoice.amount} </Typography>
+                                {invoice.status === '未清算' && ( // Show delete icon for unsettled invoices
+                                    <Button 
+                                        onClick={() => handleDeleteInvoice(invoice.invoiceId)} 
+                                        color="secondary" 
+                                        style={{ padding: '0' }} // Remove padding for a better fit
+                                    >
+                                        <DeleteIcon />
+                                    </Button>
+                                )}
+                            </Box>
+                            <Typography variant="body2">メモ: {invoice.memo}</Typography>
+                            <Typography variant="body2">状態: {invoice.status}</Typography>
+                            <Typography variant="body2">申請日: {invoice.uploadDate.toLocaleString('ja-JP', { year: 'numeric', month: '2-digit', day: '2-digit', hour: '2-digit', minute: '2-digit', second: '2-digit', hour12: false })} </Typography>
+                            <img src={invoice.picUrl} alt="Invoice" style={{ maxWidth: '100%' }} />
                         </Box>
-                        <Typography variant="body2">メモ: {invoice.memo}</Typography>
-                        <Typography variant="body2">状態: {invoice.status}</Typography>
-                        <Typography variant="body2">申請日: {invoice.uploadDate.toLocaleString('ja-JP', { year: 'numeric', month: '2-digit', day: '2-digit', hour: '2-digit', minute: '2-digit', second: '2-digit', hour12: false })} </Typography>
-                        <img src={invoice.picUrl} alt="Invoice" style={{ maxWidth: '100%' }} />
-                    </Box>
-                ))}
-            </Box>
+                    ))}
+                </Box>
 
-        </Box>
+            </Box>
+        </>
         ) : (
             <LoadingSpinner />
         )}
+        
         </>
    );
 }

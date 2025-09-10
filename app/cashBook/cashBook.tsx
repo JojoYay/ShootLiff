@@ -354,7 +354,7 @@ export default function CashBookPage() {
                 <LoadingSpinner />
             ) : (
                 <>
-                    <Typography variant="h6">現在の隊費: {currentBalance !== null ? `SGD ${currentBalance}` : 'N/A'}</Typography>
+                    <Typography variant="h6">現在の隊費: {currentBalance !== null ? `SGD ${currentBalance.toFixed(2)}` : 'N/A'}</Typography>
                     {unlinkedPayments.map((payment, paymentIndex) => { 
                         return (
                             <Card key={payment.id}>
