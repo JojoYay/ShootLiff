@@ -20,7 +20,7 @@ const YouTubeComment: React.FC<CommentProps> = ({ videoUrl }) => {
     }, [videoUrl]);
 
     const fetchComments = async () => {
-        const url = process.env.SERVER_URL + `?url=${videoUrl}&func=getYTComments`;
+        const url = process.env.NEXT_PUBLIC_SERVER_URL + `?url=${videoUrl}&func=getYTComments`;
         if (url) {
             try {
                 const response = await fetch(url, {

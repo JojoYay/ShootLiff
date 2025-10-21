@@ -32,8 +32,8 @@ const RegistrationDialog: React.FC<RegistrationDialogProps> = ({ nickname, onNic
                 formData.append('nickname', nickname);
                 formData.append('line_name',profile?.displayName || '');
                 formData.append('pic_url', profile?.pictureUrl || '');
-                if(process.env.SERVER_URL){
-                    await fetch(process.env.SERVER_URL, {
+                if(process.env.NEXT_PUBLIC_SERVER_URL){
+                    await fetch(process.env.NEXT_PUBLIC_SERVER_URL, {
                         method: 'POST',
                         body: formData,
                     })

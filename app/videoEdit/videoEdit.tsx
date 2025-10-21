@@ -67,7 +67,7 @@ export default function VideoEdit() {
     const fetchData = async () => {
         try {
             // GoogleDriveの情報を取得
-            let url = process.env.SERVER_URL + `?func=loadVideoFolders`;
+            let url = process.env.NEXT_PUBLIC_SERVER_URL + `?func=loadVideoFolders`;
             
             if (url) {
                 const response = await fetch(url, {
@@ -182,7 +182,7 @@ export default function VideoEdit() {
             
             if (confirmed) {
                 // サーバーサイドAPIを呼び出してColabノートブックのURLを取得
-                const url = process.env.SERVER_URL + 
+                const url = process.env.NEXT_PUBLIC_SERVER_URL + 
                     `?func=executeVideoTask&folderId=${folderId}&folderName=${encodeURIComponent(folderName)}&taskType=${taskType}`;
                 
                 const response = await fetch(url, {

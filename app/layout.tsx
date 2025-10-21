@@ -24,12 +24,15 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
         <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate" />
         <meta http-equiv="Pragma" content="no-cache" />
         <meta http-equiv="Expires" content="0" />
+        <meta name="cache-control" content="no-cache" />
+        <meta name="expires" content="0" />
+        <meta name="pragma" content="no-cache" />
       </head>      
       <body className={inter.className}>
-        <LiffProvider liffId={process.env.LIFF_ID ?? ''}>
+        <LiffProvider liffId={process.env.NEXT_PUBLIC_LIFF_ID ?? ''}>
           {children}
         </LiffProvider>
-        <GoogleAnalytics gaId={process.env.GA_ID ?? ''} />
+        <GoogleAnalytics gaId={process.env.NEXT_PUBLIC_GA_ID ?? ''} />
       </body>
     </html>
   );

@@ -325,7 +325,7 @@ export default function Stats() {
 
 	const fetchData = async () => {
 		try {
-			const url = process.env.SERVER_URL + `?func=getStats&func=getUsers&func=getRanking`;
+			const url = process.env.NEXT_PUBLIC_SERVER_URL + `?func=getStats&func=getUsers&func=getRanking`;
 			if (url) {
 				const response = await fetch(url, {
 					method: 'GET',

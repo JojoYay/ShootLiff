@@ -28,8 +28,8 @@ const EventResult = () => {
 
 	const fetchInfo = async () => {
         try {
-			// const url = process.env.SERVER_URL + '?func=getVideos&func=getEventData&func=getUsers';
-			const url = process.env.SERVER_URL + '?func=getVideos&func=getEventData';
+			// const url = process.env.NEXT_PUBLIC_SERVER_URL + '?func=getVideos&func=getEventData&func=getUsers';
+			const url = process.env.NEXT_PUBLIC_SERVER_URL + '?func=getVideos&func=getEventData';
             if (url) {
                 const response = await fetch(url, {
                     method: 'GET',
@@ -135,7 +135,7 @@ const EventResult = () => {
             for (const pair of Array.from(formDataToSend.entries())) {
                 console.log(pair[0] + ', ' + pair[1]);
             }
-            let url = process.env.SERVER_URL;
+            let url = process.env.NEXT_PUBLIC_SERVER_URL;
             if (url) {
                 const response = await fetch(url, {
                     method: 'POST',

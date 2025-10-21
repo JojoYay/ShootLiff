@@ -232,7 +232,7 @@ export default function Calendar() {
 
     const fetchCalendarEvents = async () => {
         try {
-            let url = process.env.SERVER_URL + `?func=loadCalendar&func=getUsers&func=getAttendance`;
+            let url = process.env.NEXT_PUBLIC_SERVER_URL + `?func=loadCalendar&func=getUsers&func=getAttendance`;
             if (url) {
                 const response = await fetch(url, {
                     method: 'GET',
@@ -350,7 +350,7 @@ export default function Calendar() {
     const handleSaveParticipation = async () => {
         try {
             setIsSaving(true); // 保存処理開始時にボタンを無効化
-            let url = process.env.SERVER_URL;
+            let url = process.env.NEXT_PUBLIC_SERVER_URL;
             if (url && profile) {
                 const formData = new FormData();
                 formData.append('func', 'updateParticipation');

@@ -64,7 +64,7 @@ export default function CashBookPage() {
 
     const loadData = async () => {
         setIsLoading(true);
-        let url = process.env.SERVER_URL + '?func=loadCashBook&func=loadCalendar&func=getUsers&func=loadOpenPayment';
+        let url = process.env.NEXT_PUBLIC_SERVER_URL + '?func=loadCashBook&func=loadCalendar&func=getUsers&func=loadOpenPayment';
         if (url) {
             const response = await fetch(url);
             const data = await response.json();
@@ -234,7 +234,7 @@ export default function CashBookPage() {
             formData.append('create', newEntry.create.toISOString());
             formData.append('isExpanded', newEntry.isExpanded.toString());
             
-            const response = await fetch(`${process.env.SERVER_URL}`, {
+            const response = await fetch(`${process.env.NEXT_PUBLIC_SERVER_URL}`, {
                 method: 'POST',
                 headers: { 'Accept': 'application/json' },
                 body: formData,
@@ -271,7 +271,7 @@ export default function CashBookPage() {
                 const formData = new FormData();
                 formData.append('func', 'deleteCashBook'); // func パラメータを追加
                 formData.append('bookId', id);
-                const res = await fetch(`${process.env.SERVER_URL}`, {
+                const res = await fetch(`${process.env.NEXT_PUBLIC_SERVER_URL}`, {
                     method: 'POST',
                     headers: { 'Accept': 'application/json' },
                     body: formData,
@@ -320,7 +320,7 @@ export default function CashBookPage() {
     const updatePaymentStatus = async (paymentId: string, folderName:string) => {
         try {
             setIsLoading(true);
-            const response = await fetch(`${process.env.SERVER_URL}?func=updateOpenPaymentStatus&id=${paymentId}&folderName=${folderName}&userId=${profile?.userId}`, {
+            const response = await fetch(`${process.env.NEXT_PUBLIC_SERVER_URL}?func=updateOpenPaymentStatus&id=${paymentId}&folderName=${folderName}&userId=${profile?.userId}`, {
                 method: 'GET',
             });
     

@@ -245,7 +245,7 @@ export default function TeamInput() {
 
     const fetchTeams = async () => {
         try {
-            const url = process.env.SERVER_URL + `?func=getTeams&func=getUsers&func=getStats`;
+            const url = process.env.NEXT_PUBLIC_SERVER_URL + `?func=getTeams&func=getUsers&func=getStats`;
             if (url) {
                 const response = await fetch(url, {
                     method: 'GET',
@@ -336,10 +336,10 @@ export default function TeamInput() {
 			});
             
 			formData.append('func', 'updateTeams');
-            if(!process.env.SERVER_URL){
+            if(!process.env.NEXT_PUBLIC_SERVER_URL){
                 return;
             }
-            const response = await fetch(process.env.SERVER_URL, {
+            const response = await fetch(process.env.NEXT_PUBLIC_SERVER_URL, {
                 method: 'POST',
                 headers: {
                     'Accept': 'application/json',

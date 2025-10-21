@@ -110,7 +110,7 @@ const uploadVideo = async(file: File) => {
     setIsModalOpen(true); // モーダルを開く
     console.log('Modal opened');
     try{
-      const url = process.env.SERVER_URL + '';
+      const url = process.env.NEXT_PUBLIC_SERVER_URL + '';
       console.log('Server URL:', url);
       const formData:FormData = new FormData();
       formData.append('func', 'uploadToYoutube');
@@ -197,7 +197,7 @@ const uploadVideo = async(file: File) => {
       // アップロード完了後の処理
       console.log('Upload completed, starting update process...');
       try {
-        const updateUrl = process.env.SERVER_URL + '?func=updateYTVideo&actDate=' + encodeURIComponent(props.actDate) +'&fileName='+encodeURIComponent(props.title);
+        const updateUrl = process.env.NEXT_PUBLIC_SERVER_URL + '?func=updateYTVideo&actDate=' + encodeURIComponent(props.actDate) +'&fileName='+encodeURIComponent(props.title);
         console.log('Update URL:', updateUrl);
         if (updateUrl) {
           const updateResponse = await fetch(updateUrl, {

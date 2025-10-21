@@ -67,7 +67,7 @@ export default function InputExpense() {
     const loadExpenseInfo = async (title: string, userId: string) => {
         setLoading(true);
         try {
-            let url = process.env.SERVER_URL + `?func=getExpenseWithStatus`;
+            let url = process.env.NEXT_PUBLIC_SERVER_URL + `?func=getExpenseWithStatus`;
             url = url + '&title=' + encodeURIComponent(title);
             url = url + '&userId=' + encodeURIComponent(userId);
     
@@ -117,7 +117,7 @@ export default function InputExpense() {
                     formData.append('file', base64File);
                     // console.log(base64File);
 
-                    const url = process.env.SERVER_URL;
+                    const url = process.env.NEXT_PUBLIC_SERVER_URL;
                     if (url) {
                         try {
                             const response = await fetch(url, {

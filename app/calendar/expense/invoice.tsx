@@ -89,7 +89,7 @@ export default function InputPatifipationFee() {
         setFile(null);
         setLoading(true);
         try {
-            let url = process.env.SERVER_URL + `?func=getInvoices`;
+            let url = process.env.NEXT_PUBLIC_SERVER_URL + `?func=getInvoices`;
             url = url + '&calendarId=' + encodeURIComponent(calendarId);
             url = url + '&userId=' + encodeURIComponent(userId);
             url = url + '&lang=' + encodeURIComponent(lang);
@@ -128,7 +128,7 @@ export default function InputPatifipationFee() {
     const loadPatificationFeeAndUsers = async (title: string, userId: string) => {
         setLoading(true);
         try {
-            let url = process.env.SERVER_URL + `?func=getInvoices&func=getUsers`;
+            let url = process.env.NEXT_PUBLIC_SERVER_URL + `?func=getInvoices&func=getUsers`;
             url = url + '&calendarId=' + encodeURIComponent(title);
             url = url + '&userId=' + encodeURIComponent(userId);
             url = url + '&lang=' + encodeURIComponent(lang);
@@ -228,7 +228,7 @@ export default function InputPatifipationFee() {
                             const base64File = (fileReader.result as string).split(',')[1];
                             formData.append('file', base64File);
                             // console.log(base64File);
-                            const url = process.env.SERVER_URL;
+                            const url = process.env.NEXT_PUBLIC_SERVER_URL;
                             if (url) {
                                 try {
                                     const response = await fetch(url, {
@@ -288,7 +288,7 @@ export default function InputPatifipationFee() {
             formData.append('invoiceId', invoiceId);
             formData.append('actDate', actDate);
 
-            const url = process.env.SERVER_URL + '';
+            const url = process.env.NEXT_PUBLIC_SERVER_URL + '';
             const response = await fetch(url, {
                 method: 'POST',
                 headers: {

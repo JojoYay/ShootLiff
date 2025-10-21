@@ -100,25 +100,23 @@ export default function KanjiTask() {
         { value: 'captain', label: '予備2' },
         { value: 'ball', label: '予備3' }
     ];
-    const { liff } = useLiff();
+    const { liff, isInitialized } = useLiff();
 
     useEffect(() => {
-        if (liff) {
-            if (liff.isLoggedIn()) {
-                liff.getProfile().then(profile => {
-                    const user: User = {
-                        userId: profile.userId,
-                        lineName: profile.displayName || '',
-                        isKanji: false,
-                        displayName: profile.displayName || '',
-                        pictureUrl: profile.pictureUrl || '',
-                    };
-                    setProfile(user);
-                    setLang(liff.getLanguage());
-                });
-            }
+        if (isInitialized && liff && liff.isLoggedIn()) {
+            liff.getProfile().then(profile => {
+                const user: User = {
+                    userId: profile.userId,
+                    lineName: profile.displayName || '',
+                    isKanji: false,
+                    displayName: profile.displayName || '',
+                    pictureUrl: profile.pictureUrl || '',
+                };
+                setProfile(user);
+                setLang(liff.getLanguage());
+            });
         }
-    }, [liff]);
+    }, [liff, isInitialized]);
 
     useEffect(() => {
         fetchData();
@@ -166,7 +164,7 @@ export default function KanjiTask() {
 
     const fetchData = async () => {
         try {
-            let url = process.env.SERVER_URL + `?func=loadCalendar&func=getUsers&func=getAttendance&func=getSheetData&sheetName=Kanji&Type=ActivityReport`;
+            let url = process.env.NEXT_PUBLIC_SERVER_URL + `?func=loadCalendar&func=getUsers&func=getAttendance&func=getSheetData&sheetName=Kanji&Type=ActivityReport`;
             if (url) {
                 const response = await fetch(url, {
                     method: 'GET',
@@ -253,7 +251,7 @@ export default function KanjiTask() {
                                 ? data.users.slice(1).find((u: string[]) => u[2] === taskMapping.assignedTo)
                                 : null;
                             
-                                                            tasks.push({
+                                tasks.push({
                                     id: `${kanjiData.event_id}_${taskIndex}`,
                                     eventId: kanjiData.event_id,
                                     eventName: event.event_name,
@@ -302,7 +300,8 @@ export default function KanjiTask() {
                 // 既存のタスクとブランクタスクを結合
                 const allTasks = [...realTasks, ...blankTasks];
                 setTasks(allTasks);
-            setIsLoading(false);
+                console.log('allTasks:', allTasks);
+                setIsLoading(false);
             }
         } catch (error) {
             console.error('Error fetching data:', error);
@@ -330,6 +329,7 @@ export default function KanjiTask() {
                 totalEvents: userAttendance.length
             };
         }).filter(stat => stat.completedTasks > 0); // 完了タスクが0の場合は表示しない
+        console.log('kanjiStats:', stats);
         setKanjiStats(stats);
     };
 
@@ -417,7 +417,7 @@ export default function KanjiTask() {
             setIsSaving(true);
             setSavingMessage(isInitial ? '初期データを作成中...' : '保存中...');
             
-            const url = process.env.SERVER_URL;
+            const url = process.env.NEXT_PUBLIC_SERVER_URL;
             if (!url) return;
 
             const formData = new FormData();

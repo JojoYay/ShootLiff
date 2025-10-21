@@ -20,7 +20,7 @@ export default function Name() {
 
     const fetchUsers = async () => {
         try {
-			const url = process.env.SERVER_URL + '?func=getUsers';
+			const url = process.env.NEXT_PUBLIC_SERVER_URL + '?func=getUsers';
 			if (url) {
 				const response = await fetch(url, {
 					method: 'GET',

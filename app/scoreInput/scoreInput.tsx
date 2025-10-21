@@ -97,8 +97,8 @@ export default function ScoreInput() {
                 setVideos(null);
                 setTeams(null);
             }
-            // const url = process.env.SERVER_URL + `?func=getTeams&func=getUsers&func=getVideo&func=getScores`;
-            let url = process.env.SERVER_URL + `?func=getTeams&func=getUsers&func=getTodayMatch&func=getScores`;
+            // const url = process.env.NEXT_PUBLIC_SERVER_URL + `?func=getTeams&func=getUsers&func=getVideo&func=getScores`;
+            let url = process.env.NEXT_PUBLIC_SERVER_URL + `?func=getTeams&func=getUsers&func=getTodayMatch&func=getScores`;
             if (url) {
                 const response = await fetch(url, {
                     method: 'GET',
@@ -402,11 +402,11 @@ export default function ScoreInput() {
             let method = 'POST'; // デフォルトはPOST (追加)
 
             if (editMode === 'edit' && currentGoal.scoreId) {
-                apiUrl = process.env.SERVER_URL + `?func=updateGoal`; // 修正API
+                apiUrl = process.env.NEXT_PUBLIC_SERVER_URL + `?func=updateGoal`; // 修正API
                 method = 'POST'; // 修正もPOSTを使用
                 form.append('scoreId', currentGoal.scoreId); // scoreIdを追加
             } else if (editMode === 'add') {
-                apiUrl = process.env.SERVER_URL + `?func=recordGoal`; // 追加API
+                apiUrl = process.env.NEXT_PUBLIC_SERVER_URL + `?func=recordGoal`; // 追加API
             }
             if (apiUrl) {
                 try {
@@ -482,7 +482,7 @@ export default function ScoreInput() {
             form.append('scoreId', scoreId);
 
             try {
-                const url = process.env.SERVER_URL + `?func=deleteGoal`;
+                const url = process.env.NEXT_PUBLIC_SERVER_URL + `?func=deleteGoal`;
                 if (url) {
                     const response = await fetch(url, {
                         method: 'POST', // 削除もPOSTを使用
@@ -544,7 +544,7 @@ export default function ScoreInput() {
         try {
             // サーバーに勝ちチームを問い合わせる
             const videoId = selectedVideo;
-            const url = process.env.SERVER_URL + `?func=getWinningTeam&matchId=${videoId}`;
+            const url = process.env.NEXT_PUBLIC_SERVER_URL + `?func=getWinningTeam&matchId=${videoId}`;
             if (url) {
                 const response = await fetch(url, {
                     method: 'GET',
@@ -594,7 +594,7 @@ export default function ScoreInput() {
             for (const pair of Array.from(form.entries())) {
                 console.log(pair[0] + ', ' + pair[1]);
             }
-            const url = process.env.SERVER_URL + `?func=closeGame`;
+            const url = process.env.NEXT_PUBLIC_SERVER_URL + `?func=closeGame`;
             if (url) {
                 const response = await fetch(url, {
                     method: 'POST',
@@ -648,7 +648,7 @@ export default function ScoreInput() {
     const handleCreateMatch = async () => {
         setIsCreatingMatch(true);
         try {
-            const url = process.env.SERVER_URL + `?func=createShootLog`;
+            const url = process.env.NEXT_PUBLIC_SERVER_URL + `?func=createShootLog`;
             const form = new FormData();
             form.append('teamCount', selectedMatchType as string);
             if (url) {

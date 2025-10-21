@@ -47,7 +47,7 @@ export default function Registration() {
 	const loadUsers = async () => {
         setLoading(true);
         try {
-            let url = process.env.SERVER_URL + `?func=getUsers`;
+            let url = process.env.NEXT_PUBLIC_SERVER_URL + `?func=getUsers`;
             if (url && profile) {
                 const response = await fetch(url, {
                     method: 'GET',
@@ -87,7 +87,7 @@ export default function Registration() {
 			formData.append('Birthday', user[9]);
 			formData.append('BirthPlace', user[10]);
 						
-			const response = await fetch(`${process.env.SERVER_URL}`, {
+			const response = await fetch(`${process.env.NEXT_PUBLIC_SERVER_URL}`, {
 				method: 'POST',
 				headers: {
 					'Accept': 'application/json',

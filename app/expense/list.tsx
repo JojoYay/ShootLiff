@@ -50,7 +50,7 @@ export default function ExpenseList() {
         const formData = new FormData();
         if (profile) {
             formData.append('func', 'loadExList');
-            const url = process.env.SERVER_URL;
+            const url = process.env.NEXT_PUBLIC_SERVER_URL;
             if (url) {
                 try {
                     const response = await fetch(url, {
@@ -109,7 +109,7 @@ export default function ExpenseList() {
         if (profile) {
             formData.append('func', 'deleteEx');
             formData.append('title',title);
-            const url = process.env.SERVER_URL;
+            const url = process.env.NEXT_PUBLIC_SERVER_URL;
             if (url) {
                 try {
                     const response = await fetch(url, {

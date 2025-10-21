@@ -79,7 +79,7 @@ export default function EventManager() {
     const fetchEvents = async () => {
         try {
             setIsLoading(true);
-            let url = process.env.SERVER_URL + '?func=loadCalendar';
+            let url = process.env.NEXT_PUBLIC_SERVER_URL + '?func=loadCalendar';
             if (url) {
                 const response = await fetch(url);
                 const data = await response.json();
@@ -149,7 +149,7 @@ export default function EventManager() {
                 formData.append('func', 'deleteCalendar');
                 formData.append('id', id);
 
-                let url = process.env.SERVER_URL;
+                let url = process.env.NEXT_PUBLIC_SERVER_URL;
                 if (url) {
                     const response = await fetch(url, {
                         method: 'POST',
@@ -221,7 +221,7 @@ export default function EventManager() {
                 console.log(key, value.toString());
             });
 
-            let url = process.env.SERVER_URL;
+            let url = process.env.NEXT_PUBLIC_SERVER_URL;
             if (url) {
                 const response = await fetch(url, {
                     method: 'POST',
@@ -247,7 +247,7 @@ export default function EventManager() {
         formDataToSend.append('id', event.id);
         formDataToSend.append('new_status', newStatus.toString());
 
-        let url = process.env.SERVER_URL;
+        let url = process.env.NEXT_PUBLIC_SERVER_URL;
         if (url) {
             const response = await fetch(url, {
                 method: 'POST',

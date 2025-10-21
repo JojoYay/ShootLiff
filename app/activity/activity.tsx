@@ -50,7 +50,7 @@ export default function Video() {
 
 	const fetchVideo = async () => {
 		try {
-			const url = process.env.SERVER_URL + '?func=getInfoOfTheDay&func=getUsers';
+			const url = process.env.NEXT_PUBLIC_SERVER_URL + '?func=getInfoOfTheDay&func=getUsers';
 			if (url) {
 				const response = await fetch(url, {
 					method: 'GET',
@@ -158,7 +158,7 @@ export default function Video() {
 
 	const fetchShootLog = async (actDate: string) => {
 		try {
-			const url = process.env.SERVER_URL + '?func=getInfoOfTheDay&actDate=' + encodeURIComponent(actDate);
+			const url = process.env.NEXT_PUBLIC_SERVER_URL + '?func=getInfoOfTheDay&actDate=' + encodeURIComponent(actDate);
 			if (url) {
 				const response = await fetch(url, {
 					method: 'GET',

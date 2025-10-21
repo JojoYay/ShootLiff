@@ -32,8 +32,8 @@ export default function CreateExpense() {
     const fetchEventParticipants = async (calendarId: string) => {
         setLoading(true);
         try {
-            const url = process.env.SERVER_URL + `?func=getAttendees&func=getCalendar&calendarId=${calendarId}`;
-            if (url) {
+            const url = process.env.NEXT_PUBLIC_SERVER_URL + `?func=getAttendees&func=getCalendar&calendarId=${calendarId}`;
+            if (url) { 
                 const response = await fetch(url, {
                     method: 'GET',
                 });
@@ -58,7 +58,7 @@ export default function CreateExpense() {
 
     const fetchMembers = async () => {
         try {
-            const url = process.env.SERVER_URL + `?func=getRegisteredMembers&func=getPayNow`;
+            const url = process.env.NEXT_PUBLIC_SERVER_URL + `?func=getRegisteredMembers&func=getPayNow`;
             
             if (url) {
                 const response = await fetch(url, {
@@ -93,7 +93,7 @@ export default function CreateExpense() {
         }
         setLoading(true);
         try {
-            let url = process.env.SERVER_URL + `?func=generateExReport`;
+            let url = process.env.NEXT_PUBLIC_SERVER_URL + `?func=generateExReport`;
             console.log(selectedOptions);
             console.log(payNow);
             for(const opt of selectedOptions){

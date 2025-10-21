@@ -14,7 +14,7 @@ export default function Video() {
 
 	const fetchVideo = async () => {
 		try {
-			const url = process.env.SERVER_URL + '?func=getVideo';
+			const url = process.env.NEXT_PUBLIC_SERVER_URL + '?func=getVideo';
 			if (url) {
 				const response = await fetch(url, {
 					method: 'GET',

@@ -1,5 +1,4 @@
 import { Metadata } from "next"
-import { LiffProvider } from "../liffProvider"
 import KanjiTask from "./kanjiTask"
 
 export const metadata: Metadata = {
@@ -8,9 +7,7 @@ export const metadata: Metadata = {
 
 const KanjiTaskPage = () => {
     return (
-        <LiffProvider liffId={process.env.LIFF_ID ?? ''}>
-            <KanjiTask/>
-        </LiffProvider>
+        <KanjiTask/>
     )
 }
 
