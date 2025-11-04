@@ -310,7 +310,7 @@ export default function KanjiTask() {
     };
 
     const calculateKanjiStats = () => {
-        const kanjiUsers = users.filter(user => user[3] === '幹事');
+        const kanjiUsers = users.filter(user => user[3] === '幹事' && user[1] !== '忍');
         const stats: KanjiStats[] = kanjiUsers.map(user => {
             const userTasks = tasks.filter(task => task.assignedTo === user[2] && task.accepted);
             
@@ -733,19 +733,17 @@ export default function KanjiTask() {
                                             task.eventId === event.ID && task.taskName === taskType.value
                                         );
                                         
-                                        // 当日出席幹事に加えて、タスクにアサインされている人も含める
-                                        const assignedUsers = existingTask ? [existingTask.assignedTo] : [];
-                                        const allAvailableKanji = [...availableKanji];
+                                        // 全幹事を取得（「忍」は除外）
+                                        const allKanjiUsers = users
+                                            .filter(user => user[3] === '幹事' && user[1] !== '忍')
+                                            .map(user => ({
+                                                userId: user[2],
+                                                userName: user[1],
+                                                userPic: user[4]
+                                            }));
                                         
-                                        // アサインされているが出席していない人を追加
-                                        assignedUsers.forEach(userId => {
-                                            if (userId && !availableKanji.find(k => k.userId === userId)) {
-                                                const user = users.find(u => u[2] === userId);
-                                                if (user) {
-                                                    allAvailableKanji.push({ userId: user[2], userName: user[1], userPic: user[4] });
-                                                }
-                                            }
-                                        });
+                                        // 全幹事をコンボボックスに表示（重複を避けるため）
+                                        const allAvailableKanji = allKanjiUsers;
                                         
                                         return (
                                             <Box key={taskType.value} sx={{ 
