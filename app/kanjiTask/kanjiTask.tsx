@@ -20,7 +20,7 @@ import {
     FormControlLabel
 } from '@mui/material';
 import { useLiff } from '../liffProvider';
-import { Add, Delete, Edit, CheckCircle, Schedule, PriorityHigh, Assignment } from '@mui/icons-material';
+import { Add, Delete, Edit, CheckCircle, Schedule, PriorityHigh, Assignment, ViewModule, ViewList, ArrowUpward, ArrowDownward, ExpandMore, ExpandLess } from '@mui/icons-material';
 import LoadingSpinner from '../calendar/loadingSpinner';
 import LoadingModal from '../components/LoadingModal';
 import AvatarIcon from '../stats/avatarIcon';
@@ -67,6 +67,7 @@ interface Task {
 interface KanjiStats {
     userId: string;
     userName: string;
+    userPic?: string;
     totalTasks: number;
     completedTasks: number;
     totalEvents: number;
@@ -86,6 +87,10 @@ export default function KanjiTask() {
     const [isSaving, setIsSaving] = useState<boolean>(false);
     const [savingMessage, setSavingMessage] = useState<string>('');
     const [isAssigning, setIsAssigning] = useState<boolean>(false);
+    const [viewMode, setViewMode] = useState<'card' | 'grid'>('grid');
+    const [rotationOrder, setRotationOrder] = useState<string[]>([]); // 幹事のローテーション順
+    const [excludedKanji, setExcludedKanji] = useState<Set<string>>(new Set()); // ローテーションから除外された幹事
+    const [showSettings, setShowSettings] = useState<boolean>(false);
 
     // 幹事の仕事の種類（DBカラム名に合わせて調整）
     const kanjiTaskTypes = [
@@ -161,6 +166,17 @@ export default function KanjiTask() {
     useEffect(() => {
         calculateKanjiStats();
     }, [tasks, users]);
+
+    useEffect(() => {
+        // 幹事のローテーション順を初期化（除外された幹事は除く）
+        if (users.length > 0 && rotationOrder.length === 0) {
+            const kanjiUsers = users
+                .filter(user => user[3] === '幹事' && user[1] !== '忍' && !excludedKanji.has(user[2]))
+                .map(user => user[2]);
+            setRotationOrder(kanjiUsers);
+        }
+        // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, [users, excludedKanji]);
 
     const fetchData = async () => {
         try {
@@ -311,19 +327,38 @@ export default function KanjiTask() {
 
     const calculateKanjiStats = () => {
         const kanjiUsers = users.filter(user => user[3] === '幹事' && user[1] !== '忍');
-        const stats: KanjiStats[] = kanjiUsers.map(user => {
-            const userTasks = tasks.filter(task => task.assignedTo === user[2] && task.accepted);
+        
+        // 表示されているタスクタイプ
+        const displayedTaskTypes = kanjiTaskTypes.map(t => t.value);
+        
+        // 全てのタスクがアサインされているイベントを取得
+        const fullyAssignedEvents = events.filter(event => {
+            const eventTasks = tasks.filter(task => task.eventId === event.ID);
+            const displayedTasks = eventTasks.filter(task => displayedTaskTypes.includes(task.taskName));
             
-            // 各幹事の実際の参加数（〇のデータのみ）を計算
+            // 全ての表示タスクがアサインされているかチェック
+            return displayedTasks.length === displayedTaskTypes.length && 
+                   displayedTasks.every(task => task.assignedTo && task.assignedTo !== '');
+        });
+        
+        const stats: KanjiStats[] = kanjiUsers.map(user => {
+            // Acceptしているかしていないかは関係なく、アサインされているタスクをカウント
+            const userTasks = tasks.filter(task => 
+                task.assignedTo === user[2] && 
+                displayedTaskTypes.includes(task.taskName)
+            );
+            
+            // 全てのタスクがアサインされているイベントで、そのユーザーが参加している（〇）イベントをカウント
             const userAttendance = attendance.filter(att => 
                 att.user_id === user[2] && 
                 att.status === '〇' &&
-                events.some(event => event.ID === att.calendar_id) // イベントIDが存在するもののみ
+                fullyAssignedEvents.some(event => event.ID === att.calendar_id) // 全てのタスクがアサインされているイベントのみ
             );
             
             return {
                 userId: user[2],
                 userName: user[1],
+                userPic: user[4],
                 totalTasks: userTasks.length,
                 completedTasks: userTasks.length,
                 totalEvents: userAttendance.length
@@ -546,6 +581,364 @@ export default function KanjiTask() {
         setTimeout(() => setIsAssigning(false), 1000);
     };
 
+    const handleBulkAIAssignment = () => {
+        setIsAssigning(true);
+        
+        // 現在の日付を取得（時刻を00:00:00に設定）
+        const today = new Date();
+        today.setHours(0, 0, 0, 0);
+        
+        // 表示されているイベントを取得（過去日付のイベントは除外）
+        const visibleEvents = events.filter(event => {
+            const eventDate = new Date(event.start_datetime);
+            eventDate.setHours(0, 0, 0, 0);
+            const isPastEvent = eventDate < today;
+            
+            // 過去日付のイベントは除外
+            if (isPastEvent) return false;
+            
+            // その他のフィルタ条件
+            return showPastEvents || event.event_status !== 99;
+        });
+        
+        if (rotationOrder.length === 0) {
+            setIsAssigning(false);
+            return;
+        }
+        
+        // ローテーション順に従ってアサイン（未アサインのタスクのみ、参加の是非を考慮）
+        setTasks(prevTasks => {
+            const updatedTasks = [...prevTasks];
+            let rotationIndex = 0; // ローテーション用のインデックス
+            
+            // 各幹事のタスク数をカウント（均等化のため）
+            const taskCounts = new Map<string, number>();
+            rotationOrder.forEach(userId => {
+                taskCounts.set(userId, 0);
+            });
+            
+            visibleEvents.forEach(event => {
+                // このイベントの参加予定幹事を取得
+                const attendees = getEventAttendees(event.ID);
+                const attendeeIds = new Set(attendees.map(att => att.user_id));
+                
+                // 参加予定の幹事と参加予定外の幹事を分ける
+                const attendingKanji = rotationOrder.filter(userId => attendeeIds.has(userId));
+                const nonAttendingKanji = rotationOrder.filter(userId => !attendeeIds.has(userId));
+                
+                // このイベントの未アサインのタスクを取得
+                const displayedTaskTypes = ['video', 'drone_prep', 'score_mip'];
+                const unassignedTasks = displayedTaskTypes.map(taskType => {
+                    const task = updatedTasks.find(t => 
+                        t.eventId === event.ID && 
+                        t.taskName === taskType
+                    );
+                    return { task, taskType };
+                }).filter(item => {
+                    // 未アサインのタスクのみ
+                    return !item.task || !item.task.assignedTo || item.task.assignedTo === '';
+                });
+                
+                // 各未アサインタスクにローテーションでアサイン
+                unassignedTasks.forEach(({ task, taskType }) => {
+                    // 使用する候補リストを決定（参加予定を優先）
+                    let candidateList: string[] = [];
+                    if (attendingKanji.length > 0) {
+                        // 参加予定の幹事がいる場合、参加予定の幹事を優先
+                        // ローテーション順を保持しつつ、参加予定の幹事を先に配置
+                        candidateList = rotationOrder.filter(id => attendingKanji.includes(id));
+                        // 参加予定外の幹事も追加（不足する場合に備えて）
+                        candidateList = [...candidateList, ...rotationOrder.filter(id => nonAttendingKanji.includes(id))];
+                    } else {
+                        // 参加予定の幹事がいない場合、全員から選択（ローテーション順を維持）
+                        candidateList = rotationOrder;
+                    }
+                    
+                    // ローテーション順に従って、タスク数が最も少ない候補を選択
+                    // 参加予定の幹事を優先しつつ、タスク数の均等化も考慮
+                    let selectedKanji: string | null = null;
+                    let minTaskCount = Infinity;
+                    
+                    // まず参加予定の幹事から、タスク数が最も少ない人を探す
+                    for (let i = 0; i < candidateList.length; i++) {
+                        const candidateId = candidateList[(rotationIndex + i) % candidateList.length];
+                        const user = users.find(u => u[2] === candidateId);
+                        if (!user) continue;
+                        
+                        const isAttending = attendeeIds.has(candidateId);
+                        const taskCount = taskCounts.get(candidateId) || 0;
+                        
+                        // 参加予定の幹事を優先し、タスク数が少ない人を選択
+                        if (isAttending && (selectedKanji === null || attendeeIds.has(selectedKanji) === false || taskCount < minTaskCount)) {
+                            selectedKanji = candidateId;
+                            minTaskCount = taskCount;
+                        } else if (!selectedKanji && !isAttending && taskCount < minTaskCount) {
+                            // 参加予定の幹事がいない場合のみ、参加予定外の幹事を選択
+                            selectedKanji = candidateId;
+                            minTaskCount = taskCount;
+                        }
+                    }
+                    
+                    // 参加予定の幹事がいる場合は、必ず参加予定の幹事から選択
+                    if (attendingKanji.length > 0 && selectedKanji && !attendeeIds.has(selectedKanji)) {
+                        // 参加予定の幹事から、タスク数が最も少ない人を選択
+                        const attendingCandidates = attendingKanji.map(id => ({
+                            id,
+                            count: taskCounts.get(id) || 0
+                        })).sort((a, b) => a.count - b.count);
+                        
+                        if (attendingCandidates.length > 0) {
+                            selectedKanji = attendingCandidates[0].id;
+                        }
+                    }
+                    
+                    if (selectedKanji) {
+                        const user = users.find(u => u[2] === selectedKanji);
+                        if (user) {
+                            if (!task) {
+                                // 新規タスクを作成
+                                const newTask: Task = {
+                                    id: `${event.ID}_${taskType}`,
+                                    eventId: event.ID,
+                                    eventName: event.event_name,
+                                    eventDate: event.start_datetime,
+                                    taskName: taskType,
+                                    description: `${taskType}を担当`,
+                                    assignedTo: selectedKanji,
+                                    assignedToName: user[1],
+                                    accepted: false,
+                                    createdAt: new Date().toISOString().split('T')[0],
+                                    createdBy: profile?.userId || '',
+                                    lastUpdate: new Date().toISOString(),
+                                    updateUser: 'AI Assignment'
+                                };
+                                updatedTasks.push(newTask);
+                            } else {
+                                // 既存タスクを更新
+                                task.assignedTo = selectedKanji;
+                                task.assignedToName = user[1];
+                                task.accepted = false;
+                                task.lastUpdate = new Date().toISOString();
+                                task.updateUser = 'AI Assignment';
+                            }
+                            
+                            // タスク数を更新
+                            taskCounts.set(selectedKanji, (taskCounts.get(selectedKanji) || 0) + 1);
+                            rotationIndex++;
+                        }
+                    }
+                });
+            });
+            
+            return updatedTasks;
+        });
+        
+        setTimeout(() => setIsAssigning(false), 1000);
+    };
+
+    const handleBulkSave = async () => {
+        setIsSaving(true);
+        setSavingMessage('一括保存中...');
+        
+        try {
+            // 現在の日付を取得（時刻を00:00:00に設定）
+            const today = new Date();
+            today.setHours(0, 0, 0, 0);
+            
+            // 表示されているイベントを取得（過去日付のイベントは除外）
+            const visibleEvents = events.filter(event => {
+                const eventDate = new Date(event.start_datetime);
+                eventDate.setHours(0, 0, 0, 0);
+                const isPastEvent = eventDate < today;
+                
+                // 過去日付のイベントは除外
+                if (isPastEvent) return false;
+                
+                // その他のフィルタ条件
+                return showPastEvents || event.event_status !== 99;
+            });
+            
+            // 変更があるイベントのみを保存
+            const eventsToSave = visibleEvents.filter(event => hasChanges(event.ID));
+            
+            if (eventsToSave.length === 0) {
+                setIsSaving(false);
+                setSavingMessage('');
+                return;
+            }
+            
+            // 各イベントを順番に保存
+            for (const event of eventsToSave) {
+                await handleSaveEvent(event);
+            }
+            
+            setIsSaving(false);
+            setSavingMessage('');
+        } catch (error) {
+            console.error('Error in bulk save:', error);
+            setIsSaving(false);
+            setSavingMessage('');
+        }
+    };
+
+    const hasAnyChanges = (): boolean => {
+        // 現在の日付を取得（時刻を00:00:00に設定）
+        const today = new Date();
+        today.setHours(0, 0, 0, 0);
+        
+        // 表示されているイベントを取得（過去日付のイベントは除外）
+        const visibleEvents = events.filter(event => {
+            const eventDate = new Date(event.start_datetime);
+            eventDate.setHours(0, 0, 0, 0);
+            const isPastEvent = eventDate < today;
+            
+            // 過去日付のイベントは除外
+            if (isPastEvent) return false;
+            
+            // その他のフィルタ条件
+            return showPastEvents || event.event_status !== 99;
+        });
+        
+        // 変更があるイベントが1つでもあるかチェック
+        return visibleEvents.some(event => hasChanges(event.ID));
+    };
+
+    const moveKanjiUp = (index: number) => {
+        if (index === 0) return;
+        const newOrder = [...rotationOrder];
+        [newOrder[index - 1], newOrder[index]] = [newOrder[index], newOrder[index - 1]];
+        setRotationOrder(newOrder);
+    };
+
+    const moveKanjiDown = (index: number) => {
+        if (index === rotationOrder.length - 1) return;
+        const newOrder = [...rotationOrder];
+        [newOrder[index], newOrder[index + 1]] = [newOrder[index + 1], newOrder[index]];
+        setRotationOrder(newOrder);
+    };
+
+    const toggleKanjiExclusion = (userId: string) => {
+        setExcludedKanji(prev => {
+            const newExcluded = new Set(prev);
+            if (newExcluded.has(userId)) {
+                // 除外を解除する場合、ローテーションに追加
+                newExcluded.delete(userId);
+                setRotationOrder(prevOrder => {
+                    // 既にローテーションに含まれている場合は追加しない
+                    if (!prevOrder.includes(userId)) {
+                        return [...prevOrder, userId];
+                    }
+                    return prevOrder;
+                });
+            } else {
+                // 除外する場合、ローテーションから削除
+                newExcluded.add(userId);
+                setRotationOrder(prevOrder => prevOrder.filter(id => id !== userId));
+            }
+            return newExcluded;
+        });
+    };
+
+    const hasChanges = (eventId: string): boolean => {
+        // データがまだロードされていない場合は変更なし
+        if (isLoading) {
+            return false;
+        }
+        
+        const eventTasks = tasks.filter(task => task.eventId === eventId);
+        const existingKanjiData = kanjiTasks.find(row => row[1] === eventId);
+        
+        // 既存データがない場合（新規イベント）、全てのタスクが空であれば変更なし
+        if (!existingKanjiData) {
+            // 表示されているタスク（kanjiTaskTypes）のみをチェック
+            const displayedTaskNames = kanjiTaskTypes.map(t => t.value);
+            const displayedTasks = eventTasks.filter(task => displayedTaskNames.includes(task.taskName));
+            return displayedTasks.some(task => task.assignedTo !== '' || task.accepted);
+        }
+        
+        // 現在のタスク状態を取得
+        const currentTaskData = {
+            video: '',
+            video_accept: 'false',
+            drone_video: '',
+            drone_video_accept: 'false',
+            drone_prep: '',
+            drone_prep_accept: 'false',
+            score_mip: '',
+            score_mip_accept: 'false',
+            captain: '',
+            captain_accept: 'false',
+            ball: '',
+            ball_accept: 'false'
+        };
+        
+        eventTasks.forEach(task => {
+            switch (task.taskName) {
+                case 'video':
+                    currentTaskData.video = task.assignedTo;
+                    currentTaskData.video_accept = task.accepted ? 'true' : 'false';
+                    break;
+                case 'drone_video':
+                    currentTaskData.drone_video = task.assignedTo;
+                    currentTaskData.drone_video_accept = task.accepted ? 'true' : 'false';
+                    break;
+                case 'drone_prep':
+                    currentTaskData.drone_prep = task.assignedTo;
+                    currentTaskData.drone_prep_accept = task.accepted ? 'true' : 'false';
+                    break;
+                case 'score_mip':
+                    currentTaskData.score_mip = task.assignedTo;
+                    currentTaskData.score_mip_accept = task.accepted ? 'true' : 'false';
+                    break;
+                case 'captain':
+                    currentTaskData.captain = task.assignedTo;
+                    currentTaskData.captain_accept = task.accepted ? 'true' : 'false';
+                    break;
+                case 'ball':
+                    currentTaskData.ball = task.assignedTo;
+                    currentTaskData.ball_accept = task.accepted ? 'true' : 'false';
+                    break;
+            }
+        });
+        
+        // 保存済みデータと比較（boolean値と文字列の両方に対応）
+        const getAcceptValue = (value: string | boolean | undefined): string => {
+            if (value === true || value === 'true') return 'true';
+            return 'false';
+        };
+        
+        const savedData = {
+            video: existingKanjiData[3] || '',
+            video_accept: getAcceptValue(existingKanjiData[4]),
+            drone_video: existingKanjiData[5] || '',
+            drone_video_accept: getAcceptValue(existingKanjiData[6]),
+            drone_prep: existingKanjiData[7] || '',
+            drone_prep_accept: getAcceptValue(existingKanjiData[8]),
+            score_mip: existingKanjiData[9] || '',
+            score_mip_accept: getAcceptValue(existingKanjiData[10]),
+            captain: existingKanjiData[11] || '',
+            captain_accept: getAcceptValue(existingKanjiData[12]),
+            ball: existingKanjiData[13] || '',
+            ball_accept: getAcceptValue(existingKanjiData[14])
+        };
+        
+        // 各フィールドを比較
+        return (
+            currentTaskData.video !== savedData.video ||
+            currentTaskData.video_accept !== savedData.video_accept ||
+            currentTaskData.drone_video !== savedData.drone_video ||
+            currentTaskData.drone_video_accept !== savedData.drone_video_accept ||
+            currentTaskData.drone_prep !== savedData.drone_prep ||
+            currentTaskData.drone_prep_accept !== savedData.drone_prep_accept ||
+            currentTaskData.score_mip !== savedData.score_mip ||
+            currentTaskData.score_mip_accept !== savedData.score_mip_accept ||
+            currentTaskData.captain !== savedData.captain ||
+            currentTaskData.captain_accept !== savedData.captain_accept ||
+            currentTaskData.ball !== savedData.ball ||
+            currentTaskData.ball_accept !== savedData.ball_accept
+        );
+    };
+
     const handleSaveEvent = async (event: CalendarEvent) => {
         const eventTasks = tasks.filter(task => task.eventId === event.ID);
         const existingKanjiData = kanjiTasks.find(row => row[1] === event.ID);
@@ -616,6 +1009,38 @@ export default function KanjiTask() {
         };
 
         await saveEventData(event.ID, data, false);
+        
+        // 保存後、kanjiTasksを更新して変更をリセット
+        const updatedKanjiData = [
+            data.id || '',
+            data.event_id,
+            data.act_date,
+            data.video,
+            data.video_accept,
+            data.drone_video,
+            data.drone_video_accept,
+            data.drone_prep,
+            data.drone_prep_accept,
+            data.score_mip,
+            data.score_mip_accept,
+            data.captain,
+            data.captain_accept,
+            data.ball,
+            data.ball_accept,
+            data.last_update,
+            data.update_user
+        ];
+        
+        setKanjiTasks(prev => {
+            const index = prev.findIndex(row => row[1] === event.ID);
+            if (index >= 0) {
+                const updated = [...prev];
+                updated[index] = updatedKanjiData;
+                return updated;
+            } else {
+                return [...prev, updatedKanjiData];
+            }
+        });
     };
 
     const getLatestUpdateInfo = (eventId: string) => {
@@ -653,30 +1078,414 @@ export default function KanjiTask() {
                     {lang === 'ja-JP' ? '幹事タスク管理' : 'Kanji Task Management'}
                 </Typography>
 
-                                {/* イベント一覧 */}
-                <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 2 }}>
-                    <Typography variant="h6" sx={{ color: '#757575' }}>
-                        {lang === 'ja-JP' ? 'イベント一覧' : 'Event List'}
-                    </Typography>
-                    <FormControlLabel
-                        control={
-                            <Switch
-                                checked={showPastEvents}
-                                onChange={(e) => setShowPastEvents(e.target.checked)}
-                                color="primary"
-                            />
-                        }
-                        label={lang === 'ja-JP' ? '過去のイベントを表示' : 'Show Past Events'}
-                    />
-                </Box>
+                {viewMode === 'grid' ? (
+                    <>
+                        {/* 設定セクション */}
+                        <Paper elevation={2} sx={{ mb: 2, p: 2 }}>
+                            <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 2 }}>
+                                <Typography variant="h6" sx={{ color: '#757575' }}>
+                                    {lang === 'ja-JP' ? 'ローテーション順設定' : 'Rotation Order Settings'}
+                                </Typography>
+                                <IconButton
+                                    onClick={() => setShowSettings(!showSettings)}
+                                    size="small"
+                                    sx={{ color: '#757575' }}
+                                >
+                                    {showSettings ? <ExpandLess /> : <ExpandMore />}
+                                </IconButton>
+                            </Box>
+                            {showSettings && (
+                                <Box>
+                                    <Typography variant="body2" sx={{ mb: 2, color: '#757575' }}>
+                                        {lang === 'ja-JP' ? '幹事のアサイン順番を設定します。上下ボタンで順番を変更できます。ローテーションから除外する場合はスイッチをOFFにしてください。' : 'Set the assignment order for kanji. Use up/down buttons to change the order. Turn off the switch to exclude from rotation.'}
+                                    </Typography>
+                                    
+                                    {/* ローテーション順の幹事 */}
+                                    {rotationOrder.length > 0 && (
+                                        <Box sx={{ mb: 3 }}>
+                                            <Typography variant="subtitle2" sx={{ mb: 1, color: '#757575', fontWeight: 'bold' }}>
+                                                {lang === 'ja-JP' ? 'ローテーション順' : 'Rotation Order'}
+                                            </Typography>
+                                            <List>
+                                                {rotationOrder.map((userId, index) => {
+                                                    const user = users.find(u => u[2] === userId);
+                                                    if (!user) return null;
+                                                    
+                                                    return (
+                                                        <ListItem
+                                                            key={userId}
+                                                            sx={{
+                                                                border: '1px solid #e0e0e0',
+                                                                borderRadius: 1,
+                                                                mb: 1,
+                                                                backgroundColor: '#fafafa'
+                                                            }}
+                                                            secondaryAction={
+                                                                <Box sx={{ display: 'flex', gap: 0.5, alignItems: 'center' }}>
+                                                                    <Switch
+                                                                        checked={true}
+                                                                        onChange={() => toggleKanjiExclusion(userId)}
+                                                                        size="small"
+                                                                        sx={{ mr: 1 }}
+                                                                    />
+                                                                    <IconButton
+                                                                        edge="end"
+                                                                        onClick={() => moveKanjiUp(index)}
+                                                                        disabled={index === 0}
+                                                                        size="small"
+                                                                    >
+                                                                        <ArrowUpward fontSize="small" />
+                                                                    </IconButton>
+                                                                    <IconButton
+                                                                        edge="end"
+                                                                        onClick={() => moveKanjiDown(index)}
+                                                                        disabled={index === rotationOrder.length - 1}
+                                                                        size="small"
+                                                                    >
+                                                                        <ArrowDownward fontSize="small" />
+                                                                    </IconButton>
+                                                                </Box>
+                                                            }
+                                                        >
+                                                            <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, mr: 2 }}>
+                                                                <Chip 
+                                                                    label={`${index + 1}`}
+                                                                    size="small"
+                                                                    sx={{ 
+                                                                        minWidth: 32, 
+                                                                        height: 24,
+                                                                        fontWeight: 'bold',
+                                                                        backgroundColor: '#3f51b5',
+                                                                        color: 'white'
+                                                                    }}
+                                                                />
+                                                                <AvatarIcon
+                                                                    picUrl={user[4]}
+                                                                    name={user[1]}
+                                                                    width={32}
+                                                                    height={32}
+                                                                    showTooltip={true}
+                                                                />
+                                                                <Typography variant="body2">
+                                                                    {user[1]}
+                                                                </Typography>
+                                                            </Box>
+                                                        </ListItem>
+                                                    );
+                                                })}
+                                            </List>
+                                        </Box>
+                                    )}
+                                    
+                                    {/* 除外された幹事 */}
+                                    {users
+                                        .filter(user => user[3] === '幹事' && user[1] !== '忍' && excludedKanji.has(user[2]))
+                                        .length > 0 && (
+                                        <Box>
+                                            <Typography variant="subtitle2" sx={{ mb: 1, color: '#757575', fontWeight: 'bold' }}>
+                                                {lang === 'ja-JP' ? 'ローテーションから除外' : 'Excluded from Rotation'}
+                                            </Typography>
+                                            <List>
+                                                {users
+                                                    .filter(user => user[3] === '幹事' && user[1] !== '忍' && excludedKanji.has(user[2]))
+                                                    .map((user) => {
+                                                        const userId = user[2];
+                                                        
+                                                        return (
+                                                            <ListItem
+                                                                key={userId}
+                                                                sx={{
+                                                                    border: '1px solid #e0e0e0',
+                                                                    borderRadius: 1,
+                                                                    mb: 1,
+                                                                    backgroundColor: '#f5f5f5',
+                                                                    opacity: 0.6
+                                                                }}
+                                                                secondaryAction={
+                                                                    <Switch
+                                                                        checked={false}
+                                                                        onChange={() => toggleKanjiExclusion(userId)}
+                                                                        size="small"
+                                                                    />
+                                                                }
+                                                            >
+                                                                <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, mr: 2 }}>
+                                                                    <AvatarIcon
+                                                                        picUrl={user[4]}
+                                                                        name={user[1]}
+                                                                        width={32}
+                                                                        height={32}
+                                                                        showTooltip={true}
+                                                                    />
+                                                                    <Typography variant="body2">
+                                                                        {user[1]}
+                                                                    </Typography>
+                                                                </Box>
+                                                            </ListItem>
+                                                        );
+                                                    })}
+                                            </List>
+                                        </Box>
+                                    )}
+                                </Box>
+                            )}
+                        </Paper>
+                        
+                        {/* イベント一覧コントロール */}
+                        <Box sx={{ mb: 2 }}>
+                            {/* 1行目: EventList と Show Past Events */}
+                            <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 1 }}>
+                                <Typography variant="h6" sx={{ color: '#757575' }}>
+                                    {lang === 'ja-JP' ? 'イベント一覧' : 'Event List'}
+                                </Typography>
+                                <FormControlLabel
+                                    control={
+                                        <Switch
+                                            checked={showPastEvents}
+                                            onChange={(e) => setShowPastEvents(e.target.checked)}
+                                            color="primary"
+                                        />
+                                    }
+                                    label={lang === 'ja-JP' ? '過去のイベントを表示' : 'Show Past Events'}
+                                />
+                            </Box>
+                            {/* 2行目: AutoAssign, Save, 表示切替 */}
+                            <Box sx={{ display: 'flex', justifyContent: 'flex-end', alignItems: 'center', gap: 2 }}>
+                                <Button
+                                    variant="outlined"
+                                    size="small"
+                                    onClick={handleBulkAIAssignment}
+                                    disabled={isAssigning}
+                                    sx={{ minWidth: 'auto', px: 2 }}
+                                >
+                                    {isAssigning ? (lang === 'ja-JP' ? '配置中...' : 'Assigning...') : (lang === 'ja-JP' ? 'Auto Assign（一括登録）' : 'Auto Assign')}
+                                </Button>
+                                <Button
+                                    variant="contained"
+                                    size="small"
+                                    onClick={handleBulkSave}
+                                    disabled={isSaving || !hasAnyChanges()}
+                                    sx={{ minWidth: 'auto', px: 2 }}
+                                >
+                                    {isSaving ? (lang === 'ja-JP' ? '保存中...' : 'Saving...') : (lang === 'ja-JP' ? '一括保存' : 'Bulk Save')}
+                                </Button>
+                                <Box sx={{ display: 'flex', gap: 0.5 }}>
+                                    <IconButton
+                                        onClick={() => setViewMode('card')}
+                                        color="default"
+                                        size="small"
+                                    >
+                                        <ViewList />
+                                    </IconButton>
+                                    <IconButton
+                                        onClick={() => setViewMode('grid')}
+                                        color="primary"
+                                        size="small"
+                                    >
+                                        <ViewModule />
+                                    </IconButton>
+                                </Box>
+                            </Box>
+                        </Box>
+                        
+                        <Paper elevation={2} sx={{ mb: 2 }}>
+                            <Box sx={{ overflowX: 'auto' }}>
+                                <table style={{ width: '100%', borderCollapse: 'collapse' }}>
+                                <thead>
+                                    <tr style={{ borderBottom: '2px solid #e0e0e0', backgroundColor: '#f5f5f5' }}>
+                                        <th style={{ padding: '12px', textAlign: 'left', fontWeight: 'bold' }}>
+                                            {lang === 'ja-JP' ? '日付' : 'Date'}
+                                        </th>
+                                        <th style={{ padding: '12px', textAlign: 'left', fontWeight: 'bold' }}>
+                                            {lang === 'ja-JP' ? 'ビデオ' : 'Video'}
+                                        </th>
+                                        <th style={{ padding: '12px', textAlign: 'left', fontWeight: 'bold' }}>
+                                            {lang === 'ja-JP' ? 'ドローン' : 'Drone'}
+                                        </th>
+                                        <th style={{ padding: '12px', textAlign: 'left', fontWeight: 'bold' }}>
+                                            {lang === 'ja-JP' ? 'MIP' : 'MIP'}
+                                        </th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    {events.filter(event => showPastEvents || event.event_status !== 99).map((event) => {
+                                        const eventTasks = tasks.filter(task => task.eventId === event.ID);
+                                        const videoTask = eventTasks.find(task => task.taskName === 'video');
+                                        const droneTask = eventTasks.find(task => task.taskName === 'drone_prep');
+                                        const mipTask = eventTasks.find(task => task.taskName === 'score_mip');
+                                        
+                                        // イベントの参加者を取得
+                                        const attendees = getEventAttendees(event.ID);
+                                        const attendeeIds = attendees.map(att => att.user_id);
+                                        
+                                        const getAssigneeName = (task: Task | undefined) => {
+                                            if (!task || !task.assignedTo) return '';
+                                            const user = users.find(u => u[2] === task.assignedTo);
+                                            return user ? user[1] : task.assignedToName || '';
+                                        };
+                                        
+                                        const getAssigneePicUrl = (task: Task | undefined) => {
+                                            if (!task || !task.assignedTo) return undefined;
+                                            const user = users.find(u => u[2] === task.assignedTo);
+                                            return user && user[4] ? user[4] : undefined;
+                                        };
+                                        
+                                        // タスクにアサインされている人が参加者リストに含まれているかチェック
+                                        const isAssigneeAttending = (task: Task | undefined): boolean => {
+                                            if (!task || !task.assignedTo) return false;
+                                            return attendeeIds.includes(task.assignedTo);
+                                        };
+                                        
+                                        // ハイライト用のスタイル
+                                        const getCellStyle = (task: Task | undefined) => {
+                                            const baseStyle: React.CSSProperties = { padding: '12px' };
+                                            if (task && task.assignedTo && !isAssigneeAttending(task)) {
+                                                return { ...baseStyle, backgroundColor: '#ffebee' };
+                                            }
+                                            return baseStyle;
+                                        };
 
-                {events.filter(event => showPastEvents || event.event_status !== 99).map((event) => {
-                    const eventTasks = tasks.filter(task => task.eventId === event.ID);
-                    const attendees = getEventAttendees(event.ID);
-                    const availableKanji = attendees.map(att => {
-                        const user = users.find(u => u[2] === att.user_id);
-                        return user ? { userId: user[2], userName: user[1], userPic: user[4] } : null;
-                    }).filter((kanji): kanji is { userId: string; userName: string, userPic: string } => kanji !== null);
+                                        return (
+                                            <tr key={event.ID} style={{ borderBottom: '1px solid #e0e0e0' }}>
+                                                <td style={{ padding: '12px' }}>
+                                                    <Typography variant="body2" sx={{ fontWeight: 'bold' }}>
+                                                        {new Date(event.start_datetime).toLocaleString('ja-JP', {
+                                                            timeZone: 'Asia/Singapore',
+                                                            year: 'numeric',
+                                                            month: '2-digit',
+                                                            day: '2-digit',
+                                                            weekday: 'short'
+                                                        })}
+                                                    </Typography>
+                                                    <Typography variant="caption" sx={{ color: '#757575' }}>
+                                                        {event.event_name}
+                                                    </Typography>
+                                                </td>
+                                                <td style={getCellStyle(videoTask)}>
+                                                    {videoTask && videoTask.assignedTo ? (
+                                                        <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+                                                            <AvatarIcon
+                                                                picUrl={getAssigneePicUrl(videoTask)}
+                                                                name={getAssigneeName(videoTask)}
+                                                                width={24}
+                                                                height={24}
+                                                                showTooltip={true}
+                                                            />
+                                                            <Typography variant="body2">
+                                                                {getAssigneeName(videoTask)}
+                                                            </Typography>
+                                                            {videoTask.accepted && (
+                                                                <CheckCircle color="success" fontSize="small" />
+                                                            )}
+                                                        </Box>
+                                                    ) : (
+                                                        <Typography variant="body2" sx={{ color: '#9e9e9e' }}>
+                                                            {lang === 'ja-JP' ? '未アサイン' : 'Unassigned'}
+                                                        </Typography>
+                                                    )}
+                                                </td>
+                                                <td style={getCellStyle(droneTask)}>
+                                                    {droneTask && droneTask.assignedTo ? (
+                                                        <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+                                                            <AvatarIcon
+                                                                picUrl={getAssigneePicUrl(droneTask)}
+                                                                name={getAssigneeName(droneTask)}
+                                                                width={24}
+                                                                height={24}
+                                                                showTooltip={true}
+                                                            />
+                                                            <Typography variant="body2">
+                                                                {getAssigneeName(droneTask)}
+                                                            </Typography>
+                                                            {droneTask.accepted && (
+                                                                <CheckCircle color="success" fontSize="small" />
+                                                            )}
+                                                        </Box>
+                                                    ) : (
+                                                        <Typography variant="body2" sx={{ color: '#9e9e9e' }}>
+                                                            {lang === 'ja-JP' ? '未アサイン' : 'Unassigned'}
+                                                        </Typography>
+                                                    )}
+                                                </td>
+                                                <td style={getCellStyle(mipTask)}>
+                                                    {mipTask && mipTask.assignedTo ? (
+                                                        <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+                                                            <AvatarIcon
+                                                                picUrl={getAssigneePicUrl(mipTask)}
+                                                                name={getAssigneeName(mipTask)}
+                                                                width={24}
+                                                                height={24}
+                                                                showTooltip={true}
+                                                            />
+                                                            <Typography variant="body2">
+                                                                {getAssigneeName(mipTask)}
+                                                            </Typography>
+                                                            {mipTask.accepted && (
+                                                                <CheckCircle color="success" fontSize="small" />
+                                                            )}
+                                                        </Box>
+                                                    ) : (
+                                                        <Typography variant="body2" sx={{ color: '#9e9e9e' }}>
+                                                            {lang === 'ja-JP' ? '未アサイン' : 'Unassigned'}
+                                                        </Typography>
+                                                    )}
+                                                </td>
+                                            </tr>
+                                        );
+                                    })}
+                                </tbody>
+                            </table>
+                        </Box>
+                    </Paper>
+                    </>
+                ) : (
+                    <>
+                        {/* イベント一覧コントロール */}
+                        <Box sx={{ mb: 2 }}>
+                            {/* 1行目: EventList と Show Past Events */}
+                            <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 1 }}>
+                                <Typography variant="h6" sx={{ color: '#757575' }}>
+                                    {lang === 'ja-JP' ? 'イベント一覧' : 'Event List'}
+                                </Typography>
+                                <FormControlLabel
+                                    control={
+                                        <Switch
+                                            checked={showPastEvents}
+                                            onChange={(e) => setShowPastEvents(e.target.checked)}
+                                            color="primary"
+                                        />
+                                    }
+                                    label={lang === 'ja-JP' ? '過去のイベントを表示' : 'Show Past Events'}
+                                />
+                            </Box>
+                            {/* 2行目: 表示切替 */}
+                            <Box sx={{ display: 'flex', justifyContent: 'flex-end', alignItems: 'center', gap: 2 }}>
+                                <Box sx={{ display: 'flex', gap: 0.5 }}>
+                                    <IconButton
+                                        onClick={() => setViewMode('card')}
+                                        color="primary"
+                                        size="small"
+                                    >
+                                        <ViewList />
+                                    </IconButton>
+                                    <IconButton
+                                        onClick={() => setViewMode('grid')}
+                                        color="default"
+                                        size="small"
+                                    >
+                                        <ViewModule />
+                                    </IconButton>
+                                </Box>
+                            </Box>
+                        </Box>
+                        
+                        {events.filter(event => showPastEvents || event.event_status !== 99).map((event) => {
+                        const eventTasks = tasks.filter(task => task.eventId === event.ID);
+                        const attendees = getEventAttendees(event.ID);
+                        const availableKanji = attendees.map(att => {
+                            const user = users.find(u => u[2] === att.user_id);
+                            return user ? { userId: user[2], userName: user[1], userPic: user[4] } : null;
+                        }).filter((kanji): kanji is { userId: string; userName: string, userPic: string } => kanji !== null);
 
                     return (
                         <Paper key={event.ID} elevation={2} sx={{ mb: 2 }}>
@@ -699,18 +1508,10 @@ export default function KanjiTask() {
                                         </Box>
                                         <Box sx={{ display: 'flex', flexDirection: 'column', gap: 1 }}>
                                             <Button
-                                                variant="outlined"
-                                                size="small"
-                                                onClick={() => handleAIAssignment(event)}
-                                                disabled={isAssigning}
-                                                sx={{ minWidth: 'auto', px: 2 }}
-                                            >
-                                                {isAssigning ? (lang === 'ja-JP' ? '配置中...' : 'Assigning...') : (lang === 'ja-JP' ? 'AI配置' : 'AI Assign')}
-                                            </Button>
-                                            <Button
                                                 variant="contained"
                                                 size="small"
                                                 onClick={() => handleSaveEvent(event)}
+                                                disabled={!hasChanges(event.ID)}
                                                 sx={{ minWidth: 'auto', px: 2 }}
                                             >
                                                 {lang === 'ja-JP' ? '保存' : 'Save'}
@@ -872,7 +1673,9 @@ export default function KanjiTask() {
                             </Box>
                         </Paper>
                     );
-                })}
+                    })}
+                    </>
+                )}
 
                 {/* 幹事統計 */}
                 <Paper elevation={2} sx={{ mb: 3, p: 2, mt: 3 }}>
@@ -896,6 +1699,7 @@ export default function KanjiTask() {
                                     <tr key={stat.userId} style={{ borderBottom: '1px solid #f0f0f0' }}>
                                         <td style={{ padding: '8px', display: 'flex', alignItems: 'center', gap: '8px' }}>
                                             <AvatarIcon 
+                                                picUrl={stat.userPic}
                                                 name={stat.userName}
                                                 width={24}
                                                 height={24}
