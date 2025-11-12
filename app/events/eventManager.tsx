@@ -617,7 +617,7 @@ export default function EventManager() {
                                 size='small'
                                 fullWidth
                                 label={'ピッチ代・部費拠出金'}
-                                type="number"
+                                type="text"
                                 value={formData.pitch_fee}
                                 onChange={(e) => setFormData({ ...formData, pitch_fee: e.target.value })}
                             />
@@ -627,7 +627,7 @@ export default function EventManager() {
                                 size='small'
                                 fullWidth
                                 label={'参加費'}
-                                type="number"
+                                type="text"
                                 value={formData.paticipation_fee}
                                 onChange={(e) => setFormData({ ...formData, paticipation_fee: e.target.value })}
                             />
