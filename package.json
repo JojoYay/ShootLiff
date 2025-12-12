@@ -23,7 +23,7 @@
     "node": ">=24.10.0"
   },
   "resolutions": {
-    "next": "15.5.9"
+    "next": "14.2.35"
   },
   "dependencies": {
     "@emotion/react": "^11.11.4",
