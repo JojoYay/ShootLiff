@@ -19,6 +19,12 @@
     "deploy:prod": "firebase use prod && npm run set-env:prod && next build && firebase deploy --project shootsundayfront",
     "deploy:bvs": "firebase use bvsfront && npm run set-env:bvs && next build && firebase deploy --project bvsfront"
   },
+  "engines": {
+    "node": ">=24.10.0"
+  },
+  "resolutions": {
+    "next": "15.5.9"
+  },
   "dependencies": {
     "@emotion/react": "^11.11.4",
     "@emotion/styled": "^11.11.5",
@@ -53,8 +59,8 @@
     "@types/react": "^18",
     "@types/react-dom": "^18",
     "cross-env": "^7.0.3",
-    "eslint": "^8",
-    "eslint-config-next": "14.2.4",
+    "eslint": "^9",
+    "eslint-config-next": "^16.0.10",
     "postcss": "^8",
     "tailwindcss": "^3.4.1",
     "typescript": "^5.8.2"
