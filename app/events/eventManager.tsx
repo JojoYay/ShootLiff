@@ -294,21 +294,26 @@ export default function EventManager() {
         const parts = remark.split(urlRegex);
         
         return parts.map((part, index) => {
-            // 改行を <br /> に置き換え
-            const formattedPart = part.split('\n').map((line, lineIndex) => (
-                <>
-                    {line.length > 25 ? line.slice(0, 25) + '...' : line}
-                    {lineIndex < part.split('\n').length - 1 && <br />}
-                </>
-            ));
-        
-            if (urlRegex.test(part)) {
+            const isUrl = urlRegex.test(part);
+            
+            // URLの場合は省略、通常のテキストは省略しない
+            if (isUrl) {
+                const displayText = part.length > 25 ? part.slice(0, 25) + '...' : part;
                 return (
                     <a key={index} href={part} target="_blank" rel="noopener noreferrer" style={{ color: '#1e88e5' }}>
-                        {formattedPart}
+                        {displayText}
                     </a>
                 );
             }
+            
+            // 通常のテキストは改行を <br /> に置き換え、省略しない
+            const formattedPart = part.split('\n').map((line, lineIndex, array) => (
+                <React.Fragment key={lineIndex}>
+                    {line}
+                    {lineIndex < array.length - 1 && <br />}
+                </React.Fragment>
+            ));
+            
             return <span key={index}>{formattedPart}</span>;
         });
     }
