@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { Dialog, DialogTitle, DialogContent, DialogActions, TextField, Button } from '@mui/material';
-import { User } from '../types/user';
+import { User, JsonUser } from '../types/user';
 
 interface RegistrationDialogProps {
     nickname: string;
@@ -10,7 +10,7 @@ interface RegistrationDialogProps {
     setNicknameError: (err:string) => void;
     // disabled: boolean;
     // onClose: () => void; // ダイアログを閉じるための関数を追加
-    users: string[][];
+    users: JsonUser[];
     profile: User | null;
     setShowRegistrationDialog: (boo:boolean) => void;
 }
@@ -22,7 +22,7 @@ const RegistrationDialog: React.FC<RegistrationDialogProps> = ({ nickname, onNic
         setIsRegistering(true); // 登録処理開始時にtrueにする
         console.log(isRegistering);
         try{
-            const isNameTaken = users.some(user => user[1] === nickname);
+            const isNameTaken = users.some(user => user["伝助上の名前"] === nickname);
             if (isNameTaken) {
                 setNicknameError('This nickname is already in use.');
             } else {

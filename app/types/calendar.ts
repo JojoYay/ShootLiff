@@ -25,6 +25,11 @@ export interface Attendance {
     profile?: User | null; // Profile を追加
     adult_count: number;
     child_count: number;
+    child1?: string | boolean;
+    child2?: string | boolean;
+    child3?: string | boolean;
+    child4?: string | boolean;
+    child5?: string | boolean;
 }
 
 export interface Invoice {

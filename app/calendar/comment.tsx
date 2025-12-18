@@ -2,6 +2,7 @@ import React, { useEffect, useState } from 'react';
 import { Box, TextField, Button, Typography, IconButton } from '@mui/material';
 import DeleteIcon from '@mui/icons-material/Delete';
 import AvatarIcon from '../stats/avatarIcon';
+import { JsonUser } from '../types/user';
 
 interface Profile {
     userId: string;
@@ -12,7 +13,7 @@ interface Profile {
 interface CommentProps {
     componentId: string;
     category: string;
-    users: string[][]; // ユーザー情報
+    users: JsonUser[]; // ユーザー情報
     user: Profile; // 現在のユーザーID
     lang:string;
 }
@@ -129,7 +130,7 @@ const Comment: React.FC<CommentProps> = ({ componentId, category, users, user, l
                 {comments.map((comment) => {
                     // console.log(users);
                     // console.log(comment);
-                    const createUser = users.find(u => u[2] === comment[3]);
+                    const createUser = users.find(u => u["LINE ID"] === comment[3]);
                     // const user = users.find(u => u.id === comment.create_user);
                     // console.log(createUser);
                     return createUser ? (
@@ -138,8 +139,8 @@ const Comment: React.FC<CommentProps> = ({ componentId, category, users, user, l
                             <Box sx={{ display: 'flex', alignItems: 'center' }}>
                                 {user && (
                                     <AvatarIcon 
-                                        picUrl={createUser[4]} 
-                                        name={createUser[1]} 
+                                        picUrl={createUser["Picture"]} 
+                                        name={createUser["伝助上の名前"]} 
                                         width={24}
                                         height={24}
                                         showTooltip={true} 

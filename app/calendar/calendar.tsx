@@ -24,7 +24,7 @@ import RegistrationDialog from './registrationDialog';
 import LoadingSpinner from './loadingSpinner';
 import Comment from './comment';
 import { Attendance, CalendarEvent } from '../types/calendar';
-import { User } from '../types/user';
+import { User, JsonUser } from '../types/user';
 import { BALL, BEER, LOGO } from '../utils/constants';
 import { NextEventCard } from './nextEventCard';
 import { useRouter } from 'next/navigation';
@@ -38,11 +38,11 @@ export default function Calendar() {
     const [attendance, setAttendance] = useState<Attendance[]>([]);
     // const [participationStatus, setParticipationStatus] = useState<{ [eventId: string]: '〇' | '△' | '×' }>({}); // 参加状況
     const [pendingParticipationStatus, setPendingParticipationStatus] = useState<{ [eventId: string]: '〇' | '△' | '×' }>({}); // 保留中の参加状況
-    const [pendingParticipationStatusCount, setPendingParticipationStatusCount] = useState<{ [eventId: string]: {adult:number, child:number} }>({}); // 保留中のカウント
+    const [pendingParticipationStatusCount, setPendingParticipationStatusCount] = useState<{ [eventId: string]: {adult:number, children:string[]} }>({}); // 保留中のカウント（childrenは選択された子供の名前の配列）
  
     const [profile, setProfile] = useState<User | null>(null);
     const [lang, setLang] = useState<string>('ja-JP');
-	const [users, setUsers] = useState<string[][]>([]);
+    const [jsonUsers, setJsonUsers] = useState<JsonUser[]>([]);
     const [isSaving, setIsSaving] = useState<boolean>(false);
     const { liff } = useLiff();
     const [isProxyReplyMode, setIsProxyReplyMode] = useState<boolean>(false); // 代理返信モード state
@@ -134,12 +134,22 @@ export default function Calendar() {
                 if (eventStartDate.getDate() === day && eventStartDate.getMonth() === month && eventStartDate.getFullYear() === year) {
                     const pendingStatus = pendingParticipationStatus[event.ID];
                     const existingAttendance = getAttendanceForDayAndEvent(eventStartDate, attendance, event.ID, userId);
+                    const pendingChildren = pendingParticipationStatusCount[event.ID]?.children || [];
+                    const pendingAdultCount = pendingParticipationStatusCount[event.ID]?.adult ?? 1;
+                    const pendingChildPositions = getChildPositions(userId, pendingChildren);
                     console.log('existing Attendance',existingAttendance);
                     const newEvent: CalendarEvent = {
                         ...event,
                         attendance: pendingStatus ? (existingAttendance ? {
                             ...existingAttendance,
-                            status: pendingStatus
+                            status: pendingStatus,
+                            adult_count: pendingAdultCount,
+                            child_count: pendingChildren.length,
+                            child1: pendingChildPositions.child1,
+                            child2: pendingChildPositions.child2,
+                            child3: pendingChildPositions.child3,
+                            child4: pendingChildPositions.child4,
+                            child5: pendingChildPositions.child5,
                         } : {
                             attendance_id: '',
                             user_id: profile?.userId ? profile.userId : '',
@@ -150,10 +160,15 @@ export default function Calendar() {
                             status: pendingStatus,
                             calendar: null,
                             profile: null,
-                            adult_count: 1,
-                            child_count: 0,
+                            adult_count: pendingAdultCount,
+                            child_count: pendingChildren.length,
+                            child1: pendingChildPositions.child1,
+                            child2: pendingChildPositions.child2,
+                            child3: pendingChildPositions.child3,
+                            child4: pendingChildPositions.child4,
+                            child5: pendingChildPositions.child5,
                         }) : existingAttendance,
-                        attendances: getAllAttendanceForDayAndEvent(eventStartDate, attendance, event.ID, users)
+                        attendances: getAllAttendanceForDayAndEvent(eventStartDate, attendance, event.ID, jsonUsers, userId)
                     };
                     dayEvents.push(newEvent);
                 }
@@ -197,7 +212,7 @@ export default function Calendar() {
     }
 
     // 日付とイベントIDに該当する参加ステータスを取得する関数
-    function getAllAttendanceForDayAndEvent(date: Date, attendance: Attendance[], eventId: string, users: string[][]): Attendance[] { // users を引数に追加
+    function getAllAttendanceForDayAndEvent(date: Date, attendance: Attendance[], eventId: string, jsonUsers: JsonUser[], currentUserId?: string | null): Attendance[] { // users を引数に追加
         const year = date.getFullYear();
         const month = date.getMonth() + 1; // 月は0から始まるため+1
         const day = date.getDate();
@@ -209,18 +224,65 @@ export default function Calendar() {
             parseInt(attend.month) === month &&
             parseInt(attend.date) === day
         ).map(attend => { // map で Profile 情報を追加
-            const user = users.find(u => u[2] === attend.user_id); // users から user_id に一致するユーザーを検索
+            const user = jsonUsers.find(u => u["LINE ID"] === attend.user_id); // users から user_id に一致するユーザーを検索
             const profile: User | null = user ? { // User オブジェクトを作成
-                userId: user[2],
-                lineName:user[0],
-                isKanji:user[3] === '幹事',
-                displayName: user[1],
-                pictureUrl: user[4],
+                userId: user["LINE ID"],
+                lineName:user["ライン上の名前"],
+                isKanji:user["幹事フラグ"] === '幹事',
+                displayName: user["伝助上の名前"],
+                pictureUrl: user["Picture"],
             } : null;
-            return {
+            
+            // 保留中の変更がある場合は、それを反映
+            const pendingChildren = pendingParticipationStatusCount[eventId]?.children;
+            const pendingAdultCount = pendingParticipationStatusCount[eventId]?.adult;
+            const isPendingUser = pendingChildren !== undefined && attend.user_id === currentUserId;
+            
+            let updatedAttend: Attendance = {
                 ...attend,
                 profile: profile, // Profile 情報を Attendance オブジェクトに追加
             };
+            
+            // 保留中の変更がある場合は、child_countとchild1-child5を更新
+            if (isPendingUser && pendingChildren) {
+                const childPositions = getChildPositions(attend.user_id, pendingChildren);
+                updatedAttend = {
+                    ...updatedAttend,
+                    child_count: pendingChildren.length,
+                    child1: childPositions.child1,
+                    child2: childPositions.child2,
+                    child3: childPositions.child3,
+                    child4: childPositions.child4,
+                    child5: childPositions.child5,
+                };
+                if (pendingAdultCount !== undefined) {
+                    updatedAttend.adult_count = pendingAdultCount;
+                }
+                console.log('[DEBUG getAllAttendanceForDayAndEvent] Updated with pending changes:', {
+                    user_id: attend.user_id,
+                    eventId: eventId,
+                    pendingChildren: pendingChildren,
+                    childPositions: childPositions,
+                    updatedAttend: updatedAttend
+                });
+            } else {
+                console.log('[DEBUG getAllAttendanceForDayAndEvent] No pending changes, using original:', {
+                    user_id: attend.user_id,
+                    eventId: eventId,
+                    currentUserId: currentUserId,
+                    isPendingUser: isPendingUser,
+                    pendingChildren: pendingChildren,
+                    original_child1: attend.child1,
+                    original_child2: attend.child2,
+                    original_child3: attend.child3,
+                    original_child4: attend.child4,
+                    original_child5: attend.child5,
+                    original_child_count: attend.child_count,
+                    updatedAttend: updatedAttend
+                });
+            }
+            
+            return updatedAttend;
         });
 
         return userAttendances; // 参加ステータスリストを返す // ユーザーの参加リストを返すように変更
@@ -250,21 +312,57 @@ export default function Calendar() {
                     event_status: item[7],
                 }));
                 setCalendarEvents(processedCalendarEvents);
-                setUsers(data.users.slice(1));
-                const fetchedAttendance = data.attendance.slice(1).map((item: string[]) => {
-                    const calendar_id = item[6];
+                setJsonUsers(data.jsonUsers as JsonUser[] || []);
+                const fetchedAttendance = (data.jsonAttendance || []).map((item: any) => {
+                    const calendar_id = item.calendar_id;
                     const relatedCalendarEvent = processedCalendarEvents.find(event => event.ID === calendar_id);
+                    
+                    // child1からchild5にTRUEが入っている数をカウント
+                    let childCount = 0;
+                    const childValues: any = {};
+                    for (let i = 1; i <= 5; i++) {
+                        const childKey = `child${i}`;
+                        const childValue = item[childKey];
+                        childValues[childKey] = childValue;
+                        // booleanのtrueまたは文字列の'TRUE'/'true'を判定
+                        if (childValue === true || childValue === 'TRUE' || childValue === 'true') {
+                            childCount++;
+                        }
+                    }
+                    
+                    // デバッグ: 最初の数件のみログ出力
+                    if (childCount > 0 || item.child1 || item.child2 || item.child3 || item.child4 || item.child5) {
+                        console.log('[DEBUG fetchCalendarEvents] Attendance data:', {
+                            attendance_id: item.attendance_id,
+                            user_id: item.user_id,
+                            child1: item.child1,
+                            child2: item.child2,
+                            child3: item.child3,
+                            child4: item.child4,
+                            child5: item.child5,
+                            childValues: childValues,
+                            calculatedChildCount: childCount,
+                            originalChildCount: item.child_count
+                        });
+                    }
+                    
                     return {
-                        attendance_id: item[0],
-                        user_id: item[1],
-                        year: item[2],
-                        month: item[3],
-                        date: item[4],
-                        status: item[5],
-                        calendar_id: item[6],
-                        calendar: relatedCalendarEvent,
-                        adult_count: item[7],
-                        child_count: item[8],
+                        attendance_id: String(item.attendance_id || ''),
+                        user_id: item.user_id || '',
+                        year: String(item.year || ''),
+                        month: String(item.month || ''),
+                        date: String(item.date || ''),
+                        status: item.status || '',
+                        calendar_id: item.calendar_id || '',
+                        calendar: relatedCalendarEvent || null,
+                        adult_count: typeof item.adult_count === 'number' ? item.adult_count : (item.adult_count === '' || item.adult_count === null || item.adult_count === undefined ? 1 : Number(item.adult_count) || 1),
+                        child_count: childCount, // child1からchild5にTRUEが入っている数をカウント
+                        // booleanのtrueの場合はそのまま、文字列の'TRUE'/'true'の場合は'TRUE'に統一、それ以外は空文字列
+                        child1: item.child1 === true ? true : (item.child1 === 'TRUE' || item.child1 === 'true' ? 'TRUE' : (item.child1 || '')),
+                        child2: item.child2 === true ? true : (item.child2 === 'TRUE' || item.child2 === 'true' ? 'TRUE' : (item.child2 || '')),
+                        child3: item.child3 === true ? true : (item.child3 === 'TRUE' || item.child3 === 'true' ? 'TRUE' : (item.child3 || '')),
+                        child4: item.child4 === true ? true : (item.child4 === 'TRUE' || item.child4 === 'true' ? 'TRUE' : (item.child4 || '')),
+                        child5: item.child5 === true ? true : (item.child5 === 'TRUE' || item.child5 === 'true' ? 'TRUE' : (item.child5 || '')),
                     };
                 });
                 setAttendance(fetchedAttendance);
@@ -274,14 +372,14 @@ export default function Calendar() {
         }
     };
 
-    const handleParticipationChange = async (calendar: CalendarEvent, status: '〇' | '△' | '×', userId: string | undefined, adultCount:number, childCount:number) => {
+    const handleParticipationChange = async (calendar: CalendarEvent, status: '〇' | '△' | '×', userId: string | undefined, adultCount:number, children:string[]) => {
         setPendingParticipationStatus(prevState => ({
             ...prevState,
             [calendar.ID]: status,
         }));
         setPendingParticipationStatusCount(prevState => ({
             ...prevState,
-            [calendar.ID]: {adult:adultCount, child:childCount},
+            [calendar.ID]: {adult:adultCount, children:children},
         }));
 
         console.log(calendar.ID + ':' + status);
@@ -296,6 +394,8 @@ export default function Calendar() {
                 parseInt(att.date) === startDate.getDate()
             );
     
+            const selectedChildren = pendingParticipationStatusCount[calendar.ID]?.children || [];
+            const childPositions = getChildPositions(userId, selectedChildren);
             const newAtt: Attendance = {
                 attendance_id: existingIndex >= 0 ? prevAttendance[existingIndex].attendance_id : '',
                 user_id: userId || '',
@@ -306,7 +406,12 @@ export default function Calendar() {
                 calendar_id: calendar.ID,
                 calendar: calendar,
                 adult_count: adultCount,
-                child_count: childCount
+                child_count: selectedChildren.length,
+                child1: childPositions.child1,
+                child2: childPositions.child2,
+                child3: childPositions.child3,
+                child4: childPositions.child4,
+                child5: childPositions.child5,
             };
     
             if (existingIndex >= 0) {
@@ -325,6 +430,8 @@ export default function Calendar() {
             return prevEvents.map(event => {
                 if (event.ID === calendar.ID) {
                     const startDate = new Date(event.start_datetime);
+                    const selectedChildren = pendingParticipationStatusCount[event.ID]?.children || [];
+                    const childPositions = getChildPositions(userId, selectedChildren);
                     const newAttendance: Attendance = {
                         attendance_id: '',
                         user_id: userId || '',
@@ -335,7 +442,12 @@ export default function Calendar() {
                         calendar_id: event.ID,
                         calendar: event,
                         adult_count: adultCount,
-                        child_count: childCount
+                        child_count: selectedChildren.length,
+                        child1: childPositions.child1,
+                        child2: childPositions.child2,
+                        child3: childPositions.child3,
+                        child4: childPositions.child4,
+                        child5: childPositions.child5,
                     };
                     return {
                         ...event,
@@ -375,6 +487,9 @@ export default function Calendar() {
                     if (cal) {
                         const startDate = new Date(cal.start_datetime as string);
                         const existingAttendance = findAttendance(eventId, startDate, userIdToUse);
+                        const selectedChildren = pendingParticipationStatusCount[eventId]?.children || [];
+                        const adultCount = pendingParticipationStatusCount[eventId]?.adult ?? existingAttendance?.adult_count ?? 1;
+                        const childPositions = getChildPositions(userIdToUse, selectedChildren);
                         console.log("existing_attendance")
                         console.log(existingAttendance);
                         formData.append('calendar_id_'+index, eid);
@@ -384,8 +499,13 @@ export default function Calendar() {
                         formData.append('attendance_id_'+index, existingAttendance?.attendance_id || '');
                         formData.append('user_id_'+index, userIdToUse);
                         formData.append('status_'+index, status);
-                        formData.append('adult_count_'+index, String(existingAttendance?.adult_count ?? 1));
-                        formData.append('child_count_'+index, String(existingAttendance?.child_count ?? 0));
+                        formData.append('adult_count_'+index, String(adultCount));
+                        formData.append('child_count_'+index, String(selectedChildren.length));
+                        formData.append('child1_'+index, childPositions.child1);
+                        formData.append('child2_'+index, childPositions.child2);
+                        formData.append('child3_'+index, childPositions.child3);
+                        formData.append('child4_'+index, childPositions.child4);
+                        formData.append('child5_'+index, childPositions.child5);
                     } else {
                         console.error(`Calendar event with ID ${eventId} not found in calendarEvents.`);
                     }
@@ -462,7 +582,8 @@ export default function Calendar() {
                 nextEvent = {
                     ...nextEvent,
                     attendance: getAttendanceForDayAndEvent(new Date(nextEvent.start_datetime), attendance, nextEvent.ID, profile?.userId),
-                    attendances: getAllAttendanceForDayAndEvent(new Date(nextEvent.start_datetime), attendance, nextEvent.ID, users)
+                    // attendances: getAllAttendanceForDayAndEvent(new Date(nextEvent.start_datetime), attendance, nextEvent.ID, users)
+                    attendances: getAllAttendanceForDayAndEvent(new Date(nextEvent.start_datetime), attendance, nextEvent.ID, jsonUsers, profile?.userId)
                 };
             }
         }
@@ -492,7 +613,7 @@ export default function Calendar() {
     }
 
     // フィルタリングされたユーザーリストを生成する関数
-    function getFilteredUsers(): string[][] {
+    function getFilteredUsers(): JsonUser[] {
         const currentNextEvent = getNextEvent();
         const previousEvent = getPreviousEvent();
 
@@ -513,7 +634,8 @@ export default function Calendar() {
             new Date(previousEvent.start_datetime),
             attendance,
             previousEvent.ID,
-            users
+            jsonUsers,
+            profile?.userId
         );
 //前回のイベントで回答があったユーザーIDを取得
         const previousEventResponderIds = previousEventAttendances
@@ -521,9 +643,9 @@ export default function Calendar() {
             .map(att => att.user_id);
 
         // フィルタリング条件に合致するユーザーのみを返す
-        return users.filter(user => 
-            !nextEventResponderIds.includes(user[2]) && // 次のイベントの出席回答者に含まれていない
-            previousEventResponderIds.includes(user[2]) // 前回のイベントで回答があった
+        return jsonUsers.filter(user => 
+            !nextEventResponderIds.includes(user["LINE ID"]) && // 次のイベントの出席回答者に含まれていない
+            previousEventResponderIds.includes(user["LINE ID"]) // 前回のイベントで回答があった
         );
     }
 
@@ -562,14 +684,14 @@ export default function Calendar() {
     const [nicknameError, setNicknameError] = useState('');
 
     useEffect(() => {
-        if (profile && users.length > 0) {
-            const userExists = users.some(user => user[2] === profile.userId);
+        if (profile && jsonUsers.length > 0) {
+            const userExists = jsonUsers.some(user => user["LINE ID"] === profile.userId);
             if (!userExists) {
                 setNickname(profile.displayName || '');
                 setShowRegistrationDialog(true);
             }
         }
-    }, [profile, users]);
+    }, [profile, jsonUsers]);
 
     const handleNicknameChange = (e: React.ChangeEvent<HTMLInputElement>) => {
         setNickname(e.target.value);
@@ -600,8 +722,122 @@ export default function Calendar() {
             ))}</span>;
         });
     }
+
+    // ユーザーのプロファイルから子供の名前を取得する関数
+    function getChildrenNames(userId: string | undefined | null): string[] {
+        if (!userId) return [];
+        const user = jsonUsers.find(u => u["LINE ID"] === userId);
+        if (!user) return [];
+        const children: string[] = [];
+        for (let i = 1; i <= 5; i++) {
+            const childKey = `child${i}`;
+            if (user[childKey] && user[childKey].trim() !== '') {
+                children.push(user[childKey]);
+            }
+        }
+        return children;
+    }
+
+    // 選択された子供の名前から、child1-child5の位置にTRUEを設定する関数
+    function getChildPositions(userId: string | undefined | null, selectedChildren: string[]): {child1: string, child2: string, child3: string, child4: string, child5: string} {
+        const result = {child1: '', child2: '', child3: '', child4: '', child5: ''};
+        if (!userId || selectedChildren.length === 0) return result;
+        
+        const user = jsonUsers.find(u => u["LINE ID"] === userId);
+        if (!user) return result;
+        
+        // ユーザープロファイルから各childの位置を確認
+        for (let i = 1; i <= 5; i++) {
+            const childKey = `child${i}`;
+            const childName = user[childKey];
+            if (childName && selectedChildren.includes(childName)) {
+                result[childKey as keyof typeof result] = 'TRUE';
+            }
+        }
+        return result;
+    }
+
+    // 既存のattendanceからTRUEの位置を読み取って、対応する子供の名前を取得する関数
+    function getSelectedChildrenFromAttendance(userId: string | undefined | null, attendance: Attendance | null | undefined): string[] {
+        if (!userId || !attendance) return [];
+        const user = jsonUsers.find(u => u["LINE ID"] === userId);
+        if (!user) return [];
+        
+        const selectedChildren: string[] = [];
+        for (let i = 1; i <= 5; i++) {
+            const childKey = `child${i}` as keyof Attendance;
+            const childValue = attendance[childKey] as string | boolean | undefined;
+            // booleanのtrueまたは文字列の'TRUE'/'true'を判定
+            if (childValue === true || childValue === 'TRUE' || childValue === 'true') {
+                const childName = user[`child${i}`];
+                if (childName && childName.trim() !== '') {
+                    selectedChildren.push(childName);
+                }
+            }
+        }
+        return selectedChildren;
+    }
+
+    // attendanceからchild1-child5にTRUEが入っている数をカウントする関数
+    function getChildCountFromAttendance(attendance: Attendance | null | undefined): number {
+        if (!attendance) {
+            console.log('[DEBUG getChildCountFromAttendance] attendance is null or undefined');
+            return 0;
+        }
+        let count = 0;
+        const childValues: any = {};
+        for (let i = 1; i <= 5; i++) {
+            const childKey = `child${i}` as keyof Attendance;
+            const childValue = attendance[childKey] as string | boolean | undefined;
+            childValues[childKey] = childValue;
+            console.log('[DEBUG getChildCountFromAttendance] childValue:', childValue, 'type:', typeof childValue);
+            // booleanのtrueまたは文字列の'TRUE'/'true'を判定
+            if (childValue === true || childValue === 'TRUE' || childValue === 'true') {
+                count++;
+            }
+        }
+        if (count > 0 || attendance.child1 || attendance.child2 || attendance.child3 || attendance.child4 || attendance.child5) {
+            console.log('[DEBUG getChildCountFromAttendance]', {
+                attendance_id: attendance.attendance_id,
+                user_id: attendance.user_id,
+                child1: attendance.child1,
+                child2: attendance.child2,
+                child3: attendance.child3,
+                child4: attendance.child4,
+                child5: attendance.child5,
+                childValues: childValues,
+                calculatedCount: count,
+                storedChildCount: attendance.child_count
+            });
+        }
+        return count;
+    }
+
+    // 参加者リストから子供の数を計算する関数
+    // getAllAttendanceForDayAndEvent関数内で既に保留中の変更が反映されているので、
+    // ここでは単純にattendanceから取得する
+    function getChildCountForAttendee(attendance: Attendance, eventId: string, userId: string): number {
+        console.log('[DEBUG getChildCountForAttendee]', {
+            attendance_id: attendance.attendance_id,
+            attendance_user_id: attendance.user_id,
+            eventId: eventId,
+            userId: userId,
+            attendance_child1: attendance.child1,
+            attendance_child2: attendance.child2,
+            attendance_child3: attendance.child3,
+            attendance_child4: attendance.child4,
+            attendance_child5: attendance.child5,
+            attendance_child_count: attendance.child_count
+        });
+        
+        // getAllAttendanceForDayAndEvent関数内で既に保留中の変更が反映されているので、
+        // ここでは単純にattendanceから取得する
+        const count = getChildCountFromAttendance(attendance);
+        console.log('[DEBUG getChildCountForAttendee] Using attendance count:', count);
+        return count;
+    }
     
-    const isUserManager = users.some(user => user[2] === profile?.userId && user[3] === '幹事');
+    const isUserManager = jsonUsers.some(user => user["LINE ID"] === profile?.userId && user["幹事フラグ"] === '幹事');
     const nextEvent = getNextEvent();
     const filteredUsers = getFilteredUsers();
     return (
@@ -625,8 +861,10 @@ export default function Calendar() {
                                     profile={profile}
                                     proxyReplyUser={proxyReplyUser}
                                     setProxyReplyUser={setProxyReplyUser}
-                                    users={users}
+                                    users={jsonUsers}
                                     filteredUsers={filteredUsers}
+                                    jsonUsers={jsonUsers}
+                                    attendance={attendance}
                                     />
     
                                 {/* カレンダー表示領域 */}
@@ -712,10 +950,76 @@ export default function Calendar() {
                                                                         {calendar.event_name} @ {calendar.place}
                                                                     </Typography>
                                                                     <Typography variant="body2" sx={{ color: '#757575' }}>
-                                                                        〇 親: {calendar.attendances?.filter(att => att.status === '〇').reduce((total, att) => total + (att.adult_count ?? 1), 0) || 0}, 
-                                                                        子: {calendar.attendances?.filter(att => att.status === '〇').reduce((total, att) => total + (att.child_count ?? 0), 0) || 0}, 
-                                                                        △: {calendar.attendances?.filter(att => att.status === '△').reduce((total, att) => total + (att.adult_count ?? 1), 0) || 0}, 
-                                                                        ×: {calendar.attendances?.filter(att => att.status === '×').reduce((total, att) => total + (att.adult_count ?? 1), 0) || 0}, 
+                                                                        {(() => {
+                                                                            const oAttendances = calendar.attendances?.filter(att => att.status === '〇') || [];
+                                                                            // 保留中の変更があるユーザーの元のattendanceデータを取得
+                                                                            const pendingUserId = pendingParticipationStatusCount[calendar.ID]?.children !== undefined ? profile?.userId : null;
+                                                                            const originalAttendance = pendingUserId 
+                                                                                ? attendance.find(att => 
+                                                                                    att.user_id === pendingUserId &&
+                                                                                    att.calendar_id === calendar.ID &&
+                                                                                    parseInt(att.year) === new Date(calendar.start_datetime).getFullYear() &&
+                                                                                    parseInt(att.month) === (new Date(calendar.start_datetime).getMonth() + 1) &&
+                                                                                    parseInt(att.date) === new Date(calendar.start_datetime).getDate()
+                                                                                )
+                                                                                : null;
+                                                                            const originalChildCount = originalAttendance ? getChildCountFromAttendance(originalAttendance) : 0;
+                                                                            
+                                                                            const childTotal = oAttendances.reduce((total, att) => {
+                                                                                const count = getChildCountForAttendee(att, calendar.ID, att.user_id);
+                                                                                // 保留中の変更があるユーザーの場合、元の数を引いて新しい数を足す
+                                                                                if (pendingUserId && att.user_id === pendingUserId) {
+                                                                                    const newCount = count;
+                                                                                    console.log('[DEBUG Display] Calculating child count for attendance with pending changes:', {
+                                                                                        attendance_id: att.attendance_id,
+                                                                                        user_id: att.user_id,
+                                                                                        originalChildCount: originalChildCount,
+                                                                                        newCount: newCount,
+                                                                                        totalBefore: total,
+                                                                                        totalAfter: total - originalChildCount + newCount
+                                                                                    });
+                                                                                    return total - originalChildCount + newCount;
+                                                                                }
+                                                                                console.log('[DEBUG Display] Calculating child count for attendance:', {
+                                                                                    attendance_id: att.attendance_id,
+                                                                                    user_id: att.user_id,
+                                                                                    child1: att.child1,
+                                                                                    child2: att.child2,
+                                                                                    child3: att.child3,
+                                                                                    child4: att.child4,
+                                                                                    child5: att.child5,
+                                                                                    child_count: att.child_count,
+                                                                                    calculatedCount: count,
+                                                                                    totalSoFar: total
+                                                                                });
+                                                                                return total + count;
+                                                                            }, 0);
+                                                                            console.log('[DEBUG Display] Final child total for event:', {
+                                                                                eventId: calendar.ID,
+                                                                                eventName: calendar.event_name,
+                                                                                oAttendancesCount: oAttendances.length,
+                                                                                childTotal: childTotal,
+                                                                                pendingUserId: pendingUserId,
+                                                                                originalChildCount: originalChildCount,
+                                                                                allAttendances: oAttendances.map(att => ({
+                                                                                    user_id: att.user_id,
+                                                                                    child1: att.child1,
+                                                                                    child2: att.child2,
+                                                                                    child3: att.child3,
+                                                                                    child4: att.child4,
+                                                                                    child5: att.child5,
+                                                                                    child_count: att.child_count
+                                                                                }))
+                                                                            });
+                                                                            return (
+                                                                                <>
+                                                                                    〇 親: {oAttendances.reduce((total, att) => total + (att.adult_count ?? 1), 0) || 0}, 
+                                                                                    子: {childTotal || 0}, 
+                                                                                    △: {calendar.attendances?.filter(att => att.status === '△').reduce((total, att) => total + (att.adult_count ?? 1), 0) || 0}, 
+                                                                                    ×: {calendar.attendances?.filter(att => att.status === '×').reduce((total, att) => total + (att.adult_count ?? 1), 0) || 0}
+                                                                                </>
+                                                                            );
+                                                                        })()}
                                                                     </Typography>
                                                                 </Box>
                                                             </Box>
@@ -742,13 +1046,16 @@ export default function Calendar() {
                                                                     disabled={isProxyReplyMode}
                                                                     onChange={(e) => {
                                                                         if(calendar.ID){
-                                                                            if(isProxyReplyMode && proxyReplyUser){
-                                                                                handleParticipationChange(calendar, e.target.value as '〇' | '△' | '×', proxyReplyUser.userId, pendingParticipationStatusCount[calendar.ID]?.adult ?? 1, pendingParticipationStatusCount[calendar.ID]?.child ?? 0);
-                                                                            } else {
-                                                                                handleParticipationChange(calendar, e.target.value as '〇' | '△' | '×', profile?.userId, calendar.attendance?.adult_count ?? 1, calendar.attendance?.child_count ?? 0);
-                                                                                if(calendar.attendance){
-                                                                                    calendar.attendance.status = e.target.value as '〇' | '△' | '×';
-                                                                                }
+                                                                            const userIdToUse = isProxyReplyMode && proxyReplyUser ? proxyReplyUser.userId : profile?.userId;
+                                                                            const adultCount = isProxyReplyMode && proxyReplyUser
+                                                                                ? (pendingParticipationStatusCount[calendar.ID]?.adult ?? 1)
+                                                                                : (calendar.attendance?.adult_count ?? 1);
+                                                                            const children = isProxyReplyMode && proxyReplyUser
+                                                                                ? (pendingParticipationStatusCount[calendar.ID]?.children || [])
+                                                                                : getSelectedChildrenFromAttendance(userIdToUse, calendar.attendance);
+                                                                            handleParticipationChange(calendar, e.target.value as '〇' | '△' | '×', userIdToUse, adultCount, children);
+                                                                            if(calendar.attendance && !isProxyReplyMode){
+                                                                                calendar.attendance.status = e.target.value as '〇' | '△' | '×';
                                                                             }
                                                                         }
                                                                     }}
@@ -769,13 +1076,13 @@ export default function Calendar() {
                                                                     onChange={(e) => {
                                                                         if(calendar.ID){
                                                                             const currentStatus = pendingParticipationStatus[calendar.ID] ||　calendar.attendance?.status || '〇' as '〇' | '△' | '×';
-                                                                            if(isProxyReplyMode && proxyReplyUser){
-                                                                                handleParticipationChange(calendar, currentStatus, proxyReplyUser.userId, e.target.value as number, pendingParticipationStatusCount[calendar.ID]?.child ?? 0);
-                                                                            } else {
-                                                                                handleParticipationChange(calendar, currentStatus, profile?.userId, e.target.value as number, calendar.attendance?.child_count ?? 0);
-                                                                                if(calendar.attendance){
-                                                                                    calendar.attendance.adult_count = e.target.value as number;
-                                                                                }
+                                                                            const userIdToUse = isProxyReplyMode && proxyReplyUser ? proxyReplyUser.userId : profile?.userId;
+                                                                            const children = isProxyReplyMode && proxyReplyUser
+                                                                                ? (pendingParticipationStatusCount[calendar.ID]?.children || [])
+                                                                                : getSelectedChildrenFromAttendance(userIdToUse, calendar.attendance);
+                                                                            handleParticipationChange(calendar, currentStatus, userIdToUse, e.target.value as number, children);
+                                                                            if(calendar.attendance && !isProxyReplyMode){
+                                                                                calendar.attendance.adult_count = e.target.value as number;
                                                                             }
                                                                         }
                                                                     }}
@@ -785,33 +1092,64 @@ export default function Calendar() {
                                                                 ))}
                                                                 </Select>
                                                             </FormControl>
-                                                            <FormControl size="small" >
-                                                                <InputLabel id="child-count-select-label">{lang === 'ja-JP' ? '子供' : 'Child'}</InputLabel>
-                                                                <Select
-                                                                    labelId="child-count-select-label"
-                                                                    id="child-count-select"
-                                                                    value={calendar.attendance?.child_count ?? 0}
-                                                                    label={lang === 'ja-JP' ? '子供' : 'Child'}
-                                                                    disabled={isProxyReplyMode}
-                                                                    onChange={(e) => {
-                                                                        if(calendar.ID){
-                                                                            const currentStatus = pendingParticipationStatus[calendar.ID] || calendar.attendance?.status || '〇' as '〇' | '△' | '×';
-                                                                            if(isProxyReplyMode && proxyReplyUser){
-                                                                                handleParticipationChange(calendar, currentStatus, proxyReplyUser.userId, pendingParticipationStatusCount[calendar.ID]?.adult ?? 1, e.target.value as number);
-                                                                            } else {
-                                                                                handleParticipationChange(calendar, currentStatus, profile?.userId, calendar.attendance?.adult_count ?? 1, e.target.value as number);
-                                                                                if(calendar.attendance){
-                                                                                    calendar.attendance.child_count = e.target.value as number;
-                                                                                }
+                                                            {(() => {
+                                                                const userIdToUse = isProxyReplyMode && proxyReplyUser ? proxyReplyUser.userId : profile?.userId;
+                                                                const childrenNames = getChildrenNames(userIdToUse);
+                                                                // 子供が登録されていない場合はコンボボックスを非表示
+                                                                if (childrenNames.length === 0) {
+                                                                    return null;
+                                                                }
+                                                                return (
+                                                                    <FormControl size="small" sx={{ minWidth: 120 }}>
+                                                                        <InputLabel id="child-select-label">{lang === 'ja-JP' ? '子供' : 'Child'}</InputLabel>
+                                                                        <Select
+                                                                            labelId="child-select-label"
+                                                                            id="child-select"
+                                                                            multiple
+                                                                            value={
+                                                                                isProxyReplyMode && proxyReplyUser
+                                                                                    ? (pendingParticipationStatusCount[calendar.ID]?.children !== undefined
+                                                                                        ? (pendingParticipationStatusCount[calendar.ID]?.children || [])
+                                                                                        : (() => {
+                                                                                            // 代理ユーザーのattendanceを取得
+                                                                                            const proxyAttendance = calendar.attendances?.find(att => att.user_id === proxyReplyUser.userId);
+                                                                                            return getSelectedChildrenFromAttendance(proxyReplyUser.userId, proxyAttendance || null);
+                                                                                        })())
+                                                                                    : (pendingParticipationStatusCount[calendar.ID]?.children !== undefined
+                                                                                        ? (pendingParticipationStatusCount[calendar.ID]?.children || [])
+                                                                                        : getSelectedChildrenFromAttendance(
+                                                                                            userIdToUse,
+                                                                                            calendar.attendance
+                                                                                        ))
                                                                             }
-                                                                        }
-                                                                    }}
-                                                                >
-                                                                {Array.from({ length: 10 }, (_, i) => (
-                                                                    <MenuItem key={i} value={i}>{i}</MenuItem>
-                                                                ))}
-                                                                </Select>
-                                                            </FormControl>
+                                                                            label={lang === 'ja-JP' ? '子供' : 'Child'}
+                                                                            disabled={isProxyReplyMode}
+                                                                            onChange={(e) => {
+                                                                                if(calendar.ID){
+                                                                                    const selectedChildren = typeof e.target.value === 'string' ? [e.target.value] : e.target.value as string[];
+                                                                                    const currentStatus = pendingParticipationStatus[calendar.ID] || calendar.attendance?.status || '〇' as '〇' | '△' | '×';
+                                                                                    const adultCount = isProxyReplyMode && proxyReplyUser
+                                                                                        ? (pendingParticipationStatusCount[calendar.ID]?.adult ?? 1)
+                                                                                        : (calendar.attendance?.adult_count ?? 1);
+                                                                                    handleParticipationChange(calendar, currentStatus, userIdToUse, adultCount, selectedChildren);
+                                                                                }
+                                                                            }}
+                                                                            renderValue={(selected) => {
+                                                                                if (Array.isArray(selected) && selected.length > 0) {
+                                                                                    return selected.join(', ');
+                                                                                }
+                                                                                return '';
+                                                                            }}
+                                                                        >
+                                                                            {childrenNames.map((name, index) => (
+                                                                                <MenuItem key={index} value={name}>
+                                                                                    {name}
+                                                                                </MenuItem>
+                                                                            ))}
+                                                                        </Select>
+                                                                    </FormControl>
+                                                                );
+                                                            })()}
                                                         </Box>
 
 
@@ -845,9 +1183,9 @@ export default function Calendar() {
                                                                 </Typography>
                                                             </Box>
                                                             <Box sx={{ m: '5px', display: 'flex', flexDirection: 'column' }}>
-                                                                <AttendanceList lang={lang} attendances={calendar.attendances || []} status="〇" />
-                                                                <AttendanceList lang={lang} attendances={calendar.attendances || []} status="△" />
-                                                                <AttendanceList lang={lang} attendances={calendar.attendances || []} status="×" />
+                                                                <AttendanceList lang={lang} attendances={calendar.attendances || []} status="〇" pendingParticipationStatusCount={pendingParticipationStatusCount} eventId={calendar.ID} />
+                                                                <AttendanceList lang={lang} attendances={calendar.attendances || []} status="△" pendingParticipationStatusCount={pendingParticipationStatusCount} eventId={calendar.ID} />
+                                                                <AttendanceList lang={lang} attendances={calendar.attendances || []} status="×" pendingParticipationStatusCount={pendingParticipationStatusCount} eventId={calendar.ID} />
                                                             </Box>
                                                         </Collapse>
                                                     </Box>
@@ -857,7 +1195,7 @@ export default function Calendar() {
                                     </Box>
                                 ))}
                                 <AddCalendarButton />
-                                <Comment componentId='calendar' users={users} user={profile} category='calendar_all' lang={lang} />
+                                <Comment componentId='calendar' users={jsonUsers} user={profile} category='calendar_all' lang={lang} />
                                 <Box sx={{ 
                                     display: 'flex', 
                                     justifyContent: 'center', 
@@ -918,7 +1256,7 @@ export default function Calendar() {
                     profile={profile}
                     setNicknameError={setNicknameError}
                     setShowRegistrationDialog={setShowRegistrationDialog}
-                    users={users}
+                    users={jsonUsers}
                     
                 />
             )}
