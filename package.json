@@ -16,7 +16,8 @@
     "deploy": "firebase use test && npm run set-env && npm run build:dev && firebase deploy --project testsundayfront",
     "deploy:new": "firebase use new && npm run set-env:new && npm run build && firebase deploy --project shootsundaynew",
     "deploy:test": "firebase use test && npm run set-env:test && npm run build:dev && firebase deploy --project testsundayfront",
-    "deploy:prod": "firebase use prod && npm run set-env:prod && next build && firebase deploy --project shootsundayfront",
+    "deploy:old": "firebase use prod && npm run set-env:prod && next build && firebase deploy --project shootsundayfront",
+    "deploy:prod": "firebase use new && npm run set-env:new && next build && firebase deploy --project shootsundaynew",
     "deploy:bvs": "firebase use bvsfront && npm run set-env:bvs && next build && firebase deploy --project bvsfront"
   },
   "engines": {
