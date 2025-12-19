@@ -205,10 +205,19 @@ export default function Registration() {
 								label={lang === 'ja' ? '表示名称' : 'Display Name'} 
 							/>
 						</Box>
-					<Box sx={{margin:1}}>
-						<Typography variant="h6" component="div" sx={{ textAlign: 'left', mb: 1, fontWeight: 'bold' }}>
+					<Box sx={{margin:1, display: 'flex', alignItems: 'center', justifyContent: 'space-between', mb: 1}}>
+						<Typography variant="h6" component="div" sx={{ fontWeight: 'bold' }}>
 							{lang === 'ja' ? '子供の登録' : 'Children Registration'}
 						</Typography>
+						<Button
+							variant="contained"
+							color="primary"
+							onClick={saveAllChanges}
+							disabled={isSaving}
+							size="small"
+						>
+							{isSaving ? <CircularProgress size={20} /> : lang === 'ja-JP' ? '保存' : 'Save'}
+						</Button>
 					</Box>
 					{/* 子供の登録フィールド */}
 					{Array.from({ length: 5 }, (_, i) => i + 1).map((childNumber) => (
@@ -222,10 +231,19 @@ export default function Registration() {
 							/>
 						</Box>
 					))}
-					<Box sx={{margin:1}}>
-						<Typography variant="h6" component="div" sx={{ textAlign: 'left', mb: 1, fontWeight: 'bold' }}>
+					<Box sx={{margin:1, display: 'flex', alignItems: 'center', justifyContent: 'space-between', mb: 1}}>
+						<Typography variant="h6" component="div" sx={{ fontWeight: 'bold' }}>
 							{lang === 'ja-JP' ? 'その他（チーム分けに利用）' : 'Others (for team allocation)'}
 						</Typography>
+						<Button
+							variant="contained"
+							color="primary"
+							onClick={saveAllChanges}
+							disabled={isSaving}
+							size="small"
+						>
+							{isSaving ? <CircularProgress size={20} /> : lang === 'ja-JP' ? '保存' : 'Save'}
+						</Button>
 					</Box>
 					<Box sx={{margin:1}}>
 						<FormControl fullWidth>
@@ -302,15 +320,6 @@ export default function Registration() {
 							placeholder={lang === 'ja' ? 'PayNow情報を入力' : 'Enter PayNow information'}
 						/>
 					</Box>
-                    <Button
-						sx={{margin:1}}
-						variant="contained"
-						color="primary"
-						onClick={saveAllChanges}
-						disabled={isSaving}
-						>
-						{isSaving ? <CircularProgress size={24} /> : lang === 'ja-JP' ? '保存' : 'Save'}
-                    </Button>
 				</>
 			) : (
 				<LoadingSpinner />
