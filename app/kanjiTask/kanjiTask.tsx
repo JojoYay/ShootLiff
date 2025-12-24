@@ -7,24 +7,20 @@ import {
     Paper,
     List,
     ListItem,
-    ListItemText,
-    ListItemSecondaryAction,
     IconButton,
     FormControl,
-    InputLabel,
     Select,
     MenuItem,
     Chip,
-    Divider,
     Switch,
     FormControlLabel
 } from '@mui/material';
 import { useLiff } from '../liffProvider';
-import { Add, Delete, Edit, CheckCircle, Schedule, PriorityHigh, Assignment, ViewModule, ViewList, ArrowUpward, ArrowDownward, ExpandMore, ExpandLess } from '@mui/icons-material';
+import { CheckCircle, Assignment, ViewModule, ViewList, ArrowUpward, ArrowDownward, ExpandMore, ExpandLess } from '@mui/icons-material';
 import LoadingSpinner from '../calendar/loadingSpinner';
 import LoadingModal from '../components/LoadingModal';
 import AvatarIcon from '../stats/avatarIcon';
-import { User } from '../types/user';
+import { User, JsonUser } from '../types/user';
 import { CalendarEvent, Attendance } from '../types/calendar';
 import { BALL, LOGO } from '../utils/constants';
 
@@ -71,6 +67,9 @@ interface KanjiStats {
     totalTasks: number;
     completedTasks: number;
     totalEvents: number;
+    videoTasks: number;
+    droneTasks: number;
+    mipTasks: number;
 }
 
 export default function KanjiTask() {
@@ -203,22 +202,33 @@ export default function KanjiTask() {
                     event.event_type !== '飲み会'
                 );
                 setEvents(nonDrinkingEvents);
-                setUsers(data.users.slice(1));
                 
-                const fetchedAttendance = data.attendance.slice(1).map((item: string[]) => {
-                    const calendar_id = item[6];
+                // jsonUsersをstring[][]形式に変換（既存コードとの互換性のため）
+                const jsonUsers = (data.jsonUsers as JsonUser[] || []);
+                const convertedUsers = jsonUsers.map((user: JsonUser) => [
+                    user["LINE ID"] || '', // [0] - ID（使用されていないが互換性のため）
+                    user["伝助上の名前"] || '', // [1] - 名前
+                    user["LINE ID"] || '', // [2] - LINE ID
+                    user["幹事フラグ"] || '', // [3] - 幹事フラグ
+                    user["Picture"] || '', // [4] - 画像URL
+                ]);
+                setUsers(convertedUsers);
+                
+                // jsonAttendanceを使用
+                const fetchedAttendance = (data.jsonAttendance || []).map((item: any) => {
+                    const calendar_id = item.calendar_id;
                     const relatedCalendarEvent = processedCalendarEvents.find(event => event.ID === calendar_id);
                     return {
-                        attendance_id: item[0],
-                        user_id: item[1],
-                        year: item[2],
-                        month: item[3],
-                        date: item[4],
-                        status: item[5],
-                        calendar_id: item[6],
-                        calendar: relatedCalendarEvent,
-                        adult_count: item[7],
-                        child_count: item[8],
+                        attendance_id: String(item.attendance_id || ''),
+                        user_id: item.user_id || '',
+                        year: String(item.year || ''),
+                        month: String(item.month || ''),
+                        date: String(item.date || ''),
+                        status: item.status || '',
+                        calendar_id: item.calendar_id || '',
+                        calendar: relatedCalendarEvent || null,
+                        adult_count: typeof item.adult_count === 'number' ? item.adult_count : (item.adult_count === '' || item.adult_count === null || item.adult_count === undefined ? 1 : Number(item.adult_count) || 1),
+                        child_count: typeof item.child_count === 'number' ? item.child_count : (item.child_count === '' || item.child_count === null || item.child_count === undefined ? 0 : Number(item.child_count) || 0),
                     };
                 });
                 setAttendance(fetchedAttendance);
@@ -264,7 +274,7 @@ export default function KanjiTask() {
                         
                         taskMappings.forEach((taskMapping, taskIndex) => {
                             const assignedUser = taskMapping.assignedTo && taskMapping.assignedTo !== '' 
-                                ? data.users.slice(1).find((u: string[]) => u[2] === taskMapping.assignedTo)
+                                ? convertedUsers.find((u: string[]) => u[2] === taskMapping.assignedTo)
                                 : null;
                             
                                 tasks.push({
@@ -348,6 +358,11 @@ export default function KanjiTask() {
                 displayedTaskTypes.includes(task.taskName)
             );
             
+            // 各種目ごとにカウント
+            const videoTasks = userTasks.filter(task => task.taskName === 'video').length;
+            const droneTasks = userTasks.filter(task => task.taskName === 'drone_prep').length;
+            const mipTasks = userTasks.filter(task => task.taskName === 'score_mip').length;
+            
             // 全てのタスクがアサインされているイベントで、そのユーザーが参加している（〇）イベントをカウント
             const userAttendance = attendance.filter(att => 
                 att.user_id === user[2] && 
@@ -361,7 +376,10 @@ export default function KanjiTask() {
                 userPic: user[4],
                 totalTasks: userTasks.length,
                 completedTasks: userTasks.length,
-                totalEvents: userAttendance.length
+                totalEvents: userAttendance.length,
+                videoTasks: videoTasks,
+                droneTasks: droneTasks,
+                mipTasks: mipTasks
             };
         }).filter(stat => stat.completedTasks > 0); // 完了タスクが0の場合は表示しない
         console.log('kanjiStats:', stats);
@@ -1256,7 +1274,7 @@ export default function KanjiTask() {
                                     size="small"
                                     onClick={handleBulkAIAssignment}
                                     disabled={isAssigning}
-                                    sx={{ minWidth: 'auto', px: 2 }}
+                                    sx={{ display: 'none', minWidth: 'auto', px: 2 }}
                                 >
                                     {isAssigning ? (lang === 'ja-JP' ? '配置中...' : 'Assigning...') : (lang === 'ja-JP' ? 'Auto Assign（一括登録）' : 'Auto Assign')}
                                 </Button>
@@ -1308,7 +1326,10 @@ export default function KanjiTask() {
                                     </tr>
                                 </thead>
                                 <tbody>
-                                    {events.filter(event => showPastEvents || event.event_status !== 99).map((event) => {
+                                    {events
+                                        .filter(event => showPastEvents || event.event_status !== 99)
+                                        .sort((a, b) => new Date(a.start_datetime).getTime() - new Date(b.start_datetime).getTime())
+                                        .map((event) => {
                                         const eventTasks = tasks.filter(task => task.eventId === event.ID);
                                         const videoTask = eventTasks.find(task => task.taskName === 'video');
                                         const droneTask = eventTasks.find(task => task.taskName === 'drone_prep');
@@ -1362,73 +1383,193 @@ export default function KanjiTask() {
                                                     </Typography>
                                                 </td>
                                                 <td style={getCellStyle(videoTask)}>
-                                                    {videoTask && videoTask.assignedTo ? (
-                                                        <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
-                                                            <AvatarIcon
-                                                                picUrl={getAssigneePicUrl(videoTask)}
-                                                                name={getAssigneeName(videoTask)}
-                                                                width={24}
-                                                                height={24}
-                                                                showTooltip={true}
-                                                            />
-                                                            <Typography variant="body2">
-                                                                {getAssigneeName(videoTask)}
-                                                            </Typography>
-                                                            {videoTask.accepted && (
-                                                                <CheckCircle color="success" fontSize="small" />
-                                                            )}
-                                                        </Box>
-                                                    ) : (
-                                                        <Typography variant="body2" sx={{ color: '#9e9e9e' }}>
-                                                            {lang === 'ja-JP' ? '未アサイン' : 'Unassigned'}
-                                                        </Typography>
-                                                    )}
+                                                    <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, flexWrap: 'wrap' }}>
+                                                        <FormControl size="small" sx={{ minWidth: 120 }}>
+                                                            <Select
+                                                                value={videoTask?.assignedTo || ""}
+                                                                onChange={(e) => {
+                                                                    if (videoTask) {
+                                                                        handleAssigneeChange(videoTask.id, e.target.value);
+                                                                    } else {
+                                                                        handleNewAssignee(event.ID, 'video', e.target.value);
+                                                                    }
+                                                                }}
+                                                                size="small"
+                                                                displayEmpty
+                                                                sx={{
+                                                                    '& .MuiSelect-select': {
+                                                                        backgroundColor: videoTask?.assignedTo && 
+                                                                            !attendeeIds.includes(videoTask.assignedTo) 
+                                                                            ? '#ffebee' : 'inherit'
+                                                                    }
+                                                                }}
+                                                            >
+                                                                <MenuItem value="" disabled>
+                                                                    {lang === 'ja-JP' ? 'アサイン' : 'Assign'}
+                                                                </MenuItem>
+                                                                {(() => {
+                                                                    const allKanjiUsers = users.filter(user => user[3] === '幹事' && user[1] !== '忍');
+                                                                    // rotationOrderの順序に従って並べ替え
+                                                                    const sortedUsers = [
+                                                                        ...rotationOrder.map(userId => allKanjiUsers.find(u => u[2] === userId)).filter((u): u is string[] => u !== undefined),
+                                                                        ...allKanjiUsers.filter(u => !rotationOrder.includes(u[2]))
+                                                                    ];
+                                                                    return sortedUsers.map((user) => (
+                                                                        <MenuItem 
+                                                                            key={user[2]} 
+                                                                            value={user[2]}
+                                                                            sx={{
+                                                                                backgroundColor: !attendeeIds.includes(user[2]) 
+                                                                                    ? '#ffebee' : 'inherit'
+                                                                            }}
+                                                                        >
+                                                                            {user[1]}
+                                                                        </MenuItem>
+                                                                    ));
+                                                                })()}
+                                                            </Select>
+                                                        </FormControl>
+                                                        {videoTask && videoTask.assignedTo && (
+                                                            <>
+                                                                <AvatarIcon
+                                                                    picUrl={getAssigneePicUrl(videoTask)}
+                                                                    name={getAssigneeName(videoTask)}
+                                                                    width={24}
+                                                                    height={24}
+                                                                    showTooltip={true}
+                                                                />
+                                                                {videoTask.accepted && (
+                                                                    <CheckCircle color="success" fontSize="small" />
+                                                                )}
+                                                            </>
+                                                        )}
+                                                    </Box>
                                                 </td>
                                                 <td style={getCellStyle(droneTask)}>
-                                                    {droneTask && droneTask.assignedTo ? (
-                                                        <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
-                                                            <AvatarIcon
-                                                                picUrl={getAssigneePicUrl(droneTask)}
-                                                                name={getAssigneeName(droneTask)}
-                                                                width={24}
-                                                                height={24}
-                                                                showTooltip={true}
-                                                            />
-                                                            <Typography variant="body2">
-                                                                {getAssigneeName(droneTask)}
-                                                            </Typography>
-                                                            {droneTask.accepted && (
-                                                                <CheckCircle color="success" fontSize="small" />
-                                                            )}
-                                                        </Box>
-                                                    ) : (
-                                                        <Typography variant="body2" sx={{ color: '#9e9e9e' }}>
-                                                            {lang === 'ja-JP' ? '未アサイン' : 'Unassigned'}
-                                                        </Typography>
-                                                    )}
+                                                    <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, flexWrap: 'wrap' }}>
+                                                        <FormControl size="small" sx={{ minWidth: 120 }}>
+                                                            <Select
+                                                                value={droneTask?.assignedTo || ""}
+                                                                onChange={(e) => {
+                                                                    if (droneTask) {
+                                                                        handleAssigneeChange(droneTask.id, e.target.value);
+                                                                    } else {
+                                                                        handleNewAssignee(event.ID, 'drone_prep', e.target.value);
+                                                                    }
+                                                                }}
+                                                                size="small"
+                                                                displayEmpty
+                                                                sx={{
+                                                                    '& .MuiSelect-select': {
+                                                                        backgroundColor: droneTask?.assignedTo && 
+                                                                            !attendeeIds.includes(droneTask.assignedTo) 
+                                                                            ? '#ffebee' : 'inherit'
+                                                                    }
+                                                                }}
+                                                            >
+                                                                <MenuItem value="" disabled>
+                                                                    {lang === 'ja-JP' ? 'アサイン' : 'Assign'}
+                                                                </MenuItem>
+                                                                {(() => {
+                                                                    const allKanjiUsers = users.filter(user => user[3] === '幹事' && user[1] !== '忍');
+                                                                    // rotationOrderの順序に従って並べ替え
+                                                                    const sortedUsers = [
+                                                                        ...rotationOrder.map(userId => allKanjiUsers.find(u => u[2] === userId)).filter((u): u is string[] => u !== undefined),
+                                                                        ...allKanjiUsers.filter(u => !rotationOrder.includes(u[2]))
+                                                                    ];
+                                                                    return sortedUsers.map((user) => (
+                                                                        <MenuItem 
+                                                                            key={user[2]} 
+                                                                            value={user[2]}
+                                                                            sx={{
+                                                                                backgroundColor: !attendeeIds.includes(user[2]) 
+                                                                                    ? '#ffebee' : 'inherit'
+                                                                            }}
+                                                                        >
+                                                                            {user[1]}
+                                                                        </MenuItem>
+                                                                    ));
+                                                                })()}
+                                                            </Select>
+                                                        </FormControl>
+                                                        {droneTask && droneTask.assignedTo && (
+                                                            <>
+                                                                <AvatarIcon
+                                                                    picUrl={getAssigneePicUrl(droneTask)}
+                                                                    name={getAssigneeName(droneTask)}
+                                                                    width={24}
+                                                                    height={24}
+                                                                    showTooltip={true}
+                                                                />
+                                                                {droneTask.accepted && (
+                                                                    <CheckCircle color="success" fontSize="small" />
+                                                                )}
+                                                            </>
+                                                        )}
+                                                    </Box>
                                                 </td>
                                                 <td style={getCellStyle(mipTask)}>
-                                                    {mipTask && mipTask.assignedTo ? (
-                                                        <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
-                                                            <AvatarIcon
-                                                                picUrl={getAssigneePicUrl(mipTask)}
-                                                                name={getAssigneeName(mipTask)}
-                                                                width={24}
-                                                                height={24}
-                                                                showTooltip={true}
-                                                            />
-                                                            <Typography variant="body2">
-                                                                {getAssigneeName(mipTask)}
-                                                            </Typography>
-                                                            {mipTask.accepted && (
-                                                                <CheckCircle color="success" fontSize="small" />
-                                                            )}
-                                                        </Box>
-                                                    ) : (
-                                                        <Typography variant="body2" sx={{ color: '#9e9e9e' }}>
-                                                            {lang === 'ja-JP' ? '未アサイン' : 'Unassigned'}
-                                                        </Typography>
-                                                    )}
+                                                    <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, flexWrap: 'wrap' }}>
+                                                        <FormControl size="small" sx={{ minWidth: 120 }}>
+                                                            <Select
+                                                                value={mipTask?.assignedTo || ""}
+                                                                onChange={(e) => {
+                                                                    if (mipTask) {
+                                                                        handleAssigneeChange(mipTask.id, e.target.value);
+                                                                    } else {
+                                                                        handleNewAssignee(event.ID, 'score_mip', e.target.value);
+                                                                    }
+                                                                }}
+                                                                size="small"
+                                                                displayEmpty
+                                                                sx={{
+                                                                    '& .MuiSelect-select': {
+                                                                        backgroundColor: mipTask?.assignedTo && 
+                                                                            !attendeeIds.includes(mipTask.assignedTo) 
+                                                                            ? '#ffebee' : 'inherit'
+                                                                    }
+                                                                }}
+                                                            >
+                                                                <MenuItem value="" disabled>
+                                                                    {lang === 'ja-JP' ? 'アサイン' : 'Assign'}
+                                                                </MenuItem>
+                                                                {(() => {
+                                                                    const allKanjiUsers = users.filter(user => user[3] === '幹事' && user[1] !== '忍');
+                                                                    // rotationOrderの順序に従って並べ替え
+                                                                    const sortedUsers = [
+                                                                        ...rotationOrder.map(userId => allKanjiUsers.find(u => u[2] === userId)).filter((u): u is string[] => u !== undefined),
+                                                                        ...allKanjiUsers.filter(u => !rotationOrder.includes(u[2]))
+                                                                    ];
+                                                                    return sortedUsers.map((user) => (
+                                                                        <MenuItem 
+                                                                            key={user[2]} 
+                                                                            value={user[2]}
+                                                                            sx={{
+                                                                                backgroundColor: !attendeeIds.includes(user[2]) 
+                                                                                    ? '#ffebee' : 'inherit'
+                                                                            }}
+                                                                        >
+                                                                            {user[1]}
+                                                                        </MenuItem>
+                                                                    ));
+                                                                })()}
+                                                            </Select>
+                                                        </FormControl>
+                                                        {mipTask && mipTask.assignedTo && (
+                                                            <>
+                                                                <AvatarIcon
+                                                                    picUrl={getAssigneePicUrl(mipTask)}
+                                                                    name={getAssigneeName(mipTask)}
+                                                                    width={24}
+                                                                    height={24}
+                                                                    showTooltip={true}
+                                                                />
+                                                                {mipTask.accepted && (
+                                                                    <CheckCircle color="success" fontSize="small" />
+                                                                )}
+                                                            </>
+                                                        )}
+                                                    </Box>
                                                 </td>
                                             </tr>
                                         );
@@ -1479,7 +1620,10 @@ export default function KanjiTask() {
                             </Box>
                         </Box>
                         
-                        {events.filter(event => showPastEvents || event.event_status !== 99).map((event) => {
+                        {events
+                            .filter(event => showPastEvents || event.event_status !== 99)
+                            .sort((a, b) => new Date(a.start_datetime).getTime() - new Date(b.start_datetime).getTime())
+                            .map((event) => {
                         const eventTasks = tasks.filter(task => task.eventId === event.ID);
                         const attendees = getEventAttendees(event.ID);
                         const availableKanji = attendees.map(att => {
@@ -1543,8 +1687,11 @@ export default function KanjiTask() {
                                                 userPic: user[4]
                                             }));
                                         
-                                        // 全幹事をコンボボックスに表示（重複を避けるため）
-                                        const allAvailableKanji = allKanjiUsers;
+                                        // rotationOrderの順序に従って並べ替え
+                                        const allAvailableKanji = [
+                                            ...rotationOrder.map(userId => allKanjiUsers.find(k => k.userId === userId)).filter((k): k is { userId: string; userName: string; userPic: string } => k !== undefined),
+                                            ...allKanjiUsers.filter(k => !rotationOrder.includes(k.userId))
+                                        ];
                                         
                                         return (
                                             <Box key={taskType.value} sx={{ 
@@ -1690,7 +1837,16 @@ export default function KanjiTask() {
                                         {lang === 'ja-JP' ? '幹事' : 'Kanji'}
                                     </th>
                                     <th style={{ padding: '8px', textAlign: 'center', fontWeight: 'bold' }}>
-                                        {lang === 'ja-JP' ? '完了タスク数/参加数' : 'Completed/Total'}
+                                        {lang === 'ja-JP' ? 'ビデオ' : 'Video'}
+                                    </th>
+                                    <th style={{ padding: '8px', textAlign: 'center', fontWeight: 'bold' }}>
+                                        {lang === 'ja-JP' ? 'ドローン' : 'Drone'}
+                                    </th>
+                                    <th style={{ padding: '8px', textAlign: 'center', fontWeight: 'bold' }}>
+                                        {lang === 'ja-JP' ? 'MIP' : 'MIP'}
+                                    </th>
+                                    <th style={{ padding: '8px', textAlign: 'center', fontWeight: 'bold' }}>
+                                        {lang === 'ja-JP' ? '合計/参加数' : 'Total/Events'}
                                     </th>
                                 </tr>
                             </thead>
@@ -1706,6 +1862,15 @@ export default function KanjiTask() {
                                                 showTooltip={true}
                                             />
                                             <span>{stat.userName}</span>
+                                        </td>
+                                        <td style={{ padding: '8px', textAlign: 'center' }}>
+                                            {stat.videoTasks}
+                                        </td>
+                                        <td style={{ padding: '8px', textAlign: 'center' }}>
+                                            {stat.droneTasks}
+                                        </td>
+                                        <td style={{ padding: '8px', textAlign: 'center' }}>
+                                            {stat.mipTasks}
                                         </td>
                                         <td style={{ padding: '8px', textAlign: 'center' }}>
                                             {stat.completedTasks}/{stat.totalEvents}
