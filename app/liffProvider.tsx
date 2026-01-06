@@ -7,6 +7,7 @@ import React, {
   useEffect,
   useState,
 } from 'react';
+import { usePathname } from 'next/navigation';
 import { Liff } from '@line/liff';
 
 // LIFFの状態を管理するコンテキスト
@@ -29,14 +30,34 @@ export const LiffProvider: FC<PropsWithChildren<{ liffId: string }>> = ({
   const [liff, setLiff] = useState<Liff | null>(null);
   const [liffError, setLiffError] = useState<string | null>(null);
   const [isInitialized, setIsInitialized] = useState(false);
+  const pathname = usePathname();
+
+  // LIFFを無効化する条件をチェック
+  const shouldDisableLiff = () => {
+    // 特定のパスで無効化（例：/name）
+    if (pathname === '/name') {
+      return true;
+    }
+
+    return false;
+  };
+
+  const isDisabled = shouldDisableLiff();
 
   useEffect(() => {
+    // LIFFが無効化されている場合は初期化をスキップ
+    if (isDisabled) {
+      console.log('LIFF is disabled for this page');
+      setIsInitialized(true);
+      return;
+    }
+
     if (isInitialized) return;
 
     // 現在のURL情報を保存
     const currentUrl = new URL(window.location.href);
     const currentPath = currentUrl.pathname;
-    const searchParams = new URLSearchParams(currentUrl.search);
+    const urlSearchParams = new URLSearchParams(currentUrl.search);
 
     // LIFF SDKの読み込みと初期化
     import('@line/liff')
@@ -53,7 +74,7 @@ export const LiffProvider: FC<PropsWithChildren<{ liffId: string }>> = ({
           setIsInitialized(true);
 
           // liff.stateパラメータを取得（LINEブラウザからのアクセスの場合）
-          const liffState = searchParams.get('liff.state');
+          const liffState = urlSearchParams.get('liff.state');
           
           // ログインが必要な場合
           if (!liff.isLoggedIn()) {
@@ -72,7 +93,7 @@ export const LiffProvider: FC<PropsWithChildren<{ liffId: string }>> = ({
         console.error('LIFF initialization failed:', error);
         setLiffError((error as Error).toString());
       });
-  }, [liffId]); // isInitializedを依存配列から削除
+  }, [liffId, isDisabled, isInitialized]); // isDisabledを依存配列に追加
 
   return (
     <LiffContext.Provider

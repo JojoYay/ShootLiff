@@ -1,14 +1,18 @@
 'use client';
 
-import { useEffect, useState } from "react";
+import { useEffect, useState, Suspense } from "react";
 import { useSwipeable } from 'react-swipeable';
+import { useSearchParams } from 'next/navigation';
 
-export default function Name() {
-    interface Quiz {
-        actualNameOrd: number;
-        pictureUrl: string;
-        options: string[];
-    }
+interface Quiz {
+    actualNameOrd: number;
+    pictureUrl: string;
+    options: string[];
+}
+
+function NameContent() {
+    const searchParams = useSearchParams();
+    const tabName = searchParams.get('tabName');
     
     const [users, setUsers] = useState<Quiz[]>([]);
     const [currentUserIndex, setCurrentUserIndex] = useState<number>(0);
@@ -20,55 +24,86 @@ export default function Name() {
 
     const fetchUsers = async () => {
         try {
-			const url = process.env.NEXT_PUBLIC_SERVER_URL + '?func=getUsers';
+            const funcName = tabName ? 'getQuizData' : 'getUsers';
+            let url = process.env.NEXT_PUBLIC_SERVER_URL + `?func=${funcName}`;
+            if (tabName) {
+                url += `&tabName=${encodeURIComponent(tabName)}`;
+            }
 			if (url) {
 				const response = await fetch(url, {
 					method: 'GET',
 				});
 				const data = await response.json();
 				console.log(data);
-                const usersData = data.users.slice(1); // 不要な最初の要素を削除
-                const shuffledUsers = [...usersData]; // 元の配列をコピー
-                for (let i = shuffledUsers.length - 1; i > 0; i--) {
-                    const j = Math.floor(Math.random() * (i + 1));
-                    [shuffledUsers[i], shuffledUsers[j]] = [shuffledUsers[j], shuffledUsers[i]];
-                }
-                const quizData: Quiz[] = []; // Quiz オブジェクトを格納する配列
-    
-                for (let i = 0; i < shuffledUsers.length; i++) {
-                    const currentUser = shuffledUsers[i];
-                    const pictureUrl = currentUser[4]; // pictureUrl を取得
-                    if(!pictureUrl){
-                        continue;
+                // getQuizDataの場合は既にQuiz形式のデータが返ってくる可能性があるため、分岐処理
+                if (tabName && data.quizData && Array.isArray(data.quizData) && data.quizData.length > 0 && typeof data.quizData[0] === 'object' && 'pictureUrl' in data.quizData[0]) {
+                    // 既にQuiz形式のデータが返ってきている場合
+                    // 1行目をスキップし、シャッフル
+                    const quizDataWithoutFirst = data.quizData.slice(1);
+                    const shuffledQuizData = [...quizDataWithoutFirst];
+                    for (let i = shuffledQuizData.length - 1; i > 0; i--) {
+                        const j = Math.floor(Math.random() * (i + 1));
+                        [shuffledQuizData[i], shuffledQuizData[j]] = [shuffledQuizData[j], shuffledQuizData[i]];
                     }
-                    const correctName = currentUser[1]; // 正しい名前を取得
-                    const actualNameOrd = Math.floor(Math.random() * 4); // 0-3 のランダムな数字
-    
-                    const incorrectOptions: string[] = [];
-                    const usedIndices = [i]; // usedIndices を初期化、現在のユーザーのインデックスを追加
-                    while (incorrectOptions.length < 3) {
-                        const randomIndex = Math.floor(Math.random() * usersData.length);
+                    setUsers(shuffledQuizData as Quiz[]);
+                } else {
+                    // getUsersの場合、またはgetQuizDataが配列形式で返ってくる場合の処理
+                    const usersData = tabName && Array.isArray(data.quizData) ? data.quizData.slice(1) : data.users.slice(1); // 不要な最初の要素を削除
+                    const shuffledUsers = [...usersData]; // 元の配列をコピー
+                    for (let i = shuffledUsers.length - 1; i > 0; i--) {
+                        const j = Math.floor(Math.random() * (i + 1));
+                        [shuffledUsers[i], shuffledUsers[j]] = [shuffledUsers[j], shuffledUsers[i]];
+                    }
+                    const quizData: Quiz[] = []; // Quiz オブジェクトを格納する配列
+        
+                    for (let i = 0; i < shuffledUsers.length; i++) {
+                        const currentUser = shuffledUsers[i];
+                        const pictureUrl = currentUser[4]; // pictureUrl を取得
+                        // pictureUrlが空、または"Picture"という文字列の場合はスキップ
+                        if(!pictureUrl || pictureUrl === 'Picture' || typeof pictureUrl !== 'string'){
+                            continue;
+                        }
+                        const correctName = currentUser[1]; // 正しい名前を取得
+                        // 正しい名前が空、または"伝助上の名前"という文字列の場合はスキップ
+                        if(!correctName || correctName === '伝助上の名前' || typeof correctName !== 'string'){
+                            continue;
+                        }
+                        const actualNameOrd = Math.floor(Math.random() * 4); // 0-3 のランダムな数字
+        
+                        const incorrectOptions: string[] = [];
+                        const usedIndices = [i]; // usedIndices を初期化、現在のユーザーのインデックスを追加
+                        let attempts = 0;
+                        const maxAttempts = usersData.length * 2; // 最大試行回数を設定
+                        while (incorrectOptions.length < 3 && attempts < maxAttempts) {
+                            attempts++;
+                            const randomIndex = Math.floor(Math.random() * usersData.length);
 
-                        if (!usedIndices.includes(randomIndex)) {
-                            const randomName = shuffledUsers[randomIndex][1];
-                            if (!incorrectOptions.includes(randomName)) {
-                                incorrectOptions.push(randomName);
-                                usedIndices.push(randomIndex);
+                            if (!usedIndices.includes(randomIndex)) {
+                                const randomName = shuffledUsers[randomIndex][1];
+                                // "伝助上の名前"という文字列は選択肢に含めない
+                                if (randomName && randomName !== '伝助上の名前' && typeof randomName === 'string' && !incorrectOptions.includes(randomName)) {
+                                    incorrectOptions.push(randomName);
+                                    usedIndices.push(randomIndex);
+                                }
                             }
                         }
-                    }
-    
-                    const options: string[] = Array(4); // 4つの選択肢の配列を初期化
-                    options[actualNameOrd] = correctName; // 正しい名前を actualNameOrd の位置に設定
-    
-                    let optionIndex = 0;
-                    for (let j = 0; j < 4; j++) {
-                        if (j === actualNameOrd) continue; // actualNameOrd の位置はスキップ
-                        options[j] = incorrectOptions[optionIndex++]; // 不正解の選択肢を設定
-                    }
-                    quizData.push({ pictureUrl, options, actualNameOrd }); // Quiz オブジェクトを配列に追加
-                    }
-                setUsers(quizData); // users state を quizData で更新
+                        // 3つの選択肢が揃わない場合は、既存の選択肢を繰り返し使用
+                        while (incorrectOptions.length < 3) {
+                            incorrectOptions.push(incorrectOptions[incorrectOptions.length % incorrectOptions.length] || '不明');
+                        }
+        
+                        const options: string[] = Array(4); // 4つの選択肢の配列を初期化
+                        options[actualNameOrd] = correctName; // 正しい名前を actualNameOrd の位置に設定
+        
+                        let optionIndex = 0;
+                        for (let j = 0; j < 4; j++) {
+                            if (j === actualNameOrd) continue; // actualNameOrd の位置はスキップ
+                            options[j] = incorrectOptions[optionIndex++]; // 不正解の選択肢を設定
+                        }
+                        quizData.push({ pictureUrl, options, actualNameOrd }); // Quiz オブジェクトを配列に追加
+                        }
+                    setUsers(quizData); // users state を quizData で更新
+                }
             }
 		} catch (error) {
 			console.error('Error fetching data:', error);
@@ -77,7 +112,7 @@ export default function Name() {
 
     useEffect(() => {
         fetchUsers();
-    }, []);
+    }, [tabName]);
 
     const handleOptionClick = (index: number) => {
         if (index === users[currentUserIndex].actualNameOrd) {
@@ -136,4 +171,12 @@ export default function Name() {
 			)}
 		</div>
 	);
+}
+
+export default function Name() {
+    return (
+        <Suspense fallback={<div>読み込み中...</div>}>
+            <NameContent />
+        </Suspense>
+    );
 }

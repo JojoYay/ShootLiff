@@ -19,10 +19,38 @@ export default function Registration() {
 	const footOptionsEng = ['Right', 'Left', 'Both']; // 利き足の選択肢
 	
 	const positionOptions = 
-		['フォワード', 'ミッドフィルダー', 'ディフェンダー', 'なんでも'];
-	const positionOptionsEng = 
-		['Forward', 'Midfielder', 'Defender', 'Anything!']; // ポジションの選択肢
+		// ['フォワード', 'ミッドフィルダー', 'ディフェンダー', 'なんでも'];
+		['センターフォワード（CF）',
+		'右ウイング（RW）',
+		'左ウイング（LW）',
+		'トップ下（AM）',
+		'センターハーフ（CM）',
+		'ボランチ／(DM)',
+		'右サイドハーフ（RM）',
+		'左サイドハーフ（LM）',
+		'センターバック（CB）',
+		'右サイドバック（RB）',
+		'左サイドバック（LB）',
+		'ゴールキーパー（GK）',
+		'わからない（決めてほしい）'];
+		const positionOptionsEng = 
+		// ['Forward', 'Midfielder', 'Defender', 'Anything!']; // ポジションの選択肢
+		['Center Forward（CF）',
+		'Right Wing（RW）',
+		'Left Wing（LW）',
+		'Attacking Midfielder（AM）', 
+		'Center Midfielder（CM）',
+		'Defensive Midfielder（DM）',
+		'Right Midfielder（RM）',
+		'Left Midfielder（LM）',
+		'Center Back（CB）',
+		'Right Side Back（RB）',
+		'Left Side Back（LB）',
+		'Goalkeeper（GK）',
+		'Anything!'
+		];
 	
+
 	const ratingOptions = ['1st Tier', '2nd Tier', '3rd Tier'];
 	
 	const birthplaceOptions =  
