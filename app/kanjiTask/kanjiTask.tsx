@@ -421,6 +421,12 @@ export default function KanjiTask() {
     };
 
     const handleAssigneeChange = (taskId: string, newAssigneeId: string) => {
+        // 空文字列の場合はタスクを削除
+        if (!newAssigneeId) {
+            setTasks(prevTasks => prevTasks.filter(task => task.id !== taskId));
+            return;
+        }
+        
         const newAssignee = users.find(u => u[2] === newAssigneeId);
         setTasks(prevTasks => 
             prevTasks.map(task => 
@@ -800,6 +806,11 @@ export default function KanjiTask() {
     };
 
     const hasAnyChanges = (): boolean => {
+        // データがまだロードされていない場合は変更なし
+        if (isLoading) {
+            return false;
+        }
+        
         // 現在の日付を取得（時刻を00:00:00に設定）
         const today = new Date();
         today.setHours(0, 0, 0, 0);
@@ -893,27 +904,27 @@ export default function KanjiTask() {
         eventTasks.forEach(task => {
             switch (task.taskName) {
                 case 'video':
-                    currentTaskData.video = task.assignedTo;
+                    currentTaskData.video = task.assignedTo || '';
                     currentTaskData.video_accept = task.accepted ? 'true' : 'false';
                     break;
                 case 'drone_video':
-                    currentTaskData.drone_video = task.assignedTo;
+                    currentTaskData.drone_video = task.assignedTo || '';
                     currentTaskData.drone_video_accept = task.accepted ? 'true' : 'false';
                     break;
                 case 'drone_prep':
-                    currentTaskData.drone_prep = task.assignedTo;
+                    currentTaskData.drone_prep = task.assignedTo || '';
                     currentTaskData.drone_prep_accept = task.accepted ? 'true' : 'false';
                     break;
                 case 'score_mip':
-                    currentTaskData.score_mip = task.assignedTo;
+                    currentTaskData.score_mip = task.assignedTo || '';
                     currentTaskData.score_mip_accept = task.accepted ? 'true' : 'false';
                     break;
                 case 'captain':
-                    currentTaskData.captain = task.assignedTo;
+                    currentTaskData.captain = task.assignedTo || '';
                     currentTaskData.captain_accept = task.accepted ? 'true' : 'false';
                     break;
                 case 'ball':
-                    currentTaskData.ball = task.assignedTo;
+                    currentTaskData.ball = task.assignedTo || '';
                     currentTaskData.ball_accept = task.accepted ? 'true' : 'false';
                     break;
             }
@@ -980,27 +991,27 @@ export default function KanjiTask() {
         eventTasks.forEach(task => {
             switch (task.taskName) {
                 case 'video':
-                    taskData.video = task.assignedTo;
+                    taskData.video = task.assignedTo || '';
                     taskData.video_accept = task.accepted ? 'true' : 'false';
                     break;
                 case 'drone_video':
-                    taskData.drone_video = task.assignedTo;
+                    taskData.drone_video = task.assignedTo || '';
                     taskData.drone_video_accept = task.accepted ? 'true' : 'false';
                     break;
                 case 'drone_prep':
-                    taskData.drone_prep = task.assignedTo;
+                    taskData.drone_prep = task.assignedTo || '';
                     taskData.drone_prep_accept = task.accepted ? 'true' : 'false';
                     break;
                 case 'score_mip':
-                    taskData.score_mip = task.assignedTo;
+                    taskData.score_mip = task.assignedTo || '';
                     taskData.score_mip_accept = task.accepted ? 'true' : 'false';
                     break;
                 case 'captain':
-                    taskData.captain = task.assignedTo;
+                    taskData.captain = task.assignedTo || '';
                     taskData.captain_accept = task.accepted ? 'true' : 'false';
                     break;
                 case 'ball':
-                    taskData.ball = task.assignedTo;
+                    taskData.ball = task.assignedTo || '';
                     taskData.ball_accept = task.accepted ? 'true' : 'false';
                     break;
             }
@@ -1404,7 +1415,7 @@ export default function KanjiTask() {
                                                                     }
                                                                 }}
                                                             >
-                                                                <MenuItem value="" disabled>
+                                                                <MenuItem value="">
                                                                     {lang === 'ja-JP' ? 'アサイン' : 'Assign'}
                                                                 </MenuItem>
                                                                 {(() => {
@@ -1467,7 +1478,7 @@ export default function KanjiTask() {
                                                                     }
                                                                 }}
                                                             >
-                                                                <MenuItem value="" disabled>
+                                                                <MenuItem value="">
                                                                     {lang === 'ja-JP' ? 'アサイン' : 'Assign'}
                                                                 </MenuItem>
                                                                 {(() => {
@@ -1530,7 +1541,7 @@ export default function KanjiTask() {
                                                                     }
                                                                 }}
                                                             >
-                                                                <MenuItem value="" disabled>
+                                                                <MenuItem value="">
                                                                     {lang === 'ja-JP' ? 'アサイン' : 'Assign'}
                                                                 </MenuItem>
                                                                 {(() => {
@@ -1730,7 +1741,7 @@ export default function KanjiTask() {
                                                                     }
                                                                 }}
                                                             >
-                                                                <MenuItem value="" disabled>
+                                                                <MenuItem value="">
                                                                     {lang === 'ja-JP' ? 'アサイン' : 'Assign'}
                                                                 </MenuItem>
                                                                 {allAvailableKanji.map((kanji) => (
