@@ -20,7 +20,8 @@
     "deploy:test": "firebase use test && npm run set-env:test && npm run build:dev && firebase deploy --project testsundayfront",
     "deploy:old": "firebase use prod && npm run set-env:prod && next build && firebase deploy --project shootsundayfront",
     "deploy:prod": "firebase use new && npm run set-env:new && next build && firebase deploy --project shootsundaynew",
-    "deploy:bvs": "firebase use bvsfront && npm run set-env:bvs && next build && firebase deploy --project bvsfront"
+    "deploy:bvs": "firebase use bvsfront && npm run set-env:bvs && next build && firebase deploy --project bvsfront",
+    "firebase:config-export": "firebase functions:config:export"
   },
   "engines": {
     "node": ">=24.10.0"

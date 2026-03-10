@@ -31,6 +31,11 @@ yarn-error.log*
 # local env files
 .env*.local
 
+# Firebase config export (params / Secret Manager; may contain secrets)
+.env
+.env.*
+!.env.example
+
 # vercel
 .vercel
 
