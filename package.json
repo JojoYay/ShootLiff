@@ -13,6 +13,8 @@
     "build:dev": "cross-env NODE_ENV=development npm run set-env && next build",
     "start": "next start",
     "lint": "next lint",
+    "test": "vitest run",
+    "test:watch": "vitest",
     "deploy": "firebase use test && npm run set-env && npm run build:dev && firebase deploy --project testsundayfront",
     "deploy:new": "firebase use new && npm run set-env:new && npm run build && firebase deploy --project shootsundaynew",
     "deploy:test": "firebase use test && npm run set-env:test && npm run build:dev && firebase deploy --project testsundayfront",
@@ -56,7 +58,12 @@
     "uuid": "^11.1.0"
   },
   "devDependencies": {
+    "@testing-library/dom": "^10.4.0",
+    "@testing-library/react": "^16.0.0",
     "@types/node": "^20",
+    "@vitejs/plugin-react": "^4.3.4",
+    "jsdom": "^25.0.0",
+    "vitest": "^2.1.0",
     "@types/react": "^18",
     "@types/react-dom": "^18",
     "cross-env": "^7.0.3",
