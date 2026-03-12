@@ -6,10 +6,12 @@ import VideoCard from '../video/videoCard';
 import AvatarIcon from '../stats/avatarIcon';
 import LoadingSpinner from '../calendar/loadingSpinner';
 import { useLiff } from '../liffProvider';
+import { useServerUrl } from '../context/serverUrlContext';
 import VideoCardPlus from './videoCardPlus';
 
 
 export default function Video() {
+    const serverUrl = useServerUrl();
 	useEffect(() => {
 		fetchVideo();
 	}, []);
@@ -50,7 +52,7 @@ export default function Video() {
 
 	const fetchVideo = async () => {
 		try {
-			const url = process.env.NEXT_PUBLIC_SERVER_URL + '?func=getInfoOfTheDay&func=getUsers';
+			const url = serverUrl + '?func=getInfoOfTheDay&func=getUsers';
 			if (url) {
 				const response = await fetch(url, {
 					method: 'GET',
@@ -158,7 +160,7 @@ export default function Video() {
 
 	const fetchShootLog = async (actDate: string) => {
 		try {
-			const url = process.env.NEXT_PUBLIC_SERVER_URL + '?func=getInfoOfTheDay&actDate=' + encodeURIComponent(actDate);
+			const url = serverUrl + '?func=getInfoOfTheDay&actDate=' + encodeURIComponent(actDate);
 			if (url) {
 				const response = await fetch(url, {
 					method: 'GET',

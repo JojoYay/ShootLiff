@@ -1,5 +1,6 @@
 'use client';
 import { useLiff } from '@/app/liffProvider';
+import { useServerUrl } from '@/app/context/serverUrlContext';
 import { Profile } from '@liff/get-profile';
 import { useEffect, useState, useRef } from 'react';
 import { Card, CardContent, CardHeader, Box, Table, TableBody, TableCell, TableContainer, TableRow, Button, Dialog, DialogContent, CircularProgress, Typography } from '@mui/material';
@@ -15,6 +16,7 @@ interface ProfileDen {
 }
 
 export default function Stats() {
+    const serverUrl = useServerUrl();
 	
 	const [statsTable, setStatsTable] = useState<StatsData[]>([]);
 	const [users, setUsers] = useState<string[][] | null>(null);
@@ -325,7 +327,7 @@ export default function Stats() {
 
 	const fetchData = async () => {
 		try {
-			const url = process.env.NEXT_PUBLIC_SERVER_URL + `?func=getStats&func=getUsers&func=getRanking`;
+			const url = serverUrl + `?func=getStats&func=getUsers&func=getRanking`;
 			if (url) {
 				const response = await fetch(url, {
 					method: 'GET',

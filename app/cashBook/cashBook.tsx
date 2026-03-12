@@ -8,10 +8,12 @@ import LoadingSpinner from '../calendar/loadingSpinner';
 import AvatarIcon from '../stats/avatarIcon';
 import { ExpandLess, ExpandMore } from '@mui/icons-material';
 import { useLiff } from '../liffProvider';
+import { useServerUrl } from '../context/serverUrlContext';
 import { Profile } from '@liff/get-profile';
 import DeleteIcon from '@mui/icons-material/Delete';
 
 export default function CashBookPage() {
+    const serverUrl = useServerUrl();
     const { liff } = useLiff();
     useEffect(() => {
         if (liff) {
@@ -64,7 +66,7 @@ export default function CashBookPage() {
 
     const loadData = async () => {
         setIsLoading(true);
-        let url = process.env.NEXT_PUBLIC_SERVER_URL + '?func=loadCashBook&func=loadCalendar&func=getUsers&func=loadOpenPayment';
+        let url = serverUrl + '?func=loadCashBook&func=loadCalendar&func=getUsers&func=loadOpenPayment';
         if (url) {
             const response = await fetch(url);
             const data = await response.json();
@@ -234,7 +236,7 @@ export default function CashBookPage() {
             formData.append('create', newEntry.create.toISOString());
             formData.append('isExpanded', newEntry.isExpanded.toString());
             
-            const response = await fetch(`${process.env.NEXT_PUBLIC_SERVER_URL}`, {
+            const response = await fetch(`${serverUrl}`, {
                 method: 'POST',
                 headers: { 'Accept': 'application/json' },
                 body: formData,
@@ -271,7 +273,7 @@ export default function CashBookPage() {
                 const formData = new FormData();
                 formData.append('func', 'deleteCashBook'); // func パラメータを追加
                 formData.append('bookId', id);
-                const res = await fetch(`${process.env.NEXT_PUBLIC_SERVER_URL}`, {
+                const res = await fetch(`${serverUrl}`, {
                     method: 'POST',
                     headers: { 'Accept': 'application/json' },
                     body: formData,
@@ -320,7 +322,7 @@ export default function CashBookPage() {
     const updatePaymentStatus = async (paymentId: string, folderName:string) => {
         try {
             setIsLoading(true);
-            const response = await fetch(`${process.env.NEXT_PUBLIC_SERVER_URL}?func=updateOpenPaymentStatus&id=${paymentId}&folderName=${folderName}&userId=${profile?.userId}`, {
+            const response = await fetch(`${serverUrl}?func=updateOpenPaymentStatus&id=${paymentId}&folderName=${folderName}&userId=${profile?.userId}`, {
                 method: 'GET',
             });
     

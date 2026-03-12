@@ -18,6 +18,7 @@ import {
     Typography
 } from '@mui/material';
 import { useLiff } from '../liffProvider';
+import { useServerUrl } from '../context/serverUrlContext';
 import { ChevronLeft, ChevronRight, ExpandMore, ExpandLess} from '@mui/icons-material';
 import CalendarGrid from './calendarGrid';
 import RegistrationDialog from './registrationDialog';
@@ -34,6 +35,7 @@ import LoadingModal from '../components/LoadingModal';
 
 export default function Calendar() {
     const router = useRouter();
+    const serverUrl = useServerUrl();
     const [calendarEvents, setCalendarEvents] = useState<CalendarEvent[]>([]); // カレンダーイベントデータ
     const [attendance, setAttendance] = useState<Attendance[]>([]);
     // const [participationStatus, setParticipationStatus] = useState<{ [eventId: string]: '〇' | '△' | '×' }>({}); // 参加状況
@@ -294,7 +296,7 @@ export default function Calendar() {
 
     const fetchCalendarEvents = async () => {
         try {
-            let url = process.env.NEXT_PUBLIC_SERVER_URL + `?func=loadCalendar&func=getUsers&func=getAttendance`;
+            let url = serverUrl + `?func=loadCalendar&func=getUsers&func=getAttendance`;
             if (url) {
                 const response = await fetch(url, {
                     method: 'GET',
@@ -462,7 +464,7 @@ export default function Calendar() {
     const handleSaveParticipation = async () => {
         try {
             setIsSaving(true); // 保存処理開始時にボタンを無効化
-            let url = process.env.NEXT_PUBLIC_SERVER_URL;
+            let url = serverUrl;
             if (url && profile) {
                 const formData = new FormData();
                 formData.append('func', 'updateParticipation');

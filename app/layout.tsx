@@ -2,6 +2,7 @@ import type { Metadata } from 'next';
 import { Inter } from 'next/font/google';
 import '@/app/globals.css';
 import { LiffProvider } from './liffProvider';
+import { ServerUrlProvider } from './context/serverUrlContext';
 import '@fontsource/roboto/300.css';
 import '@fontsource/roboto/400.css';
 import '@fontsource/roboto/500.css';
@@ -30,7 +31,9 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
       </head>      
       <body className={inter.className}>
         <LiffProvider liffId={process.env.NEXT_PUBLIC_LIFF_ID ?? ''}>
-          {children}
+          <ServerUrlProvider contextRoot={null}>
+            {children}
+          </ServerUrlProvider>
         </LiffProvider>
         <GoogleAnalytics gaId={process.env.NEXT_PUBLIC_GA_ID ?? ''} />
       </body>

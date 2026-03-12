@@ -11,6 +11,7 @@ import {
     Tooltip
 } from '@mui/material';
 import { useLiff } from '../liffProvider';
+import { useServerUrl } from '../context/serverUrlContext';
 import { 
     VideoLibrary, 
     Movie, 
@@ -37,6 +38,7 @@ interface DriveFolder {
 }
 
 export default function VideoEdit() {
+    const serverUrl = useServerUrl();
     const [folders, setFolders] = useState<DriveFolder[]>([]);
     const [lang, setLang] = useState<string>('ja-JP');
     const [isLoading, setIsLoading] = useState<boolean>(true);
@@ -67,7 +69,7 @@ export default function VideoEdit() {
     const fetchData = async () => {
         try {
             // GoogleDriveの情報を取得
-            let url = process.env.NEXT_PUBLIC_SERVER_URL + `?func=loadVideoFolders`;
+            let url = serverUrl + `?func=loadVideoFolders`;
             
             if (url) {
                 const response = await fetch(url, {
@@ -182,7 +184,7 @@ export default function VideoEdit() {
             
             if (confirmed) {
                 // サーバーサイドAPIを呼び出してColabノートブックのURLを取得
-                const url = process.env.NEXT_PUBLIC_SERVER_URL + 
+                const url = serverUrl + 
                     `?func=executeVideoTask&folderId=${folderId}&folderName=${encodeURIComponent(folderName)}&taskType=${taskType}`;
                 
                 const response = await fetch(url, {

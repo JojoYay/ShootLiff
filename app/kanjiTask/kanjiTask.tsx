@@ -16,6 +16,7 @@ import {
     FormControlLabel
 } from '@mui/material';
 import { useLiff } from '../liffProvider';
+import { useServerUrl } from '../context/serverUrlContext';
 import { CheckCircle, Assignment, ViewModule, ViewList, ArrowUpward, ArrowDownward, ExpandMore, ExpandLess } from '@mui/icons-material';
 import LoadingSpinner from '../calendar/loadingSpinner';
 import LoadingModal from '../components/LoadingModal';
@@ -73,6 +74,7 @@ interface KanjiStats {
 }
 
 export default function KanjiTask() {
+    const serverUrl = useServerUrl();
     const [tasks, setTasks] = useState<Task[]>([]);
     const [events, setEvents] = useState<CalendarEvent[]>([]);
     const [attendance, setAttendance] = useState<Attendance[]>([]);
@@ -179,7 +181,7 @@ export default function KanjiTask() {
 
     const fetchData = async () => {
         try {
-            let url = process.env.NEXT_PUBLIC_SERVER_URL + `?func=loadCalendar&func=getUsers&func=getAttendance&func=getSheetData&sheetName=Kanji&Type=ActivityReport`;
+            let url = serverUrl + `?func=loadCalendar&func=getUsers&func=getAttendance&func=getSheetData&sheetName=Kanji&Type=ActivityReport`;
             if (url) {
                 const response = await fetch(url, {
                     method: 'GET',
@@ -476,7 +478,7 @@ export default function KanjiTask() {
             setIsSaving(true);
             setSavingMessage(isInitial ? '初期データを作成中...' : '保存中...');
             
-            const url = process.env.NEXT_PUBLIC_SERVER_URL;
+            const url = serverUrl;
             if (!url) return;
 
             const formData = new FormData();

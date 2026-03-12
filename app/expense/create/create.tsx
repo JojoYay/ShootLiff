@@ -3,9 +3,11 @@ import LoadingSpinner from '@/app/calendar/loadingSpinner';
 import { Autocomplete, Box, Button, CircularProgress, FormControl, FormControlLabel, FormLabel, MenuItem, Radio, RadioGroup, Select, SelectChangeEvent, TextField, Typography } from '@mui/material';
 import { useRouter } from 'next/navigation';
 import React, { useEffect, useState } from 'react';
+import { useServerUrl } from '@/app/context/serverUrlContext';
 
 export default function CreateExpense() {
     const router = useRouter();
+    const serverUrl = useServerUrl();
     const [members, setMembers] = useState<any[][]>([]);
     const [selectedOptions, setSelectedOptions] = useState<string[]>([]);
     const [amount, setAmount] = useState('');
@@ -32,7 +34,7 @@ export default function CreateExpense() {
     const fetchEventParticipants = async (calendarId: string) => {
         setLoading(true);
         try {
-            const url = process.env.NEXT_PUBLIC_SERVER_URL + `?func=getAttendees&func=getCalendar&calendarId=${calendarId}`;
+            const url = serverUrl + `?func=getAttendees&func=getCalendar&calendarId=${calendarId}`;
             if (url) { 
                 const response = await fetch(url, {
                     method: 'GET',
@@ -58,7 +60,7 @@ export default function CreateExpense() {
 
     const fetchMembers = async () => {
         try {
-            const url = process.env.NEXT_PUBLIC_SERVER_URL + `?func=getRegisteredMembers&func=getPayNow`;
+            const url = serverUrl + `?func=getRegisteredMembers&func=getPayNow`;
             
             if (url) {
                 const response = await fetch(url, {
@@ -93,7 +95,7 @@ export default function CreateExpense() {
         }
         setLoading(true);
         try {
-            let url = process.env.NEXT_PUBLIC_SERVER_URL + `?func=generateExReport`;
+            let url = serverUrl + `?func=generateExReport`;
             console.log(selectedOptions);
             console.log(payNow);
             for(const opt of selectedOptions){

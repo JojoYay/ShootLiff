@@ -3,6 +3,7 @@
 import { useEffect, useState, Suspense } from "react";
 import { useSwipeable } from 'react-swipeable';
 import { useSearchParams } from 'next/navigation';
+import { useServerUrl } from '../context/serverUrlContext';
 
 interface Quiz {
     actualNameOrd: number;
@@ -12,6 +13,7 @@ interface Quiz {
 
 function NameContent() {
     const searchParams = useSearchParams();
+    const serverUrl = useServerUrl();
     const tabName = searchParams.get('tabName');
     
     const [users, setUsers] = useState<Quiz[]>([]);
@@ -25,7 +27,7 @@ function NameContent() {
     const fetchUsers = async () => {
         try {
             const funcName = tabName ? 'getQuizData' : 'getUsers';
-            let url = process.env.NEXT_PUBLIC_SERVER_URL + `?func=${funcName}`;
+            let url = serverUrl + `?func=${funcName}`;
             if (tabName) {
                 url += `&tabName=${encodeURIComponent(tabName)}`;
             }

@@ -1,9 +1,11 @@
 'use client';
 import { useEffect, useState } from 'react';
+import { useServerUrl } from '../context/serverUrlContext';
 import VideoCard from './videoCard';
 import { CircularProgress, Grid, Pagination } from '@mui/material';
 
 export default function Video() {
+	const serverUrl = useServerUrl();
 	useEffect(() => {
 		fetchVideo();
 	}, []);
@@ -14,7 +16,7 @@ export default function Video() {
 
 	const fetchVideo = async () => {
 		try {
-			const url = process.env.NEXT_PUBLIC_SERVER_URL + '?func=getVideo';
+			const url = serverUrl + '?func=getVideo';
 			if (url) {
 				const response = await fetch(url, {
 					method: 'GET',

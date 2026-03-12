@@ -2,8 +2,10 @@
 import { Box, Button, MenuItem, Select, SelectChangeEvent, TextField, Typography,Table, TableBody, TableCell, TableContainer, TableHead, TableRow, Paper, ListItemText, ListItem, List, FormControl, InputLabel, Divider } from '@mui/material';
 import React, { useEffect, useState } from 'react';
 import LoadingSpinner from '../calendar/loadingSpinner';
+import { useServerUrl } from '../context/serverUrlContext';
 
 const EventResult = () => {
+    const serverUrl = useServerUrl();
     const [points, setPoints] = useState(Array(10).fill(0));
     const [weather, setWeather] = useState('晴れ');
     const [mipPlayers, setMipPlayers] = useState(Array(5).fill(''));
@@ -28,8 +30,8 @@ const EventResult = () => {
 
 	const fetchInfo = async () => {
         try {
-			// const url = process.env.NEXT_PUBLIC_SERVER_URL + '?func=getVideos&func=getEventData&func=getUsers';
-			const url = process.env.NEXT_PUBLIC_SERVER_URL + '?func=getVideos&func=getEventData';
+			// const url = serverUrl + '?func=getVideos&func=getEventData&func=getUsers';
+			const url = serverUrl + '?func=getVideos&func=getEventData';
             if (url) {
                 const response = await fetch(url, {
                     method: 'GET',
@@ -135,7 +137,7 @@ const EventResult = () => {
             for (const pair of Array.from(formDataToSend.entries())) {
                 console.log(pair[0] + ', ' + pair[1]);
             }
-            let url = process.env.NEXT_PUBLIC_SERVER_URL;
+            let url = serverUrl;
             if (url) {
                 const response = await fetch(url, {
                     method: 'POST',

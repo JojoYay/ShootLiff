@@ -1,6 +1,8 @@
+'use client';
 import React, { useState } from 'react';
 import { Dialog, DialogTitle, DialogContent, DialogActions, TextField, Button } from '@mui/material';
 import { User, JsonUser } from '../types/user';
+import { useServerUrl } from '../context/serverUrlContext';
 
 interface RegistrationDialogProps {
     nickname: string;
@@ -16,6 +18,7 @@ interface RegistrationDialogProps {
 }
 
 const RegistrationDialog: React.FC<RegistrationDialogProps> = ({ nickname, onNicknameChange, nicknameError, setNicknameError, users, profile, setShowRegistrationDialog}) => {
+    const serverUrl = useServerUrl();
     const [isRegistering, setIsRegistering] = useState(false);
 
     const handleRegister = async() => {
@@ -32,8 +35,8 @@ const RegistrationDialog: React.FC<RegistrationDialogProps> = ({ nickname, onNic
                 formData.append('nickname', nickname);
                 formData.append('line_name',profile?.displayName || '');
                 formData.append('pic_url', profile?.pictureUrl || '');
-                if(process.env.NEXT_PUBLIC_SERVER_URL){
-                    await fetch(process.env.NEXT_PUBLIC_SERVER_URL, {
+                if(serverUrl){
+                    await fetch(serverUrl, {
                         method: 'POST',
                         body: formData,
                     })

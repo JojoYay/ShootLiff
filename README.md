@@ -24,4 +24,6 @@ firebase functions:config:set liff_id="your-api-key" server_url="your-database-u
 npm run deploy
 ```
 
+This app is built as a **static export** and deployed to **Firebase Hosting only** (no Cloud Run / Frameworks Backend). The Spark (free) plan is sufficient; Blaze is not required.
+
 > ほんとはもう少し設定を自動化したいけど、私しかつかわないのでこんな感じになっている

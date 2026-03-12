@@ -4,11 +4,13 @@ import { useEffect, useState } from 'react';
 import { Button, Card, CardActions, CardContent, CircularProgress, Dialog, DialogActions, DialogContent, DialogContentText, DialogTitle, Grid,IconButton,Paper, Typography } from '@mui/material';
 import { Profile } from '@liff/get-profile';
 import { useLiff } from '@/app/liffProvider';
+import { useServerUrl } from '@/app/context/serverUrlContext';
 import DeleteIcon from '@mui/icons-material/Delete';
 // Existing code for InputExpense component
 
 export default function ExpenseList() {
     const router = useRouter();
+    const serverUrl = useServerUrl();
     // const [file, setFile] = useState<File | null>(null);
     // const [src, setSrc] = useState<string>('');
     // const [amount, setAmount] = useState('');
@@ -50,7 +52,7 @@ export default function ExpenseList() {
         const formData = new FormData();
         if (profile) {
             formData.append('func', 'loadExList');
-            const url = process.env.NEXT_PUBLIC_SERVER_URL;
+            const url = serverUrl;
             if (url) {
                 try {
                     const response = await fetch(url, {
@@ -109,7 +111,7 @@ export default function ExpenseList() {
         if (profile) {
             formData.append('func', 'deleteEx');
             formData.append('title',title);
-            const url = process.env.NEXT_PUBLIC_SERVER_URL;
+            const url = serverUrl;
             if (url) {
                 try {
                     const response = await fetch(url, {

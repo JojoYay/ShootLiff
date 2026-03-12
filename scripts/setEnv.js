@@ -34,10 +34,22 @@ function setEnvFile(config) {
   const deployDate = now.toISOString();
   const deployVersion = `${now.getFullYear()}${String(now.getMonth() + 1).padStart(2, '0')}${String(now.getDate()).padStart(2, '0')}.${String(now.getHours()).padStart(2, '0')}${String(now.getMinutes()).padStart(2, '0')}`;
 
-  // デフォルトのFirebaseConfigの内容を設定
-  let envContent = `NEXT_PUBLIC_LIFF_ID=${firebaseConfig.project_config.liff_id}\n`;
-  envContent += `NEXT_PUBLIC_SERVER_URL=${firebaseConfig.project_config.server_url}\n`;
-  envContent += `NEXT_PUBLIC_GA_ID=${firebaseConfig.project_config.ga_id}\n`;
+  // Default Firebase config. Context root URLs: any key server_url_<name> (except server_url) -> NEXT_PUBLIC_CONTEXT_ROOT_URLS JSON
+  const proj = firebaseConfig.project_config || {};
+  const contextRootUrls = {};
+  for (const key of Object.keys(proj)) {
+    if (key.startsWith('server_url_') && key !== 'server_url') {
+      const name = key.replace(/^server_url_/, '').toLowerCase();
+      if (proj[key]) contextRootUrls[name] = proj[key];
+    }
+  }
+  let envContent = `NEXT_PUBLIC_LIFF_ID=${proj.liff_id}\n`;
+  envContent += `NEXT_PUBLIC_SERVER_URL=${proj.server_url || ''}\n`;
+  if (Object.keys(contextRootUrls).length > 0) {
+    const json = JSON.stringify(contextRootUrls).replace(/\\/g, '\\\\').replace(/"/g, '\\"');
+    envContent += `NEXT_PUBLIC_CONTEXT_ROOT_URLS="${json}"\n`;
+  }
+  envContent += `NEXT_PUBLIC_GA_ID=${proj.ga_id}\n`;
   envContent += `NEXT_PUBLIC_DEPLOY_DATE="${deployDate}"\n`;
   envContent += `NEXT_PUBLIC_DEPLOY_VERSION="${deployVersion}"\n`;
 
@@ -46,7 +58,12 @@ function setEnvFile(config) {
     if (envConfig.hasOwnProperty(key)) {
       const envKey = `NEXT_PUBLIC_${toSnakeCase(key).toUpperCase()}`;
       envContent = envContent.replace(new RegExp(`${envKey}=.*\n`), ''); // 既存の設定を削除
-      envContent += `${envKey}="${envConfig[key]}"\n`; // 新しい設定を追加
+      let val = envConfig[key];
+      if (key === 'contextRootUrls' && val && typeof val === 'object') {
+        val = JSON.stringify(val);
+      }
+      const escaped = typeof val === 'string' ? val.replace(/\\/g, '\\\\').replace(/"/g, '\\"') : String(val);
+      envContent += `${envKey}="${escaped}"\n`; // 新しい設定を追加
     }
   }
 

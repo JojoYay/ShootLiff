@@ -4,9 +4,10 @@ import { Button, Typography } from '@mui/material';
 import { Profile } from '@liff/get-profile';
 import CloudUploadIcon from '@mui/icons-material/CloudUpload';
 import { useLiff } from '@/app/liffProvider';
-// Existing code for InputExpense component
+import { useServerUrl } from '@/app/context/serverUrlContext';
 
 export default function InputExpense() {
+    const serverUrl = useServerUrl();
     const [file, setFile] = useState<File | null>(null);
     const [src, setSrc] = useState<string>('');
     // const [amount, setAmount] = useState('');
@@ -67,7 +68,7 @@ export default function InputExpense() {
     const loadExpenseInfo = async (title: string, userId: string) => {
         setLoading(true);
         try {
-            let url = process.env.NEXT_PUBLIC_SERVER_URL + `?func=getExpenseWithStatus`;
+            let url = serverUrl + `?func=getExpenseWithStatus`;
             url = url + '&title=' + encodeURIComponent(title);
             url = url + '&userId=' + encodeURIComponent(userId);
     
@@ -117,7 +118,7 @@ export default function InputExpense() {
                     formData.append('file', base64File);
                     // console.log(base64File);
 
-                    const url = process.env.NEXT_PUBLIC_SERVER_URL;
+                    const url = serverUrl;
                     if (url) {
                         try {
                             const response = await fetch(url, {

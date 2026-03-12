@@ -1,8 +1,10 @@
+'use client';
 import { Box, styled } from '@mui/system';
 import { CardActionArea, Card, CardMedia, Typography, Table, TableHead, TableRow, TableCell, TableBody, Grid, Button, LinearProgress, CircularProgress } from '@mui/material';
 import AvatarIcon from '../stats/avatarIcon';
 import { useRef, useState } from 'react';
 import YouTubeComment from '../calendar/youTubeComment';
+import { useServerUrl } from '../context/serverUrlContext';
 
 const Overlay2 = styled('div')({
   position: 'absolute',
@@ -63,6 +65,7 @@ type VideoPropsNeo = {
 };
 
 export default function VideoCardNeo(props: VideoPropsNeo) {
+  const serverUrl = useServerUrl();
   const handleCardClick = () => {
     window.open(props.url, '_blank');
   };
@@ -110,7 +113,7 @@ const uploadVideo = async(file: File) => {
     setIsModalOpen(true); // モーダルを開く
     console.log('Modal opened');
     try{
-      const url = process.env.NEXT_PUBLIC_SERVER_URL + '';
+      const url = serverUrl + '';
       console.log('Server URL:', url);
       const formData:FormData = new FormData();
       formData.append('func', 'uploadToYoutube');
@@ -197,7 +200,7 @@ const uploadVideo = async(file: File) => {
       // アップロード完了後の処理
       console.log('Upload completed, starting update process...');
       try {
-        const updateUrl = process.env.NEXT_PUBLIC_SERVER_URL + '?func=updateYTVideo&actDate=' + encodeURIComponent(props.actDate) +'&fileName='+encodeURIComponent(props.title);
+        const updateUrl = serverUrl + '?func=updateYTVideo&actDate=' + encodeURIComponent(props.actDate) +'&fileName='+encodeURIComponent(props.title);
         console.log('Update URL:', updateUrl);
         if (updateUrl) {
           const updateResponse = await fetch(updateUrl, {

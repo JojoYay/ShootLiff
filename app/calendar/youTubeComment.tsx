@@ -1,6 +1,7 @@
+'use client';
 import React, { useEffect, useState } from 'react';
 import { Box, Typography } from '@mui/material';
-
+import { useServerUrl } from '../context/serverUrlContext';
 
 interface CommentProps {
     videoUrl:string;
@@ -13,6 +14,7 @@ interface YTComment {
 }
 
 const YouTubeComment: React.FC<CommentProps> = ({ videoUrl }) => {
+    const serverUrl = useServerUrl();
     const [comments, setComments] = useState<YTComment[]>([]);
 
     useEffect(() => {
@@ -20,7 +22,7 @@ const YouTubeComment: React.FC<CommentProps> = ({ videoUrl }) => {
     }, [videoUrl]);
 
     const fetchComments = async () => {
-        const url = process.env.NEXT_PUBLIC_SERVER_URL + `?url=${videoUrl}&func=getYTComments`;
+        const url = serverUrl + `?url=${videoUrl}&func=getYTComments`;
         if (url) {
             try {
                 const response = await fetch(url, {

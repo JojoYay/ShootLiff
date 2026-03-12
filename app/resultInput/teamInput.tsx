@@ -1,5 +1,6 @@
 'use client';
 import { useEffect, useState, SetStateAction } from 'react';
+import { useServerUrl } from '../context/serverUrlContext';
 import { Avatar, Button, Card, CardActionArea, CardContent, CircularProgress, Grid, Typography, FormControl, InputLabel, MenuItem, Select, Box, Checkbox, List, ListItem, ListItemIcon, ListItemText, IconButton, Paper, Accordion, AccordionSummary, AccordionDetails, Radio, RadioGroup, FormControlLabel } from '@mui/material';
 import { ArrowUpward, ArrowDownward } from '@mui/icons-material';
 import ExpandMoreIcon from '@mui/icons-material/ExpandMore';
@@ -203,6 +204,7 @@ const isAdultMember = (name: string): boolean => {
 };
 
 export default function TeamInput() {
+    const serverUrl = useServerUrl();
     const [teams, setTeams] = useState<string[]>([]);
     // const [value, setValue] = useState<string>('');
     const [team1, setTeam1] = useState<string[]>([]);
@@ -245,7 +247,7 @@ export default function TeamInput() {
 
     const fetchTeams = async () => {
         try {
-            const url = process.env.NEXT_PUBLIC_SERVER_URL + `?func=getTeams&func=getUsers&func=getStats`;
+            const url = serverUrl + `?func=getTeams&func=getUsers&func=getStats`;
             if (url) {
                 const response = await fetch(url, {
                     method: 'GET',
@@ -336,10 +338,10 @@ export default function TeamInput() {
 			});
             
 			formData.append('func', 'updateTeams');
-            if(!process.env.NEXT_PUBLIC_SERVER_URL){
+            if(!serverUrl){
                 return;
             }
-            const response = await fetch(process.env.NEXT_PUBLIC_SERVER_URL, {
+            const response = await fetch(serverUrl, {
                 method: 'POST',
                 headers: {
                     'Accept': 'application/json',

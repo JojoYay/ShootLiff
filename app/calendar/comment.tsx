@@ -1,8 +1,10 @@
+'use client';
 import React, { useEffect, useState } from 'react';
 import { Box, TextField, Button, Typography, IconButton } from '@mui/material';
 import DeleteIcon from '@mui/icons-material/Delete';
 import AvatarIcon from '../stats/avatarIcon';
 import { JsonUser } from '../types/user';
+import { useServerUrl } from '../context/serverUrlContext';
 
 interface Profile {
     userId: string;
@@ -19,6 +21,7 @@ interface CommentProps {
 }
 
 const Comment: React.FC<CommentProps> = ({ componentId, category, users, user, lang }) => {
+    const serverUrl = useServerUrl();
     const [comments, setComments] = useState<string[][]>([]);
     const [newComment, setNewComment] = useState<string>('');
     const [isSubmitting, setIsSubmitting] = useState<boolean>(false); // 追加
@@ -28,7 +31,7 @@ const Comment: React.FC<CommentProps> = ({ componentId, category, users, user, l
     }, [componentId, category]);
 
     const fetchComments = async () => {
-        const url = process.env.NEXT_PUBLIC_SERVER_URL + `?component_id=${componentId}&category=${category}&func=getComments`;
+        const url = serverUrl + `?component_id=${componentId}&category=${category}&func=getComments`;
         if (url) {
             try {
                 const response = await fetch(url, {
@@ -58,7 +61,7 @@ const Comment: React.FC<CommentProps> = ({ componentId, category, users, user, l
                     console.log(pair[0] + ', ' + pair[1]);
                 }
 
-                let url = process.env.NEXT_PUBLIC_SERVER_URL;
+                let url = serverUrl;
                 if (url) {
                     const response = await fetch(url, {
                         method: 'POST',
@@ -87,7 +90,7 @@ const Comment: React.FC<CommentProps> = ({ componentId, category, users, user, l
             const formData:FormData = new FormData();
             formData.append('id', commentId);
             formData.append('func', 'deleteComments');
-            let url = process.env.NEXT_PUBLIC_SERVER_URL;
+            let url = serverUrl;
             if (url) {
                 const response = await fetch(url, {
                     method: 'POST',

@@ -1,4 +1,8 @@
 {
+    "contextRootUrls": {
+        "bvs": "https://script.google.com/macros/s/AKfycbyNWSZa57KCoMxkBaf0ie4BykQOlp77wIkS_np_f8QskVrmD8jju95MiQxXwclA77p9ug/exec",
+        "cs": "https://script.google.com/macros/s/.../exec"
+    },
     "appTitle": "Scout App",
     "logoPath": "https://lh3.googleusercontent.com/d/19801mlnWv3-xCbQGcGFe0zueuRqM6mbA",
     "cate1_cap": "いつもの",

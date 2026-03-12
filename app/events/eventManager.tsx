@@ -27,6 +27,7 @@ import { AdapterDateFns } from '@mui/x-date-pickers/AdapterDateFns';
 import ja from 'date-fns/locale/ja/index.js';
 import { DatePicker, TimePicker } from '@mui/x-date-pickers';
 import LoadingSpinner from '../calendar/loadingSpinner';
+import { useServerUrl } from '../context/serverUrlContext';
 import Link from 'next/link';
 import { BALL, BEER, LOGO } from '../utils/constants';
 import LoadingModal from '../components/LoadingModal';
@@ -46,6 +47,7 @@ interface Event {
 }
 
 export default function EventManager() {
+    const serverUrl = useServerUrl();
     const [events, setEvents] = useState<Event[]>([]);
     const [open, setOpen] = useState(false);
     const [selectedEvent, setSelectedEvent] = useState<Event | null>(null);
@@ -79,7 +81,7 @@ export default function EventManager() {
     const fetchEvents = async () => {
         try {
             setIsLoading(true);
-            let url = process.env.NEXT_PUBLIC_SERVER_URL + '?func=loadCalendar';
+            let url = serverUrl + '?func=loadCalendar';
             if (url) {
                 const response = await fetch(url);
                 const data = await response.json();
@@ -149,7 +151,7 @@ export default function EventManager() {
                 formData.append('func', 'deleteCalendar');
                 formData.append('id', id);
 
-                let url = process.env.NEXT_PUBLIC_SERVER_URL;
+                let url = serverUrl;
                 if (url) {
                     const response = await fetch(url, {
                         method: 'POST',
@@ -221,7 +223,7 @@ export default function EventManager() {
                 console.log(key, value.toString());
             });
 
-            let url = process.env.NEXT_PUBLIC_SERVER_URL;
+            let url = serverUrl;
             if (url) {
                 const response = await fetch(url, {
                     method: 'POST',
@@ -247,7 +249,7 @@ export default function EventManager() {
         formDataToSend.append('id', event.id);
         formDataToSend.append('new_status', newStatus.toString());
 
-        let url = process.env.NEXT_PUBLIC_SERVER_URL;
+        let url = serverUrl;
         if (url) {
             const response = await fetch(url, {
                 method: 'POST',

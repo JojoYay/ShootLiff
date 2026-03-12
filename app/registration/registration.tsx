@@ -1,5 +1,6 @@
 'use client';
 import { useLiff } from '@/app/liffProvider';
+import { useServerUrl } from '@/app/context/serverUrlContext';
 import { Profile } from '@liff/get-profile';
 import { useEffect, useState } from 'react';
 import { Box, Button, CircularProgress, FormControl, InputLabel, MenuItem, Select, TextField, Typography, Autocomplete } from '@mui/material';
@@ -7,6 +8,7 @@ import LoadingSpinner from '../calendar/loadingSpinner';
 import { JsonUser } from '../types/user';
 
 export default function Registration() {
+	const serverUrl = useServerUrl();
 	const [profile, setProfile] = useState<Profile | null>(null);
 	const [loading, setLoading] = useState(false);
 	const [user, setUser] = useState<JsonUser | null>(null);
@@ -77,7 +79,7 @@ export default function Registration() {
 	const loadUsers = async (preserveSelection: boolean = false) => {
         setLoading(true);
         try {
-            let url = process.env.NEXT_PUBLIC_SERVER_URL + `?func=getUsers`;
+            let url = serverUrl + `?func=getUsers`;
             if (url && profile) {
                 const response = await fetch(url, {
                     method: 'GET',
@@ -141,7 +143,7 @@ export default function Registration() {
 				formData.append(childKey, user[childKey] || '');
 			}
 						
-			const response = await fetch(`${process.env.NEXT_PUBLIC_SERVER_URL}`, {
+			const response = await fetch(`${serverUrl}`, {
 				method: 'POST',
 				headers: {
 					'Accept': 'application/json',
