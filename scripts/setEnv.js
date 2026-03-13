@@ -46,8 +46,8 @@ function setEnvFile(config) {
   let envContent = `NEXT_PUBLIC_LIFF_ID=${proj.liff_id}\n`;
   envContent += `NEXT_PUBLIC_SERVER_URL=${proj.server_url || ''}\n`;
   if (Object.keys(contextRootUrls).length > 0) {
-    const json = JSON.stringify(contextRootUrls).replace(/\\/g, '\\\\').replace(/"/g, '\\"');
-    envContent += `NEXT_PUBLIC_CONTEXT_ROOT_URLS="${json}"\n`;
+    const json = JSON.stringify(contextRootUrls);
+    envContent += `NEXT_PUBLIC_CONTEXT_ROOT_URLS='${json}'\n`;
   }
   envContent += `NEXT_PUBLIC_GA_ID=${proj.ga_id}\n`;
   envContent += `NEXT_PUBLIC_DEPLOY_DATE="${deployDate}"\n`;
@@ -60,10 +60,11 @@ function setEnvFile(config) {
       envContent = envContent.replace(new RegExp(`${envKey}=.*\n`), ''); // 既存の設定を削除
       let val = envConfig[key];
       if (key === 'contextRootUrls' && val && typeof val === 'object') {
-        val = JSON.stringify(val);
+        envContent += `${envKey}='${JSON.stringify(val)}'\n`; // 新しい設定を追加
+      } else {
+        const escaped = typeof val === 'string' ? val.replace(/\\/g, '\\\\').replace(/"/g, '\\"') : String(val);
+        envContent += `${envKey}="${escaped}"\n`; // 新しい設定を追加
       }
-      const escaped = typeof val === 'string' ? val.replace(/\\/g, '\\\\').replace(/"/g, '\\"') : String(val);
-      envContent += `${envKey}="${escaped}"\n`; // 新しい設定を追加
     }
   }
 

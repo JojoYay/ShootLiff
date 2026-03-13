@@ -1,15 +1,16 @@
 'use client';
 
 import React, { createContext, FC, PropsWithChildren, useContext } from 'react';
-
-const CONTEXT_ROOT_URLS_ENV = 'NEXT_PUBLIC_CONTEXT_ROOT_URLS';
+import { usePathname } from 'next/navigation';
 
 function parseContextRootUrls(): Record<string, string> {
-  const raw = process.env[CONTEXT_ROOT_URLS_ENV];
+  const raw = process.env.NEXT_PUBLIC_CONTEXT_ROOT_URLS;
+  console.log('raw', raw);
   if (!raw || typeof raw !== 'string') return {};
   try {
     const parsed = JSON.parse(raw) as Record<string, string>;
-    return parsed && typeof parsed === 'object' ? parsed : {};
+    console.log('parsed', parsed);
+    return parsed && typeof parsed === 'object' && !Array.isArray(parsed) ? parsed : {};
   } catch {
     return {};
   }
@@ -20,14 +21,27 @@ function getServerUrlFromContext(contextRoot: string | null): string {
   if (!contextRoot) return defaultUrl;
   const key = contextRoot.toLowerCase();
   const urls = parseContextRootUrls();
-  return (urls[key] as string) ?? defaultUrl;
+  const url = urls[key];
+  return typeof url === 'string' ? url : defaultUrl;
 }
 
 const ServerUrlContext = createContext<string | null>(null);
 
+function getContextRootFromPathname(pathname: string | null): string | null {
+  if (!pathname || pathname === '/') return null;
+  const segment = pathname.replace(/^\//, '').split('/')[0]?.toLowerCase();
+  if (!segment) return null;
+  const urls = parseContextRootUrls();
+  return urls[segment] !== undefined ? segment : null;
+}
+
 export const useServerUrl = (): string => {
-  const contextRoot = useContext(ServerUrlContext);
-  return getServerUrlFromContext(contextRoot);
+  const contextRootFromProvider = useContext(ServerUrlContext);
+  const pathname = usePathname();
+  const contextRootFromPath = getContextRootFromPathname(pathname);
+  console.log('contextRootFromPath', contextRootFromPath);
+  const effectiveContext = contextRootFromPath ?? contextRootFromProvider;
+  return getServerUrlFromContext(effectiveContext);
 };
 
 export const useContextRoot = (): string | null => useContext(ServerUrlContext);
